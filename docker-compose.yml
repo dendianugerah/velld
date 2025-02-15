@@ -1,5 +1,4 @@
-version: '3.8'
-
+---
 services:
   api:
     build:
@@ -29,3 +28,4 @@ services:
 volumes:
   api_data:
   backup_data:
+...
