@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"path/filepath"
 
+	"github.com/dendianugerah/velld/internal"
 	"github.com/dendianugerah/velld/internal/auth"
 	"github.com/dendianugerah/velld/internal/backup"
 	"github.com/dendianugerah/velld/internal/common"
@@ -47,6 +48,10 @@ func main() {
 
 	r := mux.NewRouter()
 	r.Use(middleware.CORS)
+
+	// Add health check endpoint
+	healthHandler := internal.NewHealthHandler(db)
+	r.HandleFunc("/health", healthHandler.CheckHealth).Methods("GET", "OPTIONS")
 
 	// Public routes
 	api := r.PathPrefix("/api").Subrouter()

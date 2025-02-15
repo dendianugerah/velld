@@ -95,9 +95,9 @@ ENCRYPTION_KEY=your-encryption-key
 
 | Variable          | Description                                                   | Required?     | Default Behavior                  |
 |------------------|---------------------------------------------------------------|--------------|----------------------------------|
-| `JWT_SECRET`     | Secret key for signing JWT tokens.                           | ❌ Optional  | Auto-generated if missing        |
-| `ENCRYPTION_KEY` | Key for encrypting sensitive data (e.g., database credentials). | ❌ Optional  | Auto-generated if missing        |
-| `NEXT_PUBLIC_API_URL`        | Base URL for the API used by the frontend.                   | ✅ Required  | None                             |
+| `JWT_SECRET`     | Secret key for signing JWT tokens.                           | Optional  | Auto-generated if missing        |
+| `ENCRYPTION_KEY` | Key for encrypting sensitive data (e.g., database credentials). | Optional  | Auto-generated if missing        |
+| `NEXT_PUBLIC_API_URL`        | Base URL for the API used by the frontend.                   | Required  | None                             |
 
 > **Note:** If `JWT_SECRET` or `ENCRYPTION_KEY` is missing from `.env`, Velld will automatically generate secure values and save them to the `.env` file.
 
