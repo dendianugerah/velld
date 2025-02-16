@@ -6,13 +6,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useLogin } from "@/hooks/use-auth";
 import Link from "next/link";
+import { checkIsAllowRegister } from "@/lib/helper";
 
 export function LoginForm() {
   const [formData, setFormData] = useState({
     username: "",
     password: "",
   });
-  
+
+  const isSignupActive = checkIsAllowRegister();
   const { mutate: login, isPending } = useLogin();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -55,20 +57,22 @@ export function LoginForm() {
           />
         </div>
       </div>
-      
+
       <Button className="w-full" type="submit" disabled={isPending}>
         {isPending ? "Signing in..." : "Sign in"}
       </Button>
 
-      <div className="text-center text-sm">
-        <span className="text-muted-foreground">Dont have an account? </span>
-        <Link 
-          href="/register" 
-          className="font-medium hover:text-primary underline-offset-4 hover:underline"
-        >
-          Sign up
-        </Link>
-      </div>
+      {isSignupActive && (
+        <div className="text-center text-sm">
+          <span className="text-muted-foreground">Dont have an account? </span>
+          <Link
+            href="/register"
+            className="font-medium hover:text-primary underline-offset-4 hover:underline"
+          >
+            Sign up
+          </Link>
+        </div>
+      )}
     </form>
   );
 }

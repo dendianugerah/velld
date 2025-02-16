@@ -71,3 +71,24 @@ func (s *AuthService) GetProfile(ctx context.Context) (string, error) {
 
 	return username, nil
 }
+
+func (s *AuthService) CreateNewUserByEnvData(username, password string) (bool, error) {
+	adminUser, err := s.repo.GetUserByUsername(username)
+	if err != nil && err.Error() != "invalid credentials" {
+		return false, err
+	}
+	if adminUser != nil {
+		return false, errors.New("admin user already exists")
+	}
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return false, err
+	}
+	payload := User{
+		ID:        uuid.New(),
+		Username:  username,
+		Password:  string(hashedPassword),
+		CreatedAt: time.Now().Format("2006-01-02 15:04:05"),
+	}
+	return true, s.repo.CreateUser(payload)
+}
