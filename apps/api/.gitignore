@@ -28,4 +28,4 @@ backups/*
 internal/database/*.db
 
 # Tmp File
-tmp/*
+tmp
