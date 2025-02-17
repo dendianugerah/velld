@@ -35,14 +35,17 @@ A database backup management and automation tool. Velld provides a user-friendly
 ## Screenshots
 
 ### Dashboard Overview
+
 ![Dashboard](docs/images/dashboard.png)
 Monitor backup statistics and recent activities.
 
 ### Connection Management
+
 ![Connections](docs/images/connections.png)
 Easily manage multiple database connections.
 
 ### History
+
 ![History](docs/images/history.png)
 View detailed backup history and logs.
 
@@ -69,6 +72,7 @@ docker compose up -d
 ```
 
 Once started, the application will be available at:
+
 - **Web Interface**: [http://localhost:3000](http://localhost:3000)
 - **API**: [http://localhost:8080](http://localhost:8080)
 
@@ -93,13 +97,16 @@ ENCRYPTION_KEY=your-encryption-key
 
 #### **Environment Variable Details:**
 
-| Variable          | Description                                                   | Required?     | Default Behavior                  |
-|------------------|---------------------------------------------------------------|--------------|----------------------------------|
-| `JWT_SECRET`     | Secret key for signing JWT tokens.                           | Optional  | Auto-generated if missing        |
-| `ENCRYPTION_KEY` | Key for encrypting sensitive data (e.g., database credentials). | Optional  | Auto-generated if missing        |
-| `NEXT_PUBLIC_API_URL`        | Base URL for the API used by the frontend.                   | Required  | None                             |
+| Variable                    | Description                                                        | Required?                         | Default Behavior          |
+| --------------------------- | ------------------------------------------------------------------ | --------------------------------- | ------------------------- |
+| `JWT_SECRET`                | Secret key for signing JWT tokens.                                 | Optional                          | Auto-generated if missing |
+| `ENCRYPTION_KEY`            | Key for encrypting sensitive data (e.g., database credentials).    | Optional                          | Auto-generated if missing |
+| `NEXT_PUBLIC_API_URL`       | Base URL for the API used by the frontend.                         | Required                          | None                      |
+| `ALLOW_REGISTER`            | Key determines whether user registration is `true` or `false`.     | Optional                          | Auto-generated if missing |
+| `ADMIN_USER_CREDENTIAL`     | Defines the admin username. Required if `ALLOW_REGISTER` is false. | Yes, if `ALLOW_REGISTER` is false | Must be set manually.     |
+| `ADMIN_PASSWORD_CREDENTIAL` | Defines the admin password. Required if `ALLOW_REGISTER` is false. | Yes, if `ALLOW_REGISTER` is false | Must be set manually.     |
 
-> **Note:** If `JWT_SECRET` or `ENCRYPTION_KEY` is missing from `.env`, Velld will automatically generate secure values and save them to the `.env` file.
+> **Note:** If `JWT_SECRET`, `ENCRYPTION_KEY` or `ALLOW_REGISTER` is missing from `.env`, Velld will automatically generate secure values and save them to the `.env` file.
 
 ### Binary Path Detection
 
