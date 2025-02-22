@@ -2,9 +2,9 @@
 
 import { useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { isAuthenticated } from "@/lib/helper";
+import { checkIsAllowRegister, isAuthenticated } from "@/lib/helper";
 
-const publicPaths = ['/login', '/register'];
+const publicPaths = ["/login", "/register"];
 
 export function AuthMiddleware({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -12,9 +12,11 @@ export function AuthMiddleware({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!isAuthenticated() && !publicPaths.includes(pathname)) {
-      router.push('/login');
+      router.push("/login");
     } else if (isAuthenticated() && publicPaths.includes(pathname)) {
-      router.push('/');
+      router.push("/");
+    } else if (!checkIsAllowRegister() && pathname === "/register") {
+      router.push("/login");
     }
   }, [pathname, router]);
 

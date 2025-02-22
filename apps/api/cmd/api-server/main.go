@@ -20,7 +20,6 @@ import (
 
 func main() {
 	secrets := common.GetSecrets()
-
 	dbPath := filepath.Join("internal", "database", "velld.db")
 	db, err := database.Init(dbPath)
 	if err != nil {
@@ -32,6 +31,19 @@ func main() {
 
 	authRepo := auth.NewAuthRepository(db)
 	authService := auth.NewAuthService(authRepo, secrets.JWTSecret)
+
+	if !secrets.IsAllowSignup {
+		// create one admin user if isAllowSignup is false
+		if secrets.AdminUsernameCredential == "" || secrets.AdminPasswordCredential == "" {
+			log.Fatal("Admin username or password credentials are missing in environment variables")
+		}
+		_, err := authService.CreateNewUserByEnvData(secrets.AdminUsernameCredential, secrets.AdminPasswordCredential)
+		if err != nil {
+			log.Println(err)
+		} else {
+			log.Println("Admin user created")
+		}
+	}
 
 	cryptoService, err := common.NewEncryptionService(secrets.EncryptionKey)
 	if err != nil {

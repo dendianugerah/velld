@@ -23,3 +23,9 @@ go.work.sum
 
 # Backup files
 backups/*
+
+# Dataase files
+internal/database/*.db
+
+# Tmp File
+tmp

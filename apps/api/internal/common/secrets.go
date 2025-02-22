@@ -15,8 +15,11 @@ import (
 )
 
 type Secrets struct {
-	JWTSecret     string
-	EncryptionKey string
+	JWTSecret               string
+	EncryptionKey           string
+	AdminUsernameCredential string
+	AdminPasswordCredential string
+	IsAllowSignup           bool
 }
 
 var secretsFilePath = filepath.Join("..", "..", ".env")
@@ -32,7 +35,6 @@ func GetSecrets() *Secrets {
 }
 
 func loadOrGenerateSecrets() *Secrets {
-
 	err := godotenv.Load(secretsFilePath)
 	if err != nil {
 		log.Println("[WARN] No .env file found, will generate secrets if missing")
@@ -40,13 +42,27 @@ func loadOrGenerateSecrets() *Secrets {
 
 	jwtSecret := getOrGenerateSecret("JWT_SECRET")
 	encryptionKey := getOrGenerateSecret("ENCRYPTION_KEY")
+	adminUsernameCredential, _ := getWithoutGenerateSecret("ADMIN_USERNAME_CREDENTIAL")
+	adminPasswordCredential, _ := getWithoutGenerateSecret("ADMIN_PASSWORD_CREDENTIAL")
+	isAllowSignup := getOrGenerateSecret("ALLOW_REGISTER")
 
-	saveSecretsToFile(jwtSecret, encryptionKey)
+	saveSecretsToFile(jwtSecret, encryptionKey, isAllowSignup)
 
 	return &Secrets{
-		JWTSecret:     jwtSecret,
-		EncryptionKey: encryptionKey,
+		JWTSecret:               jwtSecret,
+		EncryptionKey:           encryptionKey,
+		AdminUsernameCredential: adminUsernameCredential,
+		AdminPasswordCredential: adminPasswordCredential,
+		IsAllowSignup:           isAllowSignup == "true",
 	}
+}
+
+// getWithoutGenerateSecret retrieves a secret from the environment variables without generating a new one
+func getWithoutGenerateSecret(envVar string) (string, error) {
+	if secret := os.Getenv(envVar); secret != "" {
+		return secret, nil
+	}
+	return "", fmt.Errorf("secret not found in env")
 }
 
 func getOrGenerateSecret(envVar string) string {
@@ -57,12 +73,19 @@ func getOrGenerateSecret(envVar string) string {
 	var newSecret string
 	if envVar == "ENCRYPTION_KEY" {
 		newSecret = generateSecureHexKey()
+	} else if envVar == "ALLOW_REGISTER" {
+		newSecret = generateAllowSingup()
 	} else {
 		newSecret = generateSecureBase64Key()
 	}
 
 	fmt.Printf("[INFO] %s not found in env. Generated new key.\n", envVar)
 	return newSecret
+}
+
+// Generate allow signup
+func generateAllowSingup() string {
+	return "true"
 }
 
 // Generate a secure random hex key (for AES encryption)
@@ -84,7 +107,7 @@ func generateSecureBase64Key() string {
 	return base64.StdEncoding.EncodeToString(bytes)
 }
 
-func saveSecretsToFile(jwtSecret, encryptionKey string) {
+func saveSecretsToFile(jwtSecret, encryptionKey, isAllowSignup string) {
 	existingContent, _ := os.ReadFile(secretsFilePath)
 	existingEnv := string(existingContent)
 
@@ -94,6 +117,9 @@ func saveSecretsToFile(jwtSecret, encryptionKey string) {
 
 	if !containsLine(existingEnv, "ENCRYPTION_KEY=") {
 		existingEnv += fmt.Sprintf("\nENCRYPTION_KEY=%s", encryptionKey)
+	}
+	if !containsLine(existingEnv, "ALLOW_REGISTER=") {
+		existingEnv += fmt.Sprintf("\nALLOW_REGISTER=%s", isAllowSignup)
 	}
 
 	os.WriteFile(secretsFilePath, []byte(existingEnv), 0600)
