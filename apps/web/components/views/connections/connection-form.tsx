@@ -1,13 +1,16 @@
 'use client';
 
-import { useState } from 'react';
-import { ConnectionForm as ConnectionFormType } from '@/types/connection';
+import { Info } from "lucide-react";
+import { useState } from "react";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectSeparator, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useConnections } from "@/hooks/use-connections";
-import { Select, SelectContent, SelectItem, SelectSeparator, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { DatabaseType } from '@/types/base';
+import { type ConnectionForm as ConnectionFormType } from "@/types/connection";
+import { type DatabaseType } from "@/types/base";
 
 interface ConnectionFormProps {
   onSuccess?: () => void;
@@ -116,6 +119,38 @@ export function ConnectionForm({ onSuccess, onCancel }: ConnectionFormProps) {
           required
           value={formData.database || ''}
           onChange={(e) => setFormData({ ...formData, database: e.target.value })}
+        />
+      </div>
+      
+      <div className="flex items-center justify-between space-x-4 border p-3 rounded-lg">
+        <div className="space-y-0.5">
+          <div className="flex items-center gap-2">
+            <Label htmlFor="ssl">SSL Connection</Label>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="w-[240px]">
+                    {formData.ssl 
+                      ? "Using SSL encryption for secure connection to your database." 
+                      : "Warning: Disabling SSL means your connection to the database will not be encrypted. Only use on trusted networks."}
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+          <div className="text-sm text-muted-foreground">
+            {formData.ssl 
+              ? "Connection will be encrypted (recommended)" 
+              : "Connection will not be encrypted (useful for local development)"}
+          </div>
+        </div>
+        <Switch
+          id="ssl"
+          checked={formData.ssl}
+          onCheckedChange={(checked) => setFormData({ ...formData, ssl: checked })}
         />
       </div>
 
