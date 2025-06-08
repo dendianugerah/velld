@@ -1,13 +1,33 @@
 ---
-title: Hello World
-description: Your first document
+title: What is Velld?
+description: Self-hosted database backup automation and management
 ---
 
-Welcome to the docs! You can start writing documents in `/content/docs`.
+# Velld
 
-## What is Next?
+**Velld** is a self-hosted database backup management and automation tool. It provides a modern, user-friendly web interface for scheduling, managing, and monitoring backups across multiple databases — helping you ensure data safety, automate routine backup jobs, and simplify disaster recovery.
 
-<Cards>
-  <Card title="Learn more about Next.js" href="https://nextjs.org/docs" />
-  <Card title="Learn more about Fumadocs" href="https://fumadocs.vercel.app" />
-</Cards>
+## Why Velld?
+
+- ✅ **Self-hosted**: Keep full control of your data and infrastructure.
+- 📆 **Scheduled Backups**: Automate backups with custom schedules.
+- 🔐 **Secure by Design**: Built-in encryption and access controls.
+- 📊 **Real-time Monitoring**: Get a clear view of backup status and history.
+- 💬 **Multi-database Support**: Works with PostgreSQL, MySQL, MongoDB, and more.
+
+## Supported Databases
+
+- PostgreSQL
+- MySQL
+- MongoDB
+- *(More coming soon!)*
+
+## Quickstart
+
+Velld is Docker-first for ease of deployment:
+
+```bash
+git clone https://github.com/dendianugerah/velld.git
+cd velld
+docker compose up -d
+```
