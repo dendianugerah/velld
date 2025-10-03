@@ -6,7 +6,7 @@ import { HistoryListSkeleton } from "@/components/ui/skeleton/history-list";
 import { ConnectionListSkeleton } from "@/components/ui/skeleton/connection-list";
 import { EmptyState } from "@/components/ui/empty-state";
 
-import { Database, Clock, HardDrive, Calendar, Activity, Plus, Timer } from "lucide-react";
+import { Database, Clock, HardDrive, Calendar, Activity, Timer } from "lucide-react";
 
 import { formatDistanceToNow, parseISO } from "date-fns";
 import { formatSize, getScheduleFrequency } from "@/lib/helper";
