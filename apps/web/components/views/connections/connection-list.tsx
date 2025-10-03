@@ -3,11 +3,13 @@
 import { Card } from '@/components/ui/card';
 import { useConnections } from "@/hooks/use-connections";
 import { ConnectionListSkeleton } from "@/components/ui/skeleton/connection-list";
+import { EmptyState } from '@/components/ui/empty-state';
 import { useState } from 'react';
 import { ConnectionListHeader } from './connection-list/header';
 import { ConnectionCard } from './connection-list/connection-card';
 import { BackupScheduleDialog } from './connection-list/backup-schedule-dialog';
 import { SortBy } from '@/types/connection';
+import { Database } from 'lucide-react';
 
 export function ConnectionsList() {
   const { connections, isLoading } = useConnections();
@@ -45,9 +47,9 @@ export function ConnectionsList() {
         
         {isLoading ? (
           <ConnectionListSkeleton />
-        ) : (
+        ) : filteredConnections && filteredConnections.length > 0 ? (
           <div className="space-y-3">
-            {filteredConnections?.map((connection) => (
+            {filteredConnections.map((connection) => (
               <ConnectionCard
                 key={connection.id}
                 connection={connection}
@@ -55,6 +57,13 @@ export function ConnectionsList() {
               />
             ))}
           </div>
+        ) : (
+          <EmptyState
+            icon={Database}
+            title="No database connections"
+            description="Get started by adding your first database connection."
+            variant="minimal"
+          />
         )}
 
         <BackupScheduleDialog

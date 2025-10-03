@@ -4,12 +4,14 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { HistoryListSkeleton } from "@/components/ui/skeleton/history-list";
 import { ConnectionListSkeleton } from "@/components/ui/skeleton/connection-list";
+import { EmptyState } from "@/components/ui/empty-state";
 
-import { Database, Clock, HardDrive, Calendar } from "lucide-react";
+import { Database, Clock, HardDrive, Calendar, Activity, Plus, Timer } from "lucide-react";
 
 import { formatDistanceToNow, parseISO } from "date-fns";
 import { formatSize, getScheduleFrequency } from "@/lib/helper";
 import { cn } from "@/lib/utils";
+import { useRouter } from "next/navigation";
 
 import { BackupList } from "@/types/backup";
 import { Connection } from "@/types/connection";
@@ -21,6 +23,7 @@ import { useConnections } from "@/hooks/use-connections";
 export function ActivityList() {
   const { backups, isLoading: isLoadingBackups } = useBackup();
   const { connections, isLoading: isLoadingConnections } = useConnections();
+  const router = useRouter();
 
   const renderBackupItem = (item: BackupList) => {
     const connection = connections?.find(c => c.id === item.connection_id);
@@ -156,8 +159,15 @@ export function ActivityList() {
               <div className="space-y-2">
                 {isLoadingBackups ? (
                   <HistoryListSkeleton />
+                ) : backups && backups.length > 0 ? (
+                  backups.map(renderBackupItem)
                 ) : (
-                  backups?.map(renderBackupItem)
+                  <EmptyState
+                    icon={Activity}
+                    title="No recent activity"
+                    description="Set up database connections and run your first backup to see activity."
+                    variant="minimal"
+                  />
                 )}
               </div>
             </ScrollArea>
@@ -168,8 +178,19 @@ export function ActivityList() {
               <div className="space-y-2">
                 {isLoadingConnections ? (
                   <ConnectionListSkeleton />
+                ) : connections && connections.filter(c => c.backup_enabled).length > 0 ? (
+                  connections.filter(c => c.backup_enabled).map(renderScheduledConnection)
                 ) : (
-                  connections?.filter(c => c.backup_enabled).map(renderScheduledConnection)
+                  <EmptyState
+                    icon={Timer}
+                    title="No scheduled backups"
+                    description="Automate your database backups by setting up schedules. This ensures your data is regularly backed up without manual intervention."
+                    action={{
+                      label: "Manage Connections",
+                      onClick: () => router.push('/connections'),
+                      variant: "outline"
+                    }}
+                  />
                 )}
               </div>
             </ScrollArea>

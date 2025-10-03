@@ -17,7 +17,7 @@ export default function ConnectionsPage() {
                 Manage your database connections and sources
               </p>
             </div>
-            <AddConnectionDialog/>
+            <AddConnectionDialog />
           </div>
 
           <ConnectionsList />
