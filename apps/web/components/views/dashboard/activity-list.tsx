@@ -30,19 +30,19 @@ export function ActivityList() {
     return (
       <div
         key={item.id}
-        className="group p-4 rounded-lg border border-border/50 hover:border-border/80 transition-colors"
+        className="p-4 rounded-lg border bg-card"
       >
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-0">
           <div className="flex items-start sm:items-center space-x-4">
             <div className={cn(
               "p-2.5 rounded-md shrink-0",
-              item.status === 'completed' ? "bg-emerald-500/10" : 
-              item.status === 'failed' ? "bg-red-500/10" : "bg-primary/5"
+              item.status === 'completed' ? "bg-green-500/10" : 
+              item.status === 'failed' ? "bg-red-500/10" : "bg-primary/10"
             )}>
               <Database className={cn(
                 "h-5 w-5",
-                item.status === 'completed' ? "text-emerald-500" :
-                item.status === 'failed' ? "text-red-500" : "text-primary"
+                item.status === 'completed' ? "text-green-600 dark:text-green-500" :
+                item.status === 'failed' ? "text-red-600 dark:text-red-500" : "text-primary"
               )} />
             </div>
             <div className="min-w-0 flex-1">
@@ -97,15 +97,12 @@ export function ActivityList() {
   const renderScheduledConnection = (connection: Connection) => (
     <div
       key={connection.id}
-      className="group p-4 rounded-lg border border-border/50 hover:border-border/80 transition-colors"
+      className="p-4 rounded-lg border bg-card"
     >
       <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-4">
         <div className="flex items-start sm:items-center space-x-4">
-          <div className={cn(
-            "p-2.5 rounded-md shrink-0",
-            "bg-emerald-500/10"
-          )}>
-            <Database className="h-5 w-5 text-emerald-500" />
+          <div className="p-2.5 rounded-md shrink-0 bg-primary/10">
+            <Database className="h-5 w-5 text-primary" />
           </div>
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
@@ -144,7 +141,7 @@ export function ActivityList() {
   );
 
   return (
-    <Card className="col-span-3 backdrop-blur-xl bg-card/50">
+    <Card className="col-span-3 bg-card border">
       <div className="p-4 sm:p-6">
         <Tabs defaultValue="recent" className="w-full">
           <div className="flex justify-between items-center mb-4">

@@ -4,6 +4,7 @@ import "./globals.css";
 import { QueryProvider } from "@/components/query-provider"
 import { AuthMiddleware } from "@/components/auth-middleware";
 import { Toaster } from "@/components/ui/toaster";
+import { ThemeProvider } from "@/components/theme-provider";
 
 const geistSans = Plus_Jakarta_Sans({
   variable: "--font-geist-sans",
@@ -25,16 +26,18 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable}  antialiased bg-background text-foreground`}
+        className={`${geistSans.variable} antialiased bg-background text-foreground`}
       >
-        <QueryProvider>
-          <AuthMiddleware>
-            {children}
-          </AuthMiddleware>
-        </QueryProvider>
-        <Toaster />
+        <ThemeProvider defaultTheme="light" storageKey="velld-theme">
+          <QueryProvider>
+            <AuthMiddleware>
+              {children}
+            </AuthMiddleware>
+          </QueryProvider>
+          <Toaster />
+        </ThemeProvider>
       </body>
     </html>
   );

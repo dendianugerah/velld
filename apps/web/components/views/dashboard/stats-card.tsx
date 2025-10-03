@@ -44,7 +44,7 @@ export function StatsCards() {
       {statsData.map((stat) => (
         <Card
           key={stat.name}
-          className="p-6 bg-background border border-border/50 hover:border-border/80 transition-colors"
+          className="p-6 bg-card border"
         >
           <div className="flex justify-between items-start">
             <div className="space-y-2">

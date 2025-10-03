@@ -22,28 +22,11 @@ export function ConnectionCard({
   const scheduleFrequency = getScheduleFrequency(connection.cron_schedule);
 
   return (
-    <div
-      className={cn(
-        "p-4 rounded-lg transition-all duration-200 border",
-        connection.backup_enabled
-          ? "bg-emerald-500/5 hover:bg-emerald-500/10 border-emerald-500/20"
-          : "bg-background/50 hover:bg-background/80 border-border/50"
-      )}
-    >
+    <div className="p-4 rounded-lg border bg-card">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
-          <div className={cn(
-            "p-2 rounded-md",
-            connection.backup_enabled
-              ? "bg-emerald-500/10"
-              : "bg-primary/10"
-          )}>
-            <Database className={cn(
-              "h-5 w-5",
-              connection.backup_enabled
-                ? "text-emerald-500"
-                : "text-primary"
-            )} />
+          <div className="p-2 rounded-md bg-primary/10">
+            <Database className="h-5 w-5 text-primary" />
           </div>
           <div>
             <div className="flex items-center space-x-2">
@@ -57,6 +40,12 @@ export function ConnectionCard({
               >
                 {connection.status}
               </Badge>
+              {connection.backup_enabled && (
+                <Badge variant="default" className="text-xs">
+                  <CheckCircle2 className="h-3 w-3 mr-1" />
+                  Scheduled
+                </Badge>
+              )}
             </div>
             <div className="flex items-center space-x-4 text-sm text-muted-foreground mt-1.5">
               <span>{connection.host}</span>
@@ -65,9 +54,9 @@ export function ConnectionCard({
               {connection.backup_enabled && scheduleFrequency && (
                 <>
                   <span>•</span>
-                  <span className="flex items-center text-emerald-500">
-                    <CheckCircle2 className="h-3 w-3 mr-1" />
-                    Auto-backup {scheduleFrequency}
+                  <span className="flex items-center">
+                    <Clock className="h-3 w-3 mr-1" />
+                    {scheduleFrequency}
                   </span>
                 </>
               )}
@@ -75,7 +64,6 @@ export function ConnectionCard({
                 <>
                   <span>•</span>
                   <span className="flex items-center">
-                    <Clock className="h-3 w-3 mr-1" />
                     Last backup: {new Date(connection.last_backup_time).toLocaleString()}
                   </span>
                 </>
@@ -86,7 +74,7 @@ export function ConnectionCard({
         
         <div className="flex items-center space-x-2">
           <Button 
-            variant={connection.backup_enabled ? "default" : "secondary"}
+            variant="outline"
             size="sm"
             onClick={() => createBackup(connection.id)}
             disabled={isCreating}
@@ -97,7 +85,7 @@ export function ConnectionCard({
           </Button>
           
           <Button 
-            variant={connection.backup_enabled ? "default" : "outline"} 
+            variant="ghost" 
             size="sm" 
             className="space-x-1"
             onClick={onSchedule}
@@ -109,4 +97,4 @@ export function ConnectionCard({
       </div>
     </div>
   );
-} 
+}
