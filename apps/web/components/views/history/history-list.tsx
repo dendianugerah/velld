@@ -24,13 +24,13 @@ export function HistoryList() {
   return (
     <Card className="col-span-3 bg-card border">
       <div className="flex flex-col h-full">
-        <div className="p-6 pb-0">
-          <div className="flex justify-between items-center mb-6">
+        <div className="p-6 border-b">
+          <div className="space-y-4">
             <h3 className="text-lg font-semibold">Recent Backups</h3>
+            <HistoryFilters />
           </div>
-          <HistoryFilters />
         </div>
-        <div className="flex flex-row p-6 pt-4 space-x-4">
+        <div className="flex flex-row p-6 space-x-4">
           <div className="flex-1 space-y-4">
             {isLoading ? (
               <HistoryListSkeleton />
