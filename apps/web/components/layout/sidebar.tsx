@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import Logo from "../ui/logo";
 import { useState } from "react";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: Layout },
@@ -21,19 +22,22 @@ export function Sidebar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const sidebarContent = (
-    <>
-      <div className="flex justify-between">
+    <div className="flex flex-col h-full">
+      <div className="flex justify-between items-start mb-8">
         <Logo />
-        <Button
-          variant="ghost"
-          size="icon"
-          className="lg:hidden"
-          onClick={() => setIsMobileMenuOpen(false)}
-        >
-          <X className="h-6 w-6" />
-        </Button>
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <Button
+            variant="ghost"
+            size="icon"
+            className="lg:hidden"
+            onClick={() => setIsMobileMenuOpen(false)}
+          >
+            <X className="h-6 w-6" />
+          </Button>
+        </div>
       </div>
-      <nav className="space-y-1">
+      <nav className="space-y-1 flex-1">
         {navigation.map((item) => {
           const Icon = item.icon;
           return (
@@ -52,7 +56,7 @@ export function Sidebar() {
           );
         })}
       </nav>
-    </>
+    </div>
   );
 
   return (
@@ -76,7 +80,7 @@ export function Sidebar() {
 
       <div
         className={cn(
-          "fixed inset-y-0 left-0 w-64 border-r bg-card/50 backdrop-blur-xl p-6 space-y-6 z-50 transition-transform duration-300 lg:translate-x-0 lg:static",
+          "fixed inset-y-0 left-0 w-64 border-r bg-card backdrop-blur-xl p-6 z-50 transition-transform duration-300 lg:translate-x-0 lg:static",
           isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >

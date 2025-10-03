@@ -22,7 +22,7 @@ export function HistoryList() {
   const totalPages = pagination?.total_pages || 1;
 
   return (
-    <Card className="col-span-3 backdrop-blur-xl bg-card/50">
+    <Card className="col-span-3 bg-card border">
       <div className="flex flex-col h-full">
         <div className="p-6 pb-0">
           <div className="flex justify-between items-center mb-6">

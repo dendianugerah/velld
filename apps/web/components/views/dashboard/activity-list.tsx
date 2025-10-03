@@ -144,7 +144,7 @@ export function ActivityList() {
   );
 
   return (
-    <Card className="col-span-3 backdrop-blur-xl bg-card/50">
+    <Card className="col-span-3 bg-card border">
       <div className="p-4 sm:p-6">
         <Tabs defaultValue="recent" className="w-full">
           <div className="flex justify-between items-center mb-4">

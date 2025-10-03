@@ -36,7 +36,7 @@ export function ConnectionsList() {
   });
 
   return (
-    <Card className="col-span-3 backdrop-blur-xl bg-card/50">
+    <Card className="col-span-3 bg-card border">
       <div className="p-6">
         <ConnectionListHeader 
           searchQuery={searchQuery}
