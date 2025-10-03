@@ -80,8 +80,8 @@ export function Sidebar() {
 
       <div
         className={cn(
-          "fixed inset-y-0 left-0 w-64 border-r bg-card backdrop-blur-xl p-6 z-50 transition-transform duration-300 lg:translate-x-0 lg:static",
-          isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+          "fixed inset-y-0 left-0 w-64 border-r bg-card backdrop-blur-xl p-6 z-50 transition-transform duration-300",
+          isMobileMenuOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         )}
       >
         {sidebarContent}
