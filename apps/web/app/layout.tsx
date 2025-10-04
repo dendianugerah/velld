@@ -17,7 +17,16 @@ const geistSans = Plus_Jakarta_Sans({
 // });
 
 export const metadata: Metadata = {
-  title: "Velld",
+  title: {
+    default: "Velld",
+    template: "%s | Velld",
+  },
+  description: "Automated scheduling, monitoring, and recovery for PostgreSQL, MySQL, and MongoDB.",
+  icons: {
+    icon: "/logo.ico",
+    shortcut: "/logo.ico",
+    apple: "/logo.png",
+  },
 };
 
 export default function RootLayout({

@@ -11,15 +11,16 @@ export const baseOptions: BaseLayoutProps = {
   nav: {
     title: (
       <>
-        <svg
-          width="24"
-          height="24"
-          xmlns="http://www.w3.org/2000/svg"
-          aria-label="Logo"
-        >
-          <circle cx={12} cy={12} r={12} fill="currentColor" />
-        </svg>
-        Velld
+        <img
+          src="/images/logo.png"
+          alt="Velld Logo"
+          width={32}
+          height={32}
+          className="rounded-lg"
+        />
+        <span className="text-base font-semibold bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-blue-600">
+          Velld
+        </span>
       </>
     ),
   },
