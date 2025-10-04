@@ -1,14 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { LogOut, Shield, User } from "lucide-react";
 import { useProfile } from "@/hooks/use-profile";
 import { logout } from "@/lib/helper";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Separator } from "@/components/ui/separator";
 import { NotificationSettings } from "./notification-settings";
+import { PageHeader } from "@/components/layout/page-header";
 
 export function ProfileSettings() {
   const [isLoading, setIsLoading] = useState(false);
@@ -20,45 +20,70 @@ export function ProfileSettings() {
   };
 
   return (
-    <Card className="max-w-2xl p-6">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center space-x-4">
-          <div className="p-2 rounded-full bg-muted/40">
-            <User className="w-5 h-5 text-muted-foreground" />
-          </div>
-          {isLoadingProfile ? (
-            <Skeleton className="h-6 w-32" />
-          ) : (
-            <h3 className="text-lg font-medium">{profile?.data.username}</h3>
-          )}
-        </div>
-        <Button 
-          variant="destructive" 
-          size="sm"
-          onClick={handleLogout}
-          disabled={isLoading}
-        >
-          <LogOut className="w-4 h-4 mr-2" />
-          {isLoading ? "Signing out..." : "Sign out"}
-        </Button>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        title="Settings"
+        description="Manage your account and notification preferences"
+      />
 
-      <div className="flex items-center justify-between p-4 bg-muted/40 rounded-lg">
-        <div className="flex items-center space-x-4">
-          <div className="p-2 rounded-full bg-background">
-            <Shield className="w-4 h-4 text-muted-foreground" />
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Profile</CardTitle>
+          <CardDescription>Your account information</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between p-4 rounded-lg border bg-background/50">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-md bg-primary/10">
+                <User className="w-4 h-4 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm font-medium">Username</p>
+                {isLoadingProfile ? (
+                  <Skeleton className="h-4 w-32 mt-1" />
+                ) : (
+                  <p className="text-sm text-muted-foreground">{profile?.data.username}</p>
+                )}
+              </div>
+            </div>
           </div>
-          <div>
-            <p className="font-medium">Password</p>
-            <p className="text-sm text-muted-foreground">Change your account password</p>
-          </div>
-        </div>
-        <Button variant="outline" size="sm" disabled>Change Password</Button>
-      </div>
 
-      <Separator className="my-4"/>
+          <div className="flex items-center justify-between p-4 rounded-lg border bg-background/50">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-md bg-primary/10">
+                <Shield className="w-4 h-4 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm font-medium">Password</p>
+                <p className="text-sm text-muted-foreground">Change your account password</p>
+              </div>
+            </div>
+            <Button variant="outline" size="sm" disabled>
+              Change
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       <NotificationSettings />
-    </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Sign Out</CardTitle>
+          <CardDescription>End your current session</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button 
+            variant="destructive" 
+            onClick={handleLogout}
+            disabled={isLoading}
+            className="w-full sm:w-auto"
+          >
+            <LogOut className="w-4 h-4 mr-2" />
+            {isLoading ? "Signing out..." : "Sign out"}
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
