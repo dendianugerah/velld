@@ -10,9 +10,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useBackup } from "@/hooks/use-backup";
-import { Search } from "lucide-react";
+import { Search, GitCompare } from "lucide-react";
 
-export function HistoryFilters() {
+interface HistoryFiltersProps {
+  onCompare?: () => void;
+}
+
+export function HistoryFilters({ onCompare }: HistoryFiltersProps) {
   const { search, setSearch, isLoading } = useBackup();
   
   return (
@@ -65,6 +69,18 @@ export function HistoryFilters() {
             <SelectItem value="mongodb">MongoDB</SelectItem>
           </SelectContent>
         </Select>
+
+        {onCompare && (
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={onCompare}
+            className="gap-2"
+          >
+            <GitCompare className="h-4 w-4" />
+            <span className="hidden sm:inline">Compare</span>
+          </Button>
+        )}
 
         <Button variant="ghost" size="sm">
           Reset Filters
