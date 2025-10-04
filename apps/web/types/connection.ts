@@ -11,6 +11,12 @@ export interface Connection {
   database: string;
   database_size: number;
   ssl: boolean;
+  ssh_enabled: boolean;
+  ssh_host?: string;
+  ssh_port?: number;
+  ssh_username?: string;
+  ssh_password?: string;
+  ssh_private_key?: string;
   status: StatusColor;
   last_backup_time?: string;
   backup_enabled: boolean;
@@ -27,6 +33,12 @@ export type ConnectionForm = Pick<Connection,
   | "password" 
   | "database" 
   | "ssl"
+  | "ssh_enabled"
+  | "ssh_host"
+  | "ssh_port"
+  | "ssh_username"
+  | "ssh_password"
+  | "ssh_private_key"
 >;
 
 export type ConnectionListResponse = Base<Connection[]>;

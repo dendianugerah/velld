@@ -32,6 +32,31 @@ func (s *BackupService) findDatabaseBinaryPath(dbType string) string {
 	return ""
 }
 
+func (s *BackupService) setupSSHTunnelIfNeeded(conn *connection.StoredConnection) (*connection.SSHTunnel, string, int, error) {
+	if !conn.SSHEnabled {
+		return nil, conn.Host, conn.Port, nil
+	}
+
+	tunnel, err := connection.NewSSHTunnel(
+		conn.SSHHost,
+		conn.SSHPort,
+		conn.SSHUsername,
+		conn.SSHPassword,
+		conn.SSHPrivateKey,
+		conn.Host,
+		conn.Port,
+	)
+	if err != nil {
+		return nil, "", 0, fmt.Errorf("failed to create SSH tunnel: %w", err)
+	}
+
+	if err := tunnel.Start(); err != nil {
+		return nil, "", 0, fmt.Errorf("failed to start SSH tunnel: %w", err)
+	}
+
+	return tunnel, "127.0.0.1", tunnel.GetLocalPort(), nil
+}
+
 func (s *BackupService) createPgDumpCmd(conn *connection.StoredConnection, outputPath string) *exec.Cmd {
 	binaryPath := s.findDatabaseBinaryPath("postgresql")
 	if binaryPath == "" {
@@ -41,6 +66,7 @@ func (s *BackupService) createPgDumpCmd(conn *connection.StoredConnection, outpu
 
 	binPath := filepath.Join(binaryPath, common.GetPlatformExecutableName(requiredTools["postgresql"]))
 
+	// Use original host/port (SSH tunnel handled at backup execution level)
 	cmd := exec.Command(binPath,
 		"-h", conn.Host,
 		"-p", fmt.Sprintf("%d", conn.Port),

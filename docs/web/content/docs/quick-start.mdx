@@ -48,6 +48,22 @@ Get up and running with your first database backup in just a few minutes.
       Use `host.docker.internal` instead of `localhost` to connect to databases running on your host machine.
     </Callout>
 
+    **For remote databases behind a firewall:**
+
+    Expand the **SSH Tunnel** section and enable it:
+
+    ```yaml
+    SSH Enabled: ✅
+    SSH Host: bastion.example.com
+    SSH Port: 22
+    SSH Username: deploy
+    SSH Auth Method: Private Key or Password
+    ```
+
+    <Callout type="info">
+      SSH tunnels provide secure access to databases that don't allow direct external connections. See [Database Configuration](/docs/databases#ssh-tunnel-support) for details.
+    </Callout>
+
     4. Click **Test Connection** to verify it works
     5. Click **Save Connection**
   </Step>
