@@ -30,81 +30,83 @@ export function HistoryList() {
             <HistoryFilters />
           </div>
         </div>
-        <div className="flex flex-row p-6 space-x-4">
-          <div className="flex-1 space-y-4">
-            {isLoading ? (
-              <HistoryListSkeleton />
-            ) : backups && backups.length > 0 ? (
-              <>
-                {backups.map((item: BackupList) => (
-                  <div
-                    key={item.id}
-                    className="p-4 rounded-lg bg-background/50 hover:bg-background/60 transition-colors border"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-4">
-                        <div className="p-2 rounded-md bg-primary/10">
-                          <Database className="h-5 w-5 text-primary" />
-                        </div>
-                        <div>
-                          <div className="flex items-center space-x-2">
-                            <h4 className="font-medium">{item.path.split('\\').pop()}</h4>
-                            <Badge variant="secondary" className="text-xs">
-                              {item.database_type}
-                            </Badge>
+        <div className="flex flex-row p-6 space-x-4 flex-1">
+          <div className="flex-1 flex flex-col">
+            <div className="flex-1 space-y-4">
+              {isLoading ? (
+                <HistoryListSkeleton />
+              ) : backups && backups.length > 0 ? (
+                <>
+                  {backups.map((item: BackupList) => (
+                    <div
+                      key={item.id}
+                      className="p-4 rounded-lg bg-background/50 hover:bg-background/60 transition-colors border"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-4">
+                          <div className="p-2 rounded-md bg-primary/10">
+                            <Database className="h-5 w-5 text-primary" />
                           </div>
-                          <p className="text-sm text-muted-foreground mt-1">
-                            {formatDistanceToNow(parseISO(item.created_at), { addSuffix: true })} | {formatSize(item.size)}
-                          </p>
+                          <div>
+                            <div className="flex items-center space-x-2">
+                              <h4 className="font-medium">{item.path.split('\\').pop()}</h4>
+                              <Badge variant="secondary" className="text-xs">
+                                {item.database_type}
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-muted-foreground mt-1">
+                              {formatDistanceToNow(parseISO(item.created_at), { addSuffix: true })} | {formatSize(item.size)}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                      <div className="flex items-center space-x-4">
-                        <div className="text-right">
-                          <Badge
-                            variant="secondary"
-                            className={statusColors[item.status as keyof typeof statusColors]}
-                          >
-                            {item.status}
-                          </Badge>
-                          <p className="text-sm text-muted-foreground mt-1">
-                            {calculateDuration(item.started_time, item.completed_time)}
-                          </p>
-                        </div>
-                        <div className="flex space-x-2">
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            onClick={() => downloadBackupFile({ id: item.id, path: item.path })}
-                            disabled={isDownloading}
-                          >
-                            <Download className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon">
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
+                        <div className="flex items-center space-x-4">
+                          <div className="text-right">
+                            <Badge
+                              variant="secondary"
+                              className={statusColors[item.status as keyof typeof statusColors]}
+                            >
+                              {item.status}
+                            </Badge>
+                            <p className="text-sm text-muted-foreground mt-1">
+                              {calculateDuration(item.started_time, item.completed_time)}
+                            </p>
+                          </div>
+                          <div className="flex space-x-2">
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              onClick={() => downloadBackupFile({ id: item.id, path: item.path })}
+                              disabled={isDownloading}
+                            >
+                              <Download className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-                
-                {pagination && (
-                  <div className="pt-4">
-                    <CustomPagination
-                      currentPage={page}
-                      totalPages={totalPages}
-                      onPageChange={setPage}
-                    />
-                  </div>
-                )}
-              </>
-            ) : (
-              <EmptyState
-                icon={History}
-                title="No backup history"
-                description="Your backup history will appear here once you start creating backups."
-                variant="minimal"
-              />
+                  ))}
+                </>
+              ) : (
+                <EmptyState
+                  icon={History}
+                  title="No backup history"
+                  description="Your backup history will appear here once you start creating backups."
+                  variant="minimal"
+                />
+              )}
+            </div>
+            
+            {pagination && backups && backups.length > 0 && (
+              <div className="pt-6 flex justify-end border-t mt-4">
+                <CustomPagination
+                  currentPage={page}
+                  totalPages={totalPages}
+                  onPageChange={setPage}
+                />
+              </div>
             )}
           </div>
 
