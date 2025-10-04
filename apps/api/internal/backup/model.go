@@ -26,6 +26,7 @@ type Backup struct {
 	ScheduleID    *string    `json:"schedule_id"`
 	Status        string     `json:"status"`
 	Path          string     `json:"path"`
+	S3ObjectKey   *string    `json:"s3_object_key"`
 	Size          int64      `json:"size"`
 	StartedTime   time.Time  `json:"started_time"`
 	CompletedTime *time.Time `json:"completed_time"`
@@ -42,6 +43,7 @@ type BackupList struct {
 	ScheduleID    *string   `json:"schedule_id"`
 	Status        string    `json:"status"`
 	Path          string    `json:"path"`
+	S3ObjectKey   *string   `json:"s3_object_key"`
 	Size          int64     `json:"size"`
 	StartedTime   string    `json:"started_time"`
 	CompletedTime string    `json:"completed_time"`

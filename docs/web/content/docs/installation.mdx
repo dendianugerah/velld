@@ -55,7 +55,7 @@ Choose only the database client you need to keep your installation lightweight:
     Create `apps/api/Dockerfile.postgres`:
 
     ```dockerfile
-    FROM golang:1.20-alpine AS builder
+    FROM golang:1.24-alpine AS builder
 
     WORKDIR /app
 
@@ -139,7 +139,7 @@ Choose only the database client you need to keep your installation lightweight:
     Create `apps/api/Dockerfile.mysql`:
 
     ```dockerfile
-    FROM golang:1.20-alpine AS builder
+    FROM golang:1.24-alpine AS builder
 
     WORKDIR /app
 
@@ -223,7 +223,7 @@ Choose only the database client you need to keep your installation lightweight:
     Create `apps/api/Dockerfile.mongo`:
 
     ```dockerfile
-    FROM golang:1.20-alpine AS builder
+    FROM golang:1.24-alpine AS builder
 
     WORKDIR /app
 
