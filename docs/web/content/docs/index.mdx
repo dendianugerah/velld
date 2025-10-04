@@ -1,33 +1,126 @@
 ---
-title: What is Velld?
-description: Self-hosted database backup automation and management
+title: Introduction
+description: Modern, self-hosted database backup automation
 ---
 
-# Velld
+import { Callout } from 'fumadocs-ui/components/callout';
 
-**Velld** is a self-hosted database backup management and automation tool. It provides a modern, user-friendly web interface for scheduling, managing, and monitoring backups across multiple databases — helping you ensure data safety, automate routine backup jobs, and simplify disaster recovery.
+# Welcome to Velld
 
-## Why Velld?
+**Velld** is a self-hosted database backup management platform. It provides a beautiful web interface for scheduling, managing, and monitoring backups across multiple databases—helping you ensure data safety, automate routine backup jobs, and simplify disaster recovery.
 
-- ✅ **Self-hosted**: Keep full control of your data and infrastructure.
-- 📆 **Scheduled Backups**: Automate backups with custom schedules.
-- 🔐 **Secure by Design**: Built-in encryption and access controls.
-- 📊 **Real-time Monitoring**: Get a clear view of backup status and history.
-- 💬 **Multi-database Support**: Works with PostgreSQL, MySQL, MongoDB, and more.
+<Callout type="info">
+  Velld is completely free, open-source, and designed to be simple to set up and use.
+</Callout>
+
+---
 
 ## Supported Databases
 
-- PostgreSQL
-- MySQL
-- MongoDB
-- *(More coming soon!)*
+**PostgreSQL** - Full support for PostgreSQL 9.6+
 
-## Quickstart
+**MySQL / MariaDB** - Compatible with MySQL 5.7+ and MariaDB
 
-Velld is Docker-first for ease of deployment:
+**MongoDB** - Support for MongoDB 4.0+
+
+---
+
+## Quick Start
+
+Get Velld running in under 5 minutes:
 
 ```bash
+# Clone the repository
 git clone https://github.com/dendianugerah/velld.git
 cd velld
+
+# Start the services
 docker compose up -d
+
+# Access the web interface
+open http://localhost:3000
 ```
+
+That's it! Create your account and start backing up your databases.
+
+<Callout type="tip">
+  You can install only the database clients you need to keep your Docker image lightweight. See the Installation Guide for details.
+</Callout>
+
+---
+
+## How It Works
+
+**1. Connect Your Databases**
+
+Add your PostgreSQL, MySQL, or MongoDB databases with a simple form. Test connections before saving.
+
+**2. Schedule Backups**
+
+Set up automatic backups with flexible cron schedules. Choose retention policies to auto-delete old backups.
+
+**3. Monitor & Manage**
+
+Track all backups from the dashboard. Download backups, compare versions, and get notifications.
+
+**4. Restore When Needed**
+
+Download backup files and restore them using standard database tools. Test your restores regularly.
+
+---
+
+## Features at a Glance
+
+### Backup Management
+- On-demand and scheduled backups
+- Multiple databases per connection
+- Customizable retention policies
+- Automatic cleanup of old backups
+- Backup file compression
+
+### Monitoring & Notifications
+- Real-time backup status
+- Success rate tracking
+- Storage usage metrics
+- Email notifications
+- Detailed backup history
+
+### Advanced Features
+- Backup comparison with diff viewer
+- Split and unified diff views
+- Line-by-line change tracking
+- Encrypted credential storage
+- RESTful API access
+
+### User Experience
+- Beautiful, modern UI
+- Dark mode support
+- Mobile responsive
+- Fast search and filtering
+- Pagination for large datasets
+
+---
+
+## What's Next?
+
+Ready to get started? Head over to the Installation Guide to begin.
+
+You can also:
+- View the Quick Start guide to create your first backup
+- Learn about Database Setup for PostgreSQL, MySQL, or MongoDB
+- Star us on GitHub and contribute to the project
+
+---
+
+## Community & Support
+
+- Documentation: Complete guides and references
+- Bug Reports: GitHub Issues
+- Feature Requests: GitHub Discussions
+- GitHub: dendianugerah/velld
+
+---
+
+<Callout type="success">
+  Ready to get started? Head over to the Installation Guide to begin.
+</Callout>

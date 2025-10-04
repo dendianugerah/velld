@@ -1,0 +1,472 @@
+---
+title: Database Configuration
+description: Connect and configure PostgreSQL, MySQL, and MongoDB
+---
+
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+import { Callout } from 'fumadocs-ui/components/callout';
+
+# Database Configuration
+
+Learn how to connect Velld to your databases and configure them for optimal backups.
+
+---
+
+## Supported Databases
+
+<Tabs items={['PostgreSQL', 'MySQL', 'MongoDB']}>
+  <Tab value="PostgreSQL">
+    ## PostgreSQL
+
+    ### Connection Settings
+
+    ```yaml
+    Name: My PostgreSQL DB
+    Type: PostgreSQL
+    Host: host.docker.internal  # or your server IP
+    Port: 5432                  # default PostgreSQL port
+    Database: myapp_production
+    Username: postgres
+    Password: your_password
+    SSL Mode: disable          # or require, verify-ca, verify-full
+    ```
+
+    ### Docker Setup
+
+    Make sure you're using the PostgreSQL Dockerfile:
+
+    ```dockerfile
+    # apps/api/Dockerfile.postgres
+    RUN apk add --no-cache \
+        sqlite-libs \
+        postgresql-client
+    ```
+
+    ### Connection String Format
+
+    Velld supports standard PostgreSQL connection strings:
+
+    ```
+    postgresql://username:password@host:port/database?sslmode=disable
+    ```
+
+    ### Backup Command
+
+    Velld uses `pg_dump` under the hood:
+
+    ```bash
+    pg_dump -h host -p port -U username -d database -F c -f backup.dump
+    ```
+
+    Options:
+    - `-F c`: Custom format (compressed, allows selective restore)
+    - `-F p`: Plain SQL format (human-readable)
+    - `-F t`: Tar format
+
+    ### Common Issues
+
+    **Connection refused:**
+    - Ensure PostgreSQL is accepting connections from Docker
+    - Update `postgresql.conf`: `listen_addresses = '*'`
+    - Update `pg_hba.conf` to allow connections from Docker network
+
+    **Permission denied:**
+    - User needs appropriate privileges:
+      ```sql
+      GRANT CONNECT ON DATABASE myapp_production TO backup_user;
+      GRANT SELECT ON ALL TABLES IN SCHEMA public TO backup_user;
+      ```
+
+    **SSL errors:**
+    - For local development, use `sslmode=disable`
+    - For production, use `sslmode=require` or higher
+    - Provide SSL certificates if using `verify-ca` or `verify-full`
+
+    ### Best Practices
+
+    1. **Create a dedicated backup user:**
+       ```sql
+       CREATE USER backup_user WITH PASSWORD 'secure_password';
+       GRANT CONNECT ON DATABASE myapp_production TO backup_user;
+       GRANT SELECT ON ALL TABLES IN SCHEMA public TO backup_user;
+       GRANT SELECT ON ALL SEQUENCES IN SCHEMA public TO backup_user;
+       ALTER DEFAULT PRIVILEGES IN SCHEMA public 
+         GRANT SELECT ON TABLES TO backup_user;
+       ```
+
+    2. **Use read-only replicas for large databases** to avoid impacting production
+
+    3. **Test restores regularly:**
+       ```bash
+       pg_restore -h localhost -U postgres -d test_db backup.dump
+       ```
+
+    4. **Monitor backup size** - large databases may need custom retention policies
+
+  </Tab>
+
+  <Tab value="MySQL">
+    ## MySQL / MariaDB
+
+    ### Connection Settings
+
+    ```yaml
+    Name: My MySQL DB
+    Type: MySQL
+    Host: host.docker.internal  # or your server IP
+    Port: 3306                  # default MySQL port
+    Database: myapp_production
+    Username: root
+    Password: your_password
+    ```
+
+    ### Docker Setup
+
+    Make sure you're using the MySQL Dockerfile:
+
+    ```dockerfile
+    # apps/api/Dockerfile.mysql
+    RUN apk add --no-cache \
+        sqlite-libs \
+        mysql-client
+    ```
+
+    ### Connection String Format
+
+    ```
+    mysql://username:password@host:port/database
+    ```
+
+    ### Backup Command
+
+    Velld uses `mysqldump`:
+
+    ```bash
+    mysqldump -h host -P port -u username -p database > backup.sql
+    ```
+
+    Options:
+    - `--single-transaction`: For InnoDB tables (no locks)
+    - `--routines`: Include stored procedures and functions
+    - `--triggers`: Include triggers
+    - `--events`: Include scheduled events
+
+    ### Common Issues
+
+    **Access denied:**
+    - Ensure user has sufficient privileges:
+      ```sql
+      GRANT SELECT, LOCK TABLES, SHOW VIEW, EVENT, TRIGGER 
+        ON myapp_production.* TO 'backup_user'@'%';
+      FLUSH PRIVILEGES;
+      ```
+
+    **Max packet size errors:**
+    - Increase `max_allowed_packet` in `my.cnf`:
+      ```ini
+      [mysqldump]
+      max_allowed_packet=512M
+      ```
+
+    **Connection from Docker:**
+    - Update `bind-address` in `my.cnf`:
+      ```ini
+      bind-address = 0.0.0.0
+      ```
+
+    ### Best Practices
+
+    1. **Create a dedicated backup user:**
+       ```sql
+       CREATE USER 'backup_user'@'%' IDENTIFIED BY 'secure_password';
+       GRANT SELECT, LOCK TABLES, SHOW VIEW, EVENT, TRIGGER 
+         ON myapp_production.* TO 'backup_user'@'%';
+       FLUSH PRIVILEGES;
+       ```
+
+    2. **Use `--single-transaction`** for consistent backups without locks:
+       ```bash
+       mysqldump --single-transaction --routines --triggers myapp_production
+       ```
+
+    3. **Exclude large tables if needed:**
+       ```bash
+       mysqldump myapp_production --ignore-table=myapp_production.logs
+       ```
+
+    4. **Test restores:**
+       ```bash
+       mysql -u root -p test_db < backup.sql
+       ```
+
+  </Tab>
+
+  <Tab value="MongoDB">
+    ## MongoDB
+
+    ### Connection Settings
+
+    ```yaml
+    Name: My MongoDB
+    Type: MongoDB
+    Host: host.docker.internal  # or your server IP
+    Port: 27017                 # default MongoDB port
+    Database: myapp_production
+    Username: admin
+    Password: your_password
+    Auth Database: admin        # usually 'admin'
+    ```
+
+    ### Docker Setup
+
+    Make sure you're using the MongoDB Dockerfile:
+
+    ```dockerfile
+    # apps/api/Dockerfile.mongo
+    RUN apk add --no-cache \
+        sqlite-libs \
+        mongodb-tools
+    ```
+
+    ### Connection String Format
+
+    ```
+    mongodb://username:password@host:port/database?authSource=admin
+    ```
+
+    For MongoDB Atlas or replica sets:
+    ```
+    mongodb+srv://username:password@cluster.mongodb.net/database
+    ```
+
+    ### Backup Command
+
+    Velld uses `mongodump`:
+
+    ```bash
+    mongodump --host=host --port=port \
+              --username=user --password=pass \
+              --db=database --archive=backup.archive --gzip
+    ```
+
+    Options:
+    - `--archive`: Single archive file
+    - `--gzip`: Compress the archive
+    - `--oplog`: Include oplog for point-in-time recovery
+
+    ### Common Issues
+
+    **Authentication failed:**
+    - Ensure user has correct roles:
+      ```javascript
+      use admin
+      db.createUser({
+        user: "backup_user",
+        pwd: "secure_password",
+        roles: [
+          { role: "backup", db: "admin" },
+          { role: "read", db: "myapp_production" }
+        ]
+      })
+      ```
+
+    **Connection timeout:**
+    - Check MongoDB is listening on all interfaces:
+      ```yaml
+      # mongod.conf
+      net:
+        bindIp: 0.0.0.0
+      ```
+
+    **SSL/TLS errors:**
+    - Use connection string with SSL options:
+      ```
+      mongodb://user:pass@host:port/db?ssl=true&authSource=admin
+      ```
+
+    ### Best Practices
+
+    1. **Create a dedicated backup user:**
+       ```javascript
+       use admin
+       db.createUser({
+         user: "backup_user",
+         pwd: "secure_password",
+         roles: [
+           { role: "backup", db: "admin" },
+           { role: "read", db: "myapp_production" }
+         ]
+       })
+       ```
+
+    2. **Use `--oplog` for replica sets** to ensure consistency:
+       ```bash
+       mongodump --oplog --archive=backup.archive --gzip
+       ```
+
+    3. **Backup specific collections if needed:**
+       ```bash
+       mongodump --db=myapp --collection=users
+       ```
+
+    4. **Test restores:**
+       ```bash
+       mongorestore --archive=backup.archive --gzip \
+                    --nsFrom='myapp_production.*' \
+                    --nsTo='test_db.*'
+       ```
+
+    5. **For large databases**, consider backing up during off-peak hours
+
+  </Tab>
+</Tabs>
+
+---
+
+## Connecting to Databases on Host Machine
+
+When your database is running on your host machine (not in Docker), use these special hostnames:
+
+### macOS / Windows (Docker Desktop)
+```
+host.docker.internal
+```
+
+### Linux
+```
+172.17.0.1
+```
+
+Or add this to your `docker-compose.yml`:
+```yaml
+services:
+  api:
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+```
+
+---
+
+## Remote Database Connections
+
+### Over the Internet
+
+If your database is on a remote server:
+
+1. **Ensure the database accepts remote connections**
+2. **Open firewall ports** (5432, 3306, or 27017)
+3. **Use SSL/TLS** for security
+4. **Consider using a VPN** or SSH tunnel
+
+### SSH Tunnel (Recommended for security)
+
+For databases behind a firewall, use an SSH tunnel:
+
+```bash
+# Forward PostgreSQL through SSH
+ssh -L 5432:localhost:5432 user@remote-server
+
+# Then connect to localhost:5432 in Velld
+```
+
+Or use Docker with SSH:
+```yaml
+services:
+  api:
+    ports:
+      - "5432:5432"  # Expose SSH tunnel port
+```
+
+---
+
+## Connection Testing
+
+Before saving a connection, always click **Test Connection**. This verifies:
+
+- ✅ Network connectivity
+- ✅ Credentials are correct
+- ✅ User has necessary permissions
+- ✅ Database exists and is accessible
+
+<Callout type="tip">
+  If the test fails, check the error message—it will tell you exactly what's wrong!
+</Callout>
+
+---
+
+## Security Best Practices
+
+### 1. Use Dedicated Backup Users
+Never use root or admin accounts for backups. Create read-only users with minimal privileges.
+
+### 2. Rotate Passwords Regularly
+Change database passwords periodically and update them in Velld.
+
+### 3. Enable SSL/TLS
+Always use encrypted connections for remote databases:
+- PostgreSQL: `sslmode=require`
+- MySQL: `--ssl-mode=REQUIRED`
+- MongoDB: `ssl=true`
+
+### 4. Restrict Network Access
+Use firewall rules to only allow connections from your Velld server:
+```bash
+# PostgreSQL
+host    all    backup_user    172.17.0.0/16    md5
+
+# MySQL
+CREATE USER 'backup_user'@'172.17.0.%' IDENTIFIED BY 'password';
+```
+
+### 5. Encrypt Backup Files
+Velld encrypts connection credentials, but you can also:
+- Encrypt backup files at rest
+- Use encrypted volumes for backup storage
+- Enable encryption in your storage backend
+
+---
+
+## Troubleshooting
+
+### Check Database Client is Installed
+
+```bash
+# Enter the API container
+docker exec -it velld-api-1 sh
+
+# Check for database clients
+which pg_dump        # PostgreSQL
+which mysqldump      # MySQL
+which mongodump      # MongoDB
+```
+
+If a client is missing, you're using the wrong Dockerfile. See [Installation](/docs/installation) for database-specific Dockerfiles.
+
+### Test Connection Manually
+
+```bash
+# PostgreSQL
+pg_dump --host=host.docker.internal --port=5432 --username=postgres --version
+
+# MySQL
+mysqldump --host=host.docker.internal --port=3306 --user=root --version
+
+# MongoDB
+mongodump --host=host.docker.internal --port=27017 --version
+```
+
+### View Backup Logs
+
+```bash
+docker compose logs api | grep backup
+```
+
+---
+
+## Next Steps
+
+<Cards>
+  <Card title="Scheduling Backups" href="/docs/scheduling" description="Set up automatic backup schedules" />
+  <Card title="Notifications" href="/docs/notifications" description="Get notified when backups complete or fail" />
+  <Card title="Advanced Features" href="/docs/advanced" description="Backup comparison, encryption, and more" />
+</Cards>

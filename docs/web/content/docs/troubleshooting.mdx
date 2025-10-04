@@ -1,0 +1,451 @@
+---
+title: Troubleshooting
+description: Common issues and how to resolve them
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+# Troubleshooting
+
+Having issues? This guide covers common problems and their solutions.
+
+---
+
+## Installation Issues
+
+### Docker Compose Fails to Start
+
+**Error:** `Cannot start service api: driver failed`
+
+**Solution:**
+```bash
+# Stop all containers
+docker compose down
+
+# Remove volumes
+docker compose down -v
+
+# Rebuild and start fresh
+docker compose up -d --build
+```
+
+### Port Already in Use
+
+**Error:** `Bind for 0.0.0.0:3000 failed: port is already allocated`
+
+**Solution:**
+```bash
+# Find what's using the port
+lsof -i :3000
+lsof -i :8080
+
+# Kill the process or change ports in docker-compose.yml
+ports:
+  - "3001:3000"  # Use different host port
+```
+
+### Database Client Not Found
+
+**Error:** `pg_dump: command not found`
+
+**Solution:**
+
+You're using the wrong Dockerfile! Check which databases you need:
+
+```bash
+# For PostgreSQL only
+docker compose down
+# Edit docker-compose.yml to use Dockerfile.postgres
+docker compose up -d --build
+
+# For MySQL only
+# Edit docker-compose.yml to use Dockerfile.mysql
+
+# For MongoDB only
+# Edit docker-compose.yml to use Dockerfile.mongo
+```
+
+See [Installation Guide](/docs/installation) for details.
+
+---
+
+## Connection Issues
+
+### Cannot Connect to Database
+
+**Error:** `Connection refused` or `Connection timed out`
+
+**Solutions:**
+
+1. **Use the correct hostname:**
+   - ❌ `localhost` (won't work from Docker)
+   - ✅ `host.docker.internal` (for databases on your host)
+   - ✅ `192.168.1.x` (for databases on your network)
+
+2. **Check database is accepting connections:**
+   ```bash
+   # PostgreSQL
+   psql -h host.docker.internal -U postgres -d mydb
+   
+   # MySQL
+   mysql -h host.docker.internal -u root -p mydb
+   
+   # MongoDB
+   mongosh "mongodb://host.docker.internal:27017/mydb"
+   ```
+
+3. **Verify firewall rules:**
+   - Ensure ports 5432 (PostgreSQL), 3306 (MySQL), or 27017 (MongoDB) are open
+   - On Linux, check `ufw` or `iptables`
+   - On macOS, check System Preferences → Security & Privacy
+
+4. **Check database configuration:**
+   - PostgreSQL: `listen_addresses = '*'` in `postgresql.conf`
+   - MySQL: `bind-address = 0.0.0.0` in `my.cnf`
+   - MongoDB: `bindIp: 0.0.0.0` in `mongod.conf`
+
+### Authentication Failed
+
+**Error:** `password authentication failed` or `Access denied`
+
+**Solutions:**
+
+1. **Verify credentials are correct**
+2. **Check user has proper permissions:**
+
+   **PostgreSQL:**
+   ```sql
+   GRANT CONNECT ON DATABASE mydb TO backup_user;
+   GRANT SELECT ON ALL TABLES IN SCHEMA public TO backup_user;
+   ```
+
+   **MySQL:**
+   ```sql
+   GRANT SELECT, LOCK TABLES, SHOW VIEW ON mydb.* TO 'backup_user'@'%';
+   FLUSH PRIVILEGES;
+   ```
+
+   **MongoDB:**
+   ```javascript
+   db.createUser({
+     user: "backup_user",
+     pwd: "password",
+     roles: [{ role: "read", db: "mydb" }]
+   });
+   ```
+
+3. **Check if user is allowed from Docker network:**
+   - PostgreSQL: Update `pg_hba.conf`
+   - MySQL: User must have `@'%'` or specific IP range
+   - MongoDB: Check `security.authorization` settings
+
+---
+
+## Backup Issues
+
+### Backup Fails with Permission Error
+
+**Error:** `Permission denied` or `Access denied`
+
+**Solutions:**
+
+1. **Ensure user has SELECT permissions on all tables**
+2. **For PostgreSQL, grant permissions on sequences:**
+   ```sql
+   GRANT SELECT ON ALL SEQUENCES IN SCHEMA public TO backup_user;
+   ```
+
+3. **For MySQL, grant LOCK TABLES permission:**
+   ```sql
+   GRANT LOCK TABLES ON mydb.* TO 'backup_user'@'%';
+   ```
+
+### Backup File is Empty or Corrupted
+
+**Solutions:**
+
+1. **Check available disk space:**
+   ```bash
+   docker exec velld-api-1 df -h
+   ```
+
+2. **Verify database has data:**
+   ```sql
+   SELECT COUNT(*) FROM your_table;
+   ```
+
+3. **Check backup logs:**
+   ```bash
+   docker compose logs api | grep backup
+   ```
+
+### Backup Takes Too Long
+
+**Solutions:**
+
+1. **Use `--single-transaction` for MySQL** (reduces locks)
+2. **Backup during off-peak hours**
+3. **Use read replicas** for large databases
+4. **Exclude large non-critical tables:**
+   ```bash
+   # MySQL
+   --ignore-table=mydb.large_logs_table
+   ```
+
+---
+
+## Web Interface Issues
+
+### Cannot Access Web Interface
+
+**Error:** `This site can't be reached`
+
+**Solutions:**
+
+1. **Check services are running:**
+   ```bash
+   docker compose ps
+   ```
+
+2. **View logs for errors:**
+   ```bash
+   docker compose logs web
+   docker compose logs api
+   ```
+
+3. **Restart services:**
+   ```bash
+   docker compose restart
+   ```
+
+### Login Fails or Token Expired
+
+**Solutions:**
+
+1. **Clear browser cache and cookies**
+2. **Check JWT_SECRET is set correctly in .env**
+3. **Restart API service:**
+   ```bash
+   docker compose restart api
+   ```
+
+### UI is Broken or Missing Styles
+
+**Solutions:**
+
+1. **Hard refresh the page:** `Cmd+Shift+R` (Mac) or `Ctrl+Shift+R` (Windows/Linux)
+2. **Clear browser cache**
+3. **Rebuild web container:**
+   ```bash
+   docker compose up -d --build web
+   ```
+
+---
+
+## Backup Comparison Issues
+
+### Comparison Fails or Shows Error
+
+**Solutions:**
+
+1. **Ensure both backups are valid**
+2. **Check backups aren't corrupted:**
+   ```bash
+   # PostgreSQL
+   pg_restore --list backup.dump
+   
+   # MySQL
+   head -n 20 backup.sql
+   ```
+
+3. **Try downloading and comparing manually**
+
+### Comparison is Slow for Large Backups
+
+**Expected behavior** - Large backups take time to compare.
+
+**Solutions:**
+
+1. **Be patient** - 10-100MB files may take 10-30 seconds
+2. **Compare smaller subsets** if possible
+3. **Use filtered backups** (exclude large tables)
+
+---
+
+## Notification Issues
+
+### Email Notifications Not Sending
+
+**Solutions:**
+
+1. **Verify SMTP settings in .env:**
+   ```bash
+   SMTP_HOST=smtp.gmail.com
+   SMTP_PORT=587
+   SMTP_USER=your-email@gmail.com
+   SMTP_PASSWORD=your-app-password  # Not your regular password!
+   SMTP_FROM=noreply@yourdomain.com
+   ```
+
+2. **For Gmail, use an App Password:**
+   - Go to Google Account → Security
+   - Enable 2FA
+   - Generate an App Password
+   - Use that instead of your regular password
+
+3. **Check firewall allows SMTP:**
+   ```bash
+   telnet smtp.gmail.com 587
+   ```
+
+4. **View logs for SMTP errors:**
+   ```bash
+   docker compose logs api | grep smtp
+   ```
+
+---
+
+## Performance Issues
+
+### Dashboard is Slow
+
+**Solutions:**
+
+1. **Limit backup history:**
+   - Set shorter retention periods
+   - Delete old, unnecessary backups
+
+2. **Check database size:**
+   ```bash
+   docker exec velld-api-1 ls -lh /app/internal/database/
+   ```
+
+3. **Optimize SQLite database:**
+   ```bash
+   docker exec velld-api-1 sh
+   sqlite3 /app/internal/database/velld.db "VACUUM;"
+   ```
+
+### Backups are Slow
+
+**Solutions:**
+
+1. **Use database compression** (enabled by default)
+2. **Backup during off-peak hours**
+3. **Use read replicas** for production databases
+4. **Optimize your database** (analyze, vacuum, etc.)
+
+---
+
+## Data Recovery
+
+### Lost .env File
+
+**Solutions:**
+
+1. **Check for backup:**
+   ```bash
+   ls -la .env*
+   ```
+
+2. **Recreate from .env.example:**
+   ```bash
+   cp .env.example .env
+   # Edit with your values
+   ```
+
+3. **Generate new JWT_SECRET and ENCRYPTION_KEY:**
+   ```bash
+   # Generate random strings
+   openssl rand -base64 32
+   ```
+
+<Callout type="warning">
+  If you lose your ENCRYPTION_KEY, you'll lose access to encrypted database credentials. Always back up your .env file!
+</Callout>
+
+### Deleted Important Backup
+
+**Solutions:**
+
+1. **Check Docker volumes:**
+   ```bash
+   docker volume ls
+   docker run --rm -v velld_backup_data:/backup alpine ls -lh /backup
+   ```
+
+2. **Restore from database if still available:**
+   - Create a new manual backup
+   - It will recreate the same data
+
+---
+
+## Still Having Issues?
+
+If you've tried everything and still need help:
+
+1. **Check existing issues:** [GitHub Issues](https://github.com/dendianugerah/velld/issues)
+2. **Create a new issue** with:
+   - Clear description of the problem
+   - Steps to reproduce
+   - Error messages and logs
+   - Your environment (OS, Docker version, etc.)
+3. **Ask the community:** [GitHub Discussions](https://github.com/dendianugerah/velld/discussions)
+
+### Collecting Diagnostic Information
+
+When reporting issues, include:
+
+```bash
+# System info
+docker --version
+docker compose --version
+
+# Service status
+docker compose ps
+
+# Recent logs
+docker compose logs --tail=100 api
+docker compose logs --tail=100 web
+
+# Environment (remove sensitive values)
+cat .env | grep -v SECRET | grep -v PASSWORD
+```
+
+---
+
+## Preventing Future Issues
+
+### Regular Maintenance
+
+1. **Update regularly:**
+   ```bash
+   git pull origin main
+   docker compose up -d --build
+   ```
+
+2. **Monitor disk space:**
+   ```bash
+   df -h
+   ```
+
+3. **Test your backups:**
+   - Download a backup monthly
+   - Test restore on a test database
+   - Verify data integrity
+
+4. **Backup your .env file:**
+   ```bash
+   cp .env .env.backup
+   ```
+
+5. **Monitor logs occasionally:**
+   ```bash
+   docker compose logs -f
+   ```
+
+---
+
+<Callout type="success">
+  Most issues can be resolved by restarting services, checking logs, and verifying configuration. When in doubt, check the logs first!
+</Callout>

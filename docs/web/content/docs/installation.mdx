@@ -1,0 +1,405 @@
+---
+title: Installation
+description: Get started with Velld in minutes
+---
+
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+import { Callout } from 'fumadocs-ui/components/callout';
+
+# Installation
+
+Velld is designed to be simple to install and run. Choose the installation method that works best for you.
+
+## Prerequisites
+
+Before you begin, ensure you have:
+
+- **Docker** and **Docker Compose** installed
+- At least **512MB RAM** and **1GB disk space**
+- A database you want to backup (PostgreSQL, MySQL, or MongoDB)
+
+<Callout type="info">
+  Velld only installs the database clients you need. This keeps the Docker image lightweight and secure.
+</Callout>
+
+## Quick Start (All Databases)
+
+If you want to backup multiple database types, use this installation:
+
+```bash
+# Clone the repository
+git clone https://github.com/dendianugerah/velld.git
+cd velld
+
+# Start all services
+docker compose up -d
+
+# Access the web interface
+open http://localhost:3000
+```
+
+That's it! Velld is now running with support for PostgreSQL, MySQL, and MongoDB.
+
+---
+
+## Database-Specific Installation
+
+Choose only the database client you need to keep your installation lightweight:
+
+<Tabs items={['PostgreSQL', 'MySQL', 'MongoDB']}>
+  <Tab value="PostgreSQL">
+    ### PostgreSQL Only
+
+    **1. Create a custom Dockerfile**
+
+    Create `apps/api/Dockerfile.postgres`:
+
+    ```dockerfile
+    FROM golang:1.20-alpine AS builder
+
+    WORKDIR /app
+
+    RUN apk add --no-cache gcc musl-dev
+
+    COPY go.mod go.sum ./
+    RUN go mod download
+
+    COPY . .
+
+    RUN CGO_ENABLED=1 GOOS=linux go build -o main cmd/api-server/main.go
+
+    FROM alpine:latest
+
+    # Install only PostgreSQL client
+    RUN apk add --no-cache \
+        sqlite-libs \
+        postgresql-client
+
+    WORKDIR /app
+
+    COPY --from=builder /app/main .
+    COPY --from=builder /app/internal/database ./internal/database
+
+    EXPOSE 8080
+
+    CMD ["./main"]
+    ```
+
+    **2. Update docker-compose.yml**
+
+    ```yaml
+    services:
+      api:
+        build:
+          context: ./apps/api
+          dockerfile: Dockerfile.postgres  # Use PostgreSQL-only Dockerfile
+        ports:
+          - "8080:8080"
+        env_file:
+          - .env
+        volumes:
+          - api_data:/app/internal/database
+          - backup_data:/app/backups
+        restart: unless-stopped
+
+      web:
+        build:
+          context: ./apps/web
+          dockerfile: Dockerfile
+        ports:
+          - "3000:3000"
+        environment:
+          NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+          ALLOW_REGISTER: ${ALLOW_REGISTER}
+        depends_on:
+          - api
+        restart: unless-stopped
+
+    volumes:
+      api_data:
+      backup_data:
+    ```
+
+    **3. Start the services**
+
+    ```bash
+    docker compose up -d
+    ```
+
+    <Callout type="success">
+      Your PostgreSQL-only installation is now running! Image size: ~50MB lighter.
+    </Callout>
+  </Tab>
+
+  <Tab value="MySQL">
+    ### MySQL Only
+
+    **1. Create a custom Dockerfile**
+
+    Create `apps/api/Dockerfile.mysql`:
+
+    ```dockerfile
+    FROM golang:1.20-alpine AS builder
+
+    WORKDIR /app
+
+    RUN apk add --no-cache gcc musl-dev
+
+    COPY go.mod go.sum ./
+    RUN go mod download
+
+    COPY . .
+
+    RUN CGO_ENABLED=1 GOOS=linux go build -o main cmd/api-server/main.go
+
+    FROM alpine:latest
+
+    # Install only MySQL client
+    RUN apk add --no-cache \
+        sqlite-libs \
+        mysql-client
+
+    WORKDIR /app
+
+    COPY --from=builder /app/main .
+    COPY --from=builder /app/internal/database ./internal/database
+
+    EXPOSE 8080
+
+    CMD ["./main"]
+    ```
+
+    **2. Update docker-compose.yml**
+
+    ```yaml
+    services:
+      api:
+        build:
+          context: ./apps/api
+          dockerfile: Dockerfile.mysql  # Use MySQL-only Dockerfile
+        ports:
+          - "8080:8080"
+        env_file:
+          - .env
+        volumes:
+          - api_data:/app/internal/database
+          - backup_data:/app/backups
+        restart: unless-stopped
+
+      web:
+        build:
+          context: ./apps/web
+          dockerfile: Dockerfile
+        ports:
+          - "3000:3000"
+        environment:
+          NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+          ALLOW_REGISTER: ${ALLOW_REGISTER}
+        depends_on:
+          - api
+        restart: unless-stopped
+
+    volumes:
+      api_data:
+      backup_data:
+    ```
+
+    **3. Start the services**
+
+    ```bash
+    docker compose up -d
+    ```
+
+    <Callout type="success">
+      Your MySQL-only installation is now running! Image size: ~45MB lighter.
+    </Callout>
+  </Tab>
+
+  <Tab value="MongoDB">
+    ### MongoDB Only
+
+    **1. Create a custom Dockerfile**
+
+    Create `apps/api/Dockerfile.mongo`:
+
+    ```dockerfile
+    FROM golang:1.20-alpine AS builder
+
+    WORKDIR /app
+
+    RUN apk add --no-cache gcc musl-dev
+
+    COPY go.mod go.sum ./
+    RUN go mod download
+
+    COPY . .
+
+    RUN CGO_ENABLED=1 GOOS=linux go build -o main cmd/api-server/main.go
+
+    FROM alpine:latest
+
+    # Install only MongoDB tools
+    RUN apk add --no-cache \
+        sqlite-libs \
+        mongodb-tools
+
+    WORKDIR /app
+
+    COPY --from=builder /app/main .
+    COPY --from=builder /app/internal/database ./internal/database
+
+    EXPOSE 8080
+
+    CMD ["./main"]
+    ```
+
+    **2. Update docker-compose.yml**
+
+    ```yaml
+    services:
+      api:
+        build:
+          context: ./apps/api
+          dockerfile: Dockerfile.mongo  # Use MongoDB-only Dockerfile
+        ports:
+          - "8080:8080"
+        env_file:
+          - .env
+        volumes:
+          - api_data:/app/internal/database
+          - backup_data:/app/backups
+        restart: unless-stopped
+
+      web:
+        build:
+          context: ./apps/web
+          dockerfile: Dockerfile
+        ports:
+          - "3000:3000"
+        environment:
+          NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+          ALLOW_REGISTER: ${ALLOW_REGISTER}
+        depends_on:
+          - api
+        restart: unless-stopped
+
+    volumes:
+      api_data:
+      backup_data:
+    ```
+
+    **3. Start the services**
+
+    ```bash
+    docker compose up -d
+    ```
+
+    <Callout type="success">
+      Your MongoDB-only installation is now running! Image size: ~60MB lighter.
+    </Callout>
+  </Tab>
+</Tabs>
+
+---
+
+## Environment Configuration
+
+Create a `.env` file in the project root:
+
+```bash
+# API Configuration
+JWT_SECRET=your-super-secret-key-change-this
+ENCRYPTION_KEY=your-32-character-encryption-key
+
+# Web Configuration
+NEXT_PUBLIC_API_URL=http://localhost:8080
+ALLOW_REGISTER=true
+
+# Optional: Email notifications (recommended)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your-email@gmail.com
+SMTP_PASSWORD=your-app-password
+SMTP_FROM=noreply@yourdomain.com
+```
+
+<Callout type="warning">
+  **Security**: Change `JWT_SECRET` and `ENCRYPTION_KEY` to random, secure values in production.
+</Callout>
+
+---
+
+## Verify Installation
+
+Once the services are running, verify everything works:
+
+1. **Check service status**
+   ```bash
+   docker compose ps
+   ```
+
+2. **View logs**
+   ```bash
+   docker compose logs -f
+   ```
+
+3. **Access the web interface**
+   
+   Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+4. **Create your account**
+   
+   Sign up with your email and start managing backups!
+
+---
+
+## Updating Velld
+
+To update to the latest version:
+
+```bash
+# Pull the latest changes
+git pull origin main
+
+# Rebuild and restart
+docker compose down
+docker compose up -d --build
+```
+
+---
+
+## Troubleshooting
+
+### Services won't start
+
+```bash
+# Check logs for errors
+docker compose logs api
+docker compose logs web
+
+# Ensure ports 3000 and 8080 are available
+lsof -i :3000
+lsof -i :8080
+```
+
+### Database connection fails
+
+- Ensure your database is accessible from the Docker container
+- Use `host.docker.internal` instead of `localhost` to connect to databases on your host machine
+- Check firewall rules
+
+### Backup fails
+
+- Verify the database client is installed (check which Dockerfile you're using)
+- Test connection credentials manually
+- Check backup directory permissions
+
+---
+
+## Next Steps
+
+<Cards>
+  <Card title="Quick Start Guide" href="/docs/quick-start" description="Learn how to create your first backup" />
+  <Card title="Configuration" href="/docs/configuration" description="Configure Velld for your needs" />
+  <Card title="Database Setup" href="/docs/databases" description="Connect your databases" />
+</Cards>

@@ -1,0 +1,235 @@
+---
+title: Quick Start
+description: Create your first backup in 5 minutes
+---
+
+import { Steps, Step } from 'fumadocs-ui/components/steps';
+import { Callout } from 'fumadocs-ui/components/callout';
+
+# Quick Start
+
+Get up and running with your first database backup in just a few minutes.
+
+<Callout type="info">
+  This guide assumes you've already [installed Velld](/docs/installation). If not, start there first.
+</Callout>
+
+---
+
+## Your First Backup
+
+<Steps>
+  <Step>
+    ### Access the Dashboard
+
+    Open [http://localhost:3000](http://localhost:3000) and create your account.
+
+    The dashboard gives you an overview of all your backups, success rates, and storage usage.
+  </Step>
+
+  <Step>
+    ### Add a Database Connection
+
+    1. Navigate to **Connections** in the sidebar
+    2. Click **Add Connection**
+    3. Fill in your database details:
+
+    ```yaml
+    Name: My Production DB
+    Type: PostgreSQL
+    Host: host.docker.internal
+    Port: 5432
+    Database: myapp_production
+    Username: postgres
+    Password: ••••••••
+    ```
+
+    <Callout type="tip">
+      Use `host.docker.internal` instead of `localhost` to connect to databases running on your host machine.
+    </Callout>
+
+    4. Click **Test Connection** to verify it works
+    5. Click **Save Connection**
+  </Step>
+
+  <Step>
+    ### Run Your First Backup
+
+    From the Connections page:
+
+    1. Find your newly created connection
+    2. Click **Backup Now**
+    3. Watch the backup progress in real-time
+
+    Your backup will appear in the **History** page once complete!
+  </Step>
+
+  <Step>
+    ### Schedule Automatic Backups
+
+    Never miss a backup again:
+
+    1. Go to **Connections**
+    2. Click the **Schedule** icon on your connection
+    3. Choose your backup frequency:
+       - **Hourly** - Every hour
+       - **Daily** - Once per day at a specific time
+       - **Weekly** - Once per week
+       - **Monthly** - Once per month
+       - **Custom** - Use a cron expression
+
+    Example schedules:
+    ```bash
+    # Every day at 2 AM
+    0 2 * * *
+
+    # Every 6 hours
+    0 */6 * * *
+
+    # Every Sunday at midnight
+    0 0 * * 0
+    ```
+
+    4. Set retention policy (optional):
+       - Keep backups for 7, 14, 30, or 90 days
+       - Older backups are automatically deleted
+
+    5. Click **Save Schedule**
+
+    <Callout type="success">
+      Your backups will now run automatically! You'll receive notifications for each backup.
+    </Callout>
+  </Step>
+
+  <Step>
+    ### Download or Compare Backups
+
+    From the **History** page:
+
+    **Download a backup:**
+    - Click the download icon next to any backup
+    - The backup file will download to your computer
+
+    **Compare two backups:**
+    - Click **Compare Backups** or click the compare icon on any backup
+    - Select two backups to compare
+    - View a detailed diff showing what changed between them
+
+    <Callout type="tip">
+      The compare feature is perfect for tracking schema changes or data migrations!
+    </Callout>
+  </Step>
+</Steps>
+
+---
+
+## Common Use Cases
+
+### Production Database Backups
+
+Schedule daily backups with 30-day retention:
+
+```yaml
+Connection: production-db
+Schedule: 0 2 * * * (Daily at 2 AM)
+Retention: 30 days
+Notifications: ✓ Email on failure
+```
+
+### Development Database Snapshots
+
+Run on-demand backups before migrations:
+
+```yaml
+Connection: dev-db
+Schedule: Manual only
+Retention: 7 days
+Notifications: None
+```
+
+### Multi-Database Setup
+
+Backup all your databases with different schedules:
+
+```yaml
+PostgreSQL (Main DB):
+  Schedule: 0 */6 * * * (Every 6 hours)
+  Retention: 14 days
+
+MySQL (Analytics):
+  Schedule: 0 3 * * * (Daily at 3 AM)
+  Retention: 30 days
+
+MongoDB (Sessions):
+  Schedule: 0 */12 * * * (Every 12 hours)
+  Retention: 7 days
+```
+
+---
+
+## Pro Tips
+
+### 1. Test Your Backups
+Don't just create backups—test them! Download a backup and try restoring it to a test database.
+
+### 2. Use Descriptive Names
+Name your connections clearly:
+- ✅ `production-postgres-main`
+- ✅ `staging-mysql-analytics`
+- ❌ `database1`
+- ❌ `db`
+
+### 3. Set Up Email Notifications
+Get alerted when backups fail:
+
+1. Go to **Settings** → **Notifications**
+2. Enable email notifications
+3. Configure your SMTP settings
+4. Choose notification preferences (failures only, all backups, etc.)
+
+### 4. Monitor Your Storage
+Keep an eye on the **Storage Used** metric on the dashboard. Set up retention policies to automatically clean up old backups.
+
+### 5. Use Connection Groups
+If you have many databases, organize them by environment:
+- `prod-*` for production
+- `staging-*` for staging
+- `dev-*` for development
+
+---
+
+## Restoring a Backup
+
+Velld creates standard dump files that you can restore using native database tools:
+
+### PostgreSQL
+```bash
+# Download the backup from Velld first
+psql -U postgres -d myapp_production < backup_2024-01-15.sql
+```
+
+### MySQL
+```bash
+# Download the backup from Velld first
+mysql -u root -p myapp_production < backup_2024-01-15.sql
+```
+
+### MongoDB
+```bash
+# Download the backup from Velld first
+mongorestore --archive=backup_2024-01-15.archive --gzip
+```
+
+<Callout type="warning">
+  Always test restores on a non-production database first!
+</Callout>
+
+---
+
+## Next Steps
+
+<Cards>
+  <Card title="Database Configuration" href="/docs/databases" description="Learn how to configure each database type" />
+  <Card title="Scheduling Guide" href="/docs/scheduling" description="Master cron expressions and backup strategies" />
+  <Card title="Security Best Practices" href="/docs/security" description="Keep your backups secure" />
+</Cards>
