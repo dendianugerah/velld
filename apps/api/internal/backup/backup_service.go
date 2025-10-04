@@ -1,6 +1,7 @@
 package backup
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -164,6 +165,10 @@ func (s *BackupService) CreateBackup(connectionID string) (*Backup, error) {
 	now := time.Now()
 	backup.CompletedTime = &now
 
+	if err := s.uploadToS3IfEnabled(backup, conn.UserID); err != nil {
+		fmt.Printf("Warning: Failed to upload backup to S3: %v\n", err)
+	}
+
 	if err := s.backupRepo.CreateBackup(backup); err != nil {
 		return nil, fmt.Errorf("failed to save backup: %v", err)
 	}
@@ -191,4 +196,70 @@ func (s *BackupService) GetAllBackupsWithPagination(opts BackupListOptions) ([]*
 
 func (s *BackupService) GetBackupStats(userID uuid.UUID) (*BackupStats, error) {
 	return s.backupRepo.GetBackupStats(userID)
+}
+
+func (s *BackupService) uploadToS3IfEnabled(backup *Backup, userID uuid.UUID) error {
+	userSettings, err := s.settingsRepo.GetUserSettings(userID)
+	if err != nil {
+		return fmt.Errorf("failed to get user settings: %w", err)
+	}
+
+	if !userSettings.S3Enabled {
+		return nil
+	}
+
+	if userSettings.S3Endpoint == nil || *userSettings.S3Endpoint == "" {
+		return fmt.Errorf("S3 endpoint not configured")
+	}
+	if userSettings.S3Bucket == nil || *userSettings.S3Bucket == "" {
+		return fmt.Errorf("S3 bucket not configured")
+	}
+	if userSettings.S3AccessKey == nil || *userSettings.S3AccessKey == "" {
+		return fmt.Errorf("S3 access key not configured")
+	}
+	if userSettings.S3SecretKey == nil || *userSettings.S3SecretKey == "" {
+		return fmt.Errorf("S3 secret key not configured")
+	}
+
+	secretKey, err := s.cryptoService.Decrypt(*userSettings.S3SecretKey)
+	if err != nil {
+		return fmt.Errorf("failed to decrypt S3 secret key: %w", err)
+	}
+
+	// (default to us-east-1 if not set)
+	region := "us-east-1"
+	if userSettings.S3Region != nil && *userSettings.S3Region != "" {
+		region = *userSettings.S3Region
+	}
+
+	pathPrefix := ""
+	if userSettings.S3PathPrefix != nil {
+		pathPrefix = *userSettings.S3PathPrefix
+	}
+
+	s3Config := S3Config{
+		Endpoint:   *userSettings.S3Endpoint,
+		Region:     region,
+		Bucket:     *userSettings.S3Bucket,
+		AccessKey:  *userSettings.S3AccessKey,
+		SecretKey:  secretKey,
+		UseSSL:     userSettings.S3UseSSL,
+		PathPrefix: pathPrefix,
+	}
+
+	s3Storage, err := NewS3Storage(s3Config)
+	if err != nil {
+		return fmt.Errorf("failed to create S3 storage client: %w", err)
+	}
+
+	ctx := context.Background()
+	objectKey, err := s3Storage.UploadFile(ctx, backup.Path)
+	if err != nil {
+		return fmt.Errorf("failed to upload backup to S3: %w", err)
+	}
+
+	backup.S3ObjectKey = &objectKey
+
+	fmt.Printf("Successfully uploaded backup %s to S3: %s\n", backup.ID, objectKey)
+	return nil
 }
