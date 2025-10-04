@@ -43,6 +43,7 @@ const BreadcrumbLink = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof Link> & {
     asChild?: boolean
   }
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 >(({ className, asChild, ...props }, ref) => {
   return (
     <Link

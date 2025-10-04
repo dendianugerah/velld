@@ -103,6 +103,7 @@ export function S3StorageSettings() {
   const handleSave = async () => {
     try {
       // Only send secret key if it was changed (not empty)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const dataToSave: Record<string, any> = { ...formData };
       if (!dataToSave.s3_secret_key) {
         delete dataToSave.s3_secret_key;
@@ -178,7 +179,7 @@ export function S3StorageSettings() {
                     title: "Success",
                     description: `S3 storage ${checked ? 'enabled' : 'disabled'}`,
                   });
-                } catch (error) {
+                } catch {
                   // Revert the toggle on error
                   setFormData({ ...formData, s3_enabled: previousState });
                   toast({
