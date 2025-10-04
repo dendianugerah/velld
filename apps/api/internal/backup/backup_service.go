@@ -100,6 +100,18 @@ func (s *BackupService) CreateBackup(connectionID string) (*Backup, error) {
 		return nil, err
 	}
 
+	// Setup SSH tunnel if enabled
+	tunnel, effectiveHost, effectivePort, err := s.setupSSHTunnelIfNeeded(conn)
+	if err != nil {
+		return nil, fmt.Errorf("failed to setup SSH tunnel: %v", err)
+	}
+	if tunnel != nil {
+		defer tunnel.Stop()
+		// Update connection to use tunnel
+		conn.Host = effectiveHost
+		conn.Port = effectivePort
+	}
+
 	backupID := uuid.New()
 	timestamp := time.Now().Format("20060102_150405")
 	filename := fmt.Sprintf("%s_%s.sql", conn.DatabaseName, timestamp)

@@ -30,12 +30,30 @@ func (r *ConnectionRepository) Save(conn StoredConnection) error {
 		return err
 	}
 
+	sshPassword := ""
+	if conn.SSHPassword != "" {
+		sshPassword, err = r.crypto.Encrypt(conn.SSHPassword)
+		if err != nil {
+			return err
+		}
+	}
+
+	sshPrivateKey := ""
+	if conn.SSHPrivateKey != "" {
+		sshPrivateKey, err = r.crypto.Encrypt(conn.SSHPrivateKey)
+		if err != nil {
+			return err
+		}
+	}
+
 	query := `
 		INSERT INTO connections (
 			id, name, type, host, port, username, password, 
-			database_name, ssl, user_id, status, database_size
+			database_name, ssl, ssh_enabled, ssh_host, ssh_port, 
+			ssh_username, ssh_password, ssh_private_key, 
+			user_id, status, database_size
 		) VALUES (
-			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12
+			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18
 		)`
 
 	_, err = r.db.Exec(
@@ -49,6 +67,12 @@ func (r *ConnectionRepository) Save(conn StoredConnection) error {
 		password,
 		conn.DatabaseName,
 		conn.SSL,
+		conn.SSHEnabled,
+		conn.SSHHost,
+		conn.SSHPort,
+		conn.SSHUsername,
+		sshPassword,
+		sshPrivateKey,
 		conn.UserID,
 		conn.Status,
 		conn.DatabaseSize,
@@ -60,6 +84,7 @@ func (r *ConnectionRepository) Save(conn StoredConnection) error {
 func (r *ConnectionRepository) GetConnection(id string) (*StoredConnection, error) {
 	var conn StoredConnection
 	var encryptedUsername, encryptedPassword string
+	var encryptedSSHPassword, encryptedSSHPrivateKey sql.NullString
 
 	query := `SELECT * FROM connections WHERE id = $1`
 	err := r.db.QueryRow(query, id).Scan(
@@ -72,6 +97,12 @@ func (r *ConnectionRepository) GetConnection(id string) (*StoredConnection, erro
 		&encryptedPassword,
 		&conn.DatabaseName,
 		&conn.SSL,
+		&conn.SSHEnabled,
+		&conn.SSHHost,
+		&conn.SSHPort,
+		&conn.SSHUsername,
+		&encryptedSSHPassword,
+		&encryptedSSHPrivateKey,
 		&conn.DatabaseSize,
 		&conn.CreatedAt,
 		&conn.UpdatedAt,
@@ -93,6 +124,20 @@ func (r *ConnectionRepository) GetConnection(id string) (*StoredConnection, erro
 		return nil, err
 	}
 
+	if encryptedSSHPassword.Valid && encryptedSSHPassword.String != "" {
+		conn.SSHPassword, err = r.crypto.Decrypt(encryptedSSHPassword.String)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if encryptedSSHPrivateKey.Valid && encryptedSSHPrivateKey.String != "" {
+		conn.SSHPrivateKey, err = r.crypto.Decrypt(encryptedSSHPrivateKey.String)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return &conn, nil
 }
 
@@ -107,12 +152,30 @@ func (r *ConnectionRepository) Update(conn StoredConnection) error {
 		return err
 	}
 
+	sshPassword := ""
+	if conn.SSHPassword != "" {
+		sshPassword, err = r.crypto.Encrypt(conn.SSHPassword)
+		if err != nil {
+			return err
+		}
+	}
+
+	sshPrivateKey := ""
+	if conn.SSHPrivateKey != "" {
+		sshPrivateKey, err = r.crypto.Encrypt(conn.SSHPrivateKey)
+		if err != nil {
+			return err
+		}
+	}
+
 	query := `
 		UPDATE connections SET 
 			name = $1, type = $2, host = $3, port = $4, 
 			username = $5, password = $6, database_name = $7, 
-			ssl = $8, database_size = $9, updated_at = NOW()
-		WHERE id = $10`
+			ssl = $8, ssh_enabled = $9, ssh_host = $10, ssh_port = $11,
+			ssh_username = $12, ssh_password = $13, ssh_private_key = $14,
+			database_size = $15, updated_at = NOW()
+		WHERE id = $16`
 
 	_, err = r.db.Exec(
 		query,
@@ -124,6 +187,12 @@ func (r *ConnectionRepository) Update(conn StoredConnection) error {
 		password,
 		conn.DatabaseName,
 		conn.SSL,
+		conn.SSHEnabled,
+		conn.SSHHost,
+		conn.SSHPort,
+		conn.SSHUsername,
+		sshPassword,
+		sshPrivateKey,
 		conn.DatabaseSize,
 		conn.ID,
 	)

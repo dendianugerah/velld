@@ -16,6 +16,12 @@ type StoredConnection struct {
 	Password        string     `json:"password"`
 	DatabaseName    string     `json:"database_name"`
 	SSL             bool       `json:"ssl"`
+	SSHEnabled      bool       `json:"ssh_enabled"`
+	SSHHost         string     `json:"ssh_host"`
+	SSHPort         int        `json:"ssh_port"`
+	SSHUsername     string     `json:"ssh_username"`
+	SSHPassword     string     `json:"ssh_password"`
+	SSHPrivateKey   string     `json:"ssh_private_key"`
 	CreatedAt       string     `json:"created_at"`
 	UpdatedAt       string     `json:"updated_at"`
 	LastConnectedAt *time.Time `json:"last_connected_at"`
@@ -25,15 +31,21 @@ type StoredConnection struct {
 }
 
 type ConnectionConfig struct {
-	ID       string `json:"id"`
-	Name     string `json:"name"`
-	Type     string `json:"type"`
-	Host     string `json:"host"`
-	Port     int    `json:"port"`
-	Username string `json:"username"`
-	Password string `json:"password"`
-	Database string `json:"database"`
-	SSL      bool   `json:"ssl"`
+	ID            string `json:"id"`
+	Name          string `json:"name"`
+	Type          string `json:"type"`
+	Host          string `json:"host"`
+	Port          int    `json:"port"`
+	Username      string `json:"username"`
+	Password      string `json:"password"`
+	Database      string `json:"database"`
+	SSL           bool   `json:"ssl"`
+	SSHEnabled    bool   `json:"ssh_enabled"`
+	SSHHost       string `json:"ssh_host"`
+	SSHPort       int    `json:"ssh_port"`
+	SSHUsername   string `json:"ssh_username"`
+	SSHPassword   string `json:"ssh_password"`
+	SSHPrivateKey string `json:"ssh_private_key"`
 }
 
 type ConnectionStats struct {

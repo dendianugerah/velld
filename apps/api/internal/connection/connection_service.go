@@ -41,18 +41,24 @@ func (s *ConnectionService) SaveConnection(config ConnectionConfig, userID uuid.
 	}
 
 	storedConn := StoredConnection{
-		ID:           config.ID,
-		Name:         config.Name,
-		Type:         config.Type,
-		Host:         config.Host,
-		Port:         config.Port,
-		Username:     config.Username,
-		Password:     config.Password,
-		DatabaseName: config.Database,
-		SSL:          config.SSL,
-		UserID:       userID,
-		Status:       "connected",
-		DatabaseSize: dbSize,
+		ID:            config.ID,
+		Name:          config.Name,
+		Type:          config.Type,
+		Host:          config.Host,
+		Port:          config.Port,
+		Username:      config.Username,
+		Password:      config.Password,
+		DatabaseName:  config.Database,
+		SSL:           config.SSL,
+		SSHEnabled:    config.SSHEnabled,
+		SSHHost:       config.SSHHost,
+		SSHPort:       config.SSHPort,
+		SSHUsername:   config.SSHUsername,
+		SSHPassword:   config.SSHPassword,
+		SSHPrivateKey: config.SSHPrivateKey,
+		UserID:        userID,
+		Status:        "connected",
+		DatabaseSize:  dbSize,
 	}
 
 	if err := s.repo.Save(storedConn); err != nil {
@@ -78,18 +84,24 @@ func (s *ConnectionService) UpdateConnection(config ConnectionConfig, userID uui
 	}
 
 	storedConn := StoredConnection{
-		ID:           config.ID,
-		Name:         config.Name,
-		Type:         config.Type,
-		Host:         config.Host,
-		Port:         config.Port,
-		Username:     config.Username,
-		Password:     config.Password,
-		DatabaseName: config.Database,
-		SSL:          config.SSL,
-		UserID:       userID,
-		Status:       "connected",
-		DatabaseSize: dbSize,
+		ID:            config.ID,
+		Name:          config.Name,
+		Type:          config.Type,
+		Host:          config.Host,
+		Port:          config.Port,
+		Username:      config.Username,
+		Password:      config.Password,
+		DatabaseName:  config.Database,
+		SSL:           config.SSL,
+		SSHEnabled:    config.SSHEnabled,
+		SSHHost:       config.SSHHost,
+		SSHPort:       config.SSHPort,
+		SSHUsername:   config.SSHUsername,
+		SSHPassword:   config.SSHPassword,
+		SSHPrivateKey: config.SSHPrivateKey,
+		UserID:        userID,
+		Status:        "connected",
+		DatabaseSize:  dbSize,
 	}
 
 	if err := s.repo.Update(storedConn); err != nil {

@@ -7,10 +7,10 @@ import (
 
 	"github.com/go-sql-driver/mysql"
 	"github.com/lib/pq"
+	"github.com/mattn/go-sqlite3"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"github.com/mattn/go-sqlite3"
 )
 
 type ConnectionManager struct {
@@ -24,6 +24,10 @@ func NewConnectionManager() *ConnectionManager {
 }
 
 func (cm *ConnectionManager) Connect(config ConnectionConfig) error {
+	if config.SSHEnabled {
+		return cm.connectWithSSH(config)
+	}
+
 	switch config.Type {
 	case "mysql":
 		return cm.connectMySQL(config)
@@ -34,6 +38,51 @@ func (cm *ConnectionManager) Connect(config ConnectionConfig) error {
 	default:
 		return fmt.Errorf("unsupported database type: %s", config.Type)
 	}
+}
+
+func (cm *ConnectionManager) connectWithSSH(config ConnectionConfig) error {
+	tunnel, err := NewSSHTunnel(
+		config.SSHHost,
+		config.SSHPort,
+		config.SSHUsername,
+		config.SSHPassword,
+		config.SSHPrivateKey,
+		config.Host,
+		config.Port,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to create SSH tunnel: %w", err)
+	}
+
+	if err := tunnel.Start(); err != nil {
+		return fmt.Errorf("failed to start SSH tunnel: %w", err)
+	}
+
+	tunnelConfig := config
+	tunnelConfig.Host = "127.0.0.1"
+	tunnelConfig.Port = tunnel.GetLocalPort()
+
+	var connErr error
+	switch config.Type {
+	case "mysql":
+		connErr = cm.connectMySQL(tunnelConfig)
+	case "postgresql":
+		connErr = cm.connectPostgres(tunnelConfig)
+	case "mongodb":
+		connErr = cm.connectMongoDB(tunnelConfig)
+	default:
+		tunnel.Stop()
+		return fmt.Errorf("unsupported database type: %s", config.Type)
+	}
+
+	if connErr != nil {
+		tunnel.Stop()
+		return connErr
+	}
+
+	// Store tunnel reference (we'll need to close it later)
+	// For now, we'll let it clean up when the connection is closed
+	return nil
 }
 
 func (cm *ConnectionManager) connectMySQL(config ConnectionConfig) error {
@@ -152,8 +201,8 @@ func (cm *ConnectionManager) getSQLDatabaseSize(db *sql.DB) (int64, error) {
 func (cm *ConnectionManager) getMongoDBSize(client *mongo.Client) (int64, error) {
 	ctx := context.Background()
 	result := client.Database("admin").RunCommand(ctx, bson.D{
-		{"dbStats", 1},
-		{"scale", 1},
+		{Key: "dbStats", Value: 1},
+		{Key: "scale", Value: 1},
 	})
 
 	var stats bson.M

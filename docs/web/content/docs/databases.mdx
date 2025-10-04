@@ -347,6 +347,171 @@ services:
 
 ---
 
+## SSH Tunnel Support
+
+Velld supports SSH tunnels for secure database connections, especially useful when:
+- Your database is behind a firewall
+- You need to connect through a bastion/jump host
+- You want an extra layer of security
+- Your database doesn't allow direct external connections
+
+### Enabling SSH Tunnel
+
+When adding a connection, expand the **SSH Tunnel** section and enable it. You'll need:
+
+1. **SSH Host**: The SSH server address (e.g., `bastion.example.com`)
+2. **SSH Port**: Usually `22`
+3. **SSH Username**: Your SSH username
+4. **Authentication Method**: Choose between password or private key
+
+### Authentication Methods
+
+<Tabs items={['Password', 'Private Key']}>
+  <Tab value="Password">
+    ### Password Authentication
+
+    The simplest method—just provide your SSH password:
+
+    ```yaml
+    SSH Host: bastion.example.com
+    SSH Port: 22
+    SSH Username: deploy
+    SSH Password: your_ssh_password
+    ```
+
+    <Callout type="warn">
+      Less secure than key-based auth. Use only if you trust the network and have strong passwords.
+    </Callout>
+  </Tab>
+
+  <Tab value="Private Key">
+    ### Private Key Authentication
+
+    More secure—uses your SSH private key:
+
+    ```yaml
+    SSH Host: bastion.example.com
+    SSH Port: 22
+    SSH Username: deploy
+    SSH Private Key: |
+      -----BEGIN RSA PRIVATE KEY-----
+      MIIEpAIBAAKCAQEA...
+      -----END RSA PRIVATE KEY-----
+    ```
+
+    **How to get your private key:**
+
+    ```bash
+    # Display your private key
+    cat ~/.ssh/id_rsa
+
+    # Or generate a new one
+    ssh-keygen -t rsa -b 4096 -C "velld-backup"
+    ```
+
+    Then copy the entire key (including `-----BEGIN` and `-----END` lines) into Velld.
+
+    <Callout type="tip">
+      Make sure your public key is added to the SSH server's `~/.ssh/authorized_keys`.
+    </Callout>
+  </Tab>
+</Tabs>
+
+### Configuration Example
+
+Here's a complete example connecting to a PostgreSQL database through an SSH tunnel:
+
+```yaml
+# Database settings
+Name: Production DB (via SSH)
+Type: PostgreSQL
+Host: localhost              # or 127.0.0.1 (database host from SSH server perspective)
+Port: 5432
+Database: myapp_production
+Username: postgres
+Password: db_password
+SSL Mode: disable
+
+# SSH tunnel settings
+SSH Enabled: ✅
+SSH Host: bastion.example.com
+SSH Port: 22
+SSH Username: deploy
+SSH Authentication: Private Key
+SSH Private Key: [paste your private key]
+```
+
+**Important:** The `Host` field should be the database hostname **as seen from the SSH server**, not from your local machine. Common values:
+- `localhost` or `127.0.0.1` if the database is on the same server as SSH
+- The internal IP or hostname if they're on separate servers
+
+### How It Works
+
+1. Velld connects to your SSH server
+2. Creates a secure tunnel to the database server
+3. Routes database traffic through the tunnel
+4. Database sees the connection coming from the SSH server
+
+```
+[Velld] --SSH--> [SSH Server] ---> [Database]
+         (encrypted)        (internal network)
+```
+
+### Common Scenarios
+
+#### Database on Same Server as SSH
+```yaml
+Host: localhost  # Database is on the SSH server itself
+Port: 5432
+SSH Host: myserver.com
+```
+
+#### Database on Different Internal Server
+```yaml
+Host: 10.0.1.50  # Database's internal IP
+Port: 5432
+SSH Host: bastion.mycompany.com  # Jump host
+```
+
+#### AWS RDS Through Bastion
+```yaml
+Host: mydb.abc123.us-east-1.rds.amazonaws.com
+Port: 5432
+SSH Host: ec2-bastion.example.com
+```
+
+### Troubleshooting SSH Tunnels
+
+**SSH connection failed:**
+- Verify SSH credentials work manually:
+  ```bash
+  ssh deploy@bastion.example.com
+  ```
+- Check firewall allows SSH (port 22)
+- Ensure your SSH user has access
+
+**SSH connected but database connection failed:**
+- The `Host` field should be from SSH server's perspective, not yours
+- Try `localhost` if database is on SSH server
+- Verify database allows connections from SSH server's IP
+
+**Private key rejected:**
+- Make sure you copied the entire key (including header/footer)
+- Key should be in OpenSSH format (PEM)
+- Verify public key is in `~/.ssh/authorized_keys` on SSH server
+- Check file permissions: `chmod 600 ~/.ssh/authorized_keys`
+
+**Permission denied (publickey):**
+- Your public key isn't authorized on the SSH server
+- Add your public key to `~/.ssh/authorized_keys`:
+  ```bash
+  # On SSH server
+  echo "ssh-rsa AAAAB3..." >> ~/.ssh/authorized_keys
+  chmod 600 ~/.ssh/authorized_keys
+  ```
+
+---
+
 ## Remote Database Connections
 
 ### Over the Internet
@@ -356,26 +521,7 @@ If your database is on a remote server:
 1. **Ensure the database accepts remote connections**
 2. **Open firewall ports** (5432, 3306, or 27017)
 3. **Use SSL/TLS** for security
-4. **Consider using a VPN** or SSH tunnel
-
-### SSH Tunnel (Recommended for security)
-
-For databases behind a firewall, use an SSH tunnel:
-
-```bash
-# Forward PostgreSQL through SSH
-ssh -L 5432:localhost:5432 user@remote-server
-
-# Then connect to localhost:5432 in Velld
-```
-
-Or use Docker with SSH:
-```yaml
-services:
-  api:
-    ports:
-      - "5432:5432"  # Expose SSH tunnel port
-```
+4. **Consider using SSH tunnel** (see section above)
 
 ---
 

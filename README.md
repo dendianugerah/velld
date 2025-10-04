@@ -9,6 +9,7 @@
 - **Simple Setup** - Get started in minutes with Docker
 - **Smart Scheduling** - Flexible cron-based backup automation
 - **Secure by Default** - Encrypted credentials and secure storage
+- **SSH Tunnel Support** - Connect to databases behind firewalls
 - **Real-Time Monitoring** - Beautiful dashboard with stats and insights
 - **Backup Comparison** - Compare any two backups to see what changed
 - **Multi-Database** - PostgreSQL, MySQL, and MongoDB support
