@@ -1,4 +1,4 @@
-import { BackupListResponse, BackupStatsResponse } from '@/types/backup';
+import { BackupListResponse, BackupStatsResponse, BackupDiffResponse } from '@/types/backup';
 import { apiRequest } from '../api-client';
 
 export interface GetBackupsParams {
@@ -65,6 +65,12 @@ export async function disableBackupSchedule(connectionId: string): Promise<void>
 
 export async function getBackupStats(): Promise<BackupStatsResponse> {
   return apiRequest<BackupStatsResponse>('/api/backups/stats', {
+    method: 'GET',
+  });
+}
+
+export async function compareBackups(sourceId: string, targetId: string): Promise<BackupDiffResponse> {
+  return apiRequest<BackupDiffResponse>(`/api/backups/compare/${sourceId}/${targetId}`, {
     method: 'GET',
   });
 }
