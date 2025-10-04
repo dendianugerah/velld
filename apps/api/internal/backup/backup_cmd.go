@@ -35,6 +35,7 @@ func (s *BackupService) findDatabaseBinaryPath(dbType string) string {
 func (s *BackupService) createPgDumpCmd(conn *connection.StoredConnection, outputPath string) *exec.Cmd {
 	binaryPath := s.findDatabaseBinaryPath("postgresql")
 	if binaryPath == "" {
+		fmt.Printf("ERROR: pg_dump binary not found. Please install PostgreSQL client tools.\n")
 		return nil
 	}
 
@@ -55,6 +56,7 @@ func (s *BackupService) createPgDumpCmd(conn *connection.StoredConnection, outpu
 func (s *BackupService) createMySQLDumpCmd(conn *connection.StoredConnection, outputPath string) *exec.Cmd {
 	binaryPath := s.findDatabaseBinaryPath(conn.Type)
 	if binaryPath == "" {
+		fmt.Printf("ERROR: mysqldump binary not found. Please install MySQL/MariaDB client tools.\n")
 		return nil
 	}
 
@@ -73,6 +75,7 @@ func (s *BackupService) createMySQLDumpCmd(conn *connection.StoredConnection, ou
 func (s *BackupService) createMongoDumpCmd(conn *connection.StoredConnection, outputPath string) *exec.Cmd {
 	binaryPath := s.findDatabaseBinaryPath("mongodb")
 	if binaryPath == "" {
+		fmt.Printf("ERROR: mongodump binary not found. Please install MongoDB Database Tools.\n")
 		return nil
 	}
 

@@ -127,8 +127,18 @@ func (s *BackupService) CreateBackup(connectionID string) (*Backup, error) {
 		return nil, fmt.Errorf("unsupported database type for backup: %s", conn.Type)
 	}
 
-	if err := cmd.Run(); err != nil {
-		return nil, fmt.Errorf("backup failed: %v", err)
+	if cmd == nil {
+		return nil, fmt.Errorf("backup tool not found for %s. Please ensure %s is installed and available in PATH", conn.Type, requiredTools[conn.Type])
+	}
+
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		errorMsg := string(output)
+		if errorMsg == "" {
+			errorMsg = err.Error()
+		}
+		return nil, fmt.Errorf("backup failed for %s database '%s' on %s:%d - %s",
+			conn.Type, conn.DatabaseName, conn.Host, conn.Port, errorMsg)
 	}
 
 	// Get file size
