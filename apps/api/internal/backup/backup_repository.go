@@ -211,11 +211,11 @@ func (r *BackupRepository) GetAllActiveSchedules() ([]*BackupSchedule, error) {
 func (r *BackupRepository) CreateBackup(backup *Backup) error {
 	_, err := r.db.Exec(`
 		INSERT INTO backups (
-			id, connection_id, schedule_id, status, path, size,
+			id, connection_id, schedule_id, status, path, s3_object_key, size,
 			started_time, completed_time, created_at, updated_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
 		backup.ID, backup.ConnectionID, backup.ScheduleID,
-		backup.Status, backup.Path, backup.Size,
+		backup.Status, backup.Path, backup.S3ObjectKey, backup.Size,
 		backup.StartedTime, backup.CompletedTime,
 		backup.CreatedAt, backup.UpdatedAt)
 	return err
@@ -272,11 +272,11 @@ func (r *BackupRepository) GetBackup(id string) (*Backup, error) {
 	)
 	backup := &Backup{}
 	err := r.db.QueryRow(`
-		SELECT id, connection_id, schedule_id, status, path, size,
+		SELECT id, connection_id, schedule_id, status, path, s3_object_key, size,
 			   started_time, completed_time, created_at, updated_at 
 		FROM backups WHERE id = $1`, id).
 		Scan(&backup.ID, &backup.ConnectionID, &backup.ScheduleID,
-			&backup.Status, &backup.Path, &backup.Size,
+			&backup.Status, &backup.Path, &backup.S3ObjectKey, &backup.Size,
 			&startedTimeStr, &completedTimeStr,
 			&createdAtStr, &updatedAtStr)
 	if err != nil {
@@ -339,7 +339,7 @@ func (r *BackupRepository) GetAllBackupsWithPagination(opts BackupListOptions) (
 
 	query := fmt.Sprintf(`
 		SELECT 
-			b.id, b.connection_id, c.type, b.schedule_id, b.status, b.path, b.size,
+			b.id, b.connection_id, c.type, b.schedule_id, b.status, b.path, b.s3_object_key, b.size,
 			b.started_time, b.completed_time, b.created_at, b.updated_at,
 			c.database_name
 		FROM backups b
@@ -367,7 +367,7 @@ func (r *BackupRepository) GetAllBackupsWithPagination(opts BackupListOptions) (
 		backup := &BackupList{}
 		err := rows.Scan(
 			&backup.ID, &backup.ConnectionID, &backup.DatabaseType,
-			&backup.ScheduleID, &backup.Status, &backup.Path, &backup.Size,
+			&backup.ScheduleID, &backup.Status, &backup.Path, &backup.S3ObjectKey, &backup.Size,
 			&startedTimeStr, &completedTimeStr,
 			&createdAtStr, &updatedAtStr,
 			&backup.DatabaseName,
