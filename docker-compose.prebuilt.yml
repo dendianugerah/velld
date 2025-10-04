@@ -1,0 +1,26 @@
+services:
+  api:
+    image: ghcr.io/dendianugerah/velld/api:latest
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    volumes:
+      - api_data:/app/internal/database
+      - backup_data:/app/backups
+    restart: unless-stopped
+
+  web:
+    image: ghcr.io/dendianugerah/velld/web:latest
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+      ALLOW_REGISTER: ${ALLOW_REGISTER}
+    depends_on:
+      - api
+    restart: unless-stopped
+
+volumes:
+  api_data:
+  backup_data:

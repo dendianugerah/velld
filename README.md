@@ -55,22 +55,42 @@ View detailed backup history and logs.
 
 ## Installation
 
-### Using Docker
+### Using Pre-built Docker Images (Recommended)
+
+Pull and run pre-built images directly from GitHub Container Registry:
 
 ```sh
-# Clone the repository
+# Pull images
+docker pull ghcr.io/dendianugerah/velld/api:latest
+docker pull ghcr.io/dendianugerah/velld/web:latest
+
+# Clone for docker-compose file
 git clone https://github.com/dendianugerah/velld.git
-
-# Navigate to the project directory
 cd velld
+cp .env.example .env
 
-# Start the application
+# Run with pre-built images
+docker compose -f docker-compose.prebuilt.yml up -d
+```
+
+### Build from Source
+
+```sh
+git clone https://github.com/dendianugerah/velld.git
+cd velld
+cp .env.example .env
 docker compose up -d
 ```
 
 Once started, the application will be available at:
 - **Web Interface**: [http://localhost:3000](http://localhost:3000)
 - **API**: [http://localhost:8080](http://localhost:8080)
+
+Once started, the application will be available at:
+- **Web Interface**: [http://localhost:3000](http://localhost:3000)
+- **API**: [http://localhost:8080](http://localhost:8080)
+
+> **Note**: Pre-built images are automatically published on every release and are available for both `amd64` and `arm64` architectures (works on Intel/AMD and M1/M2 Macs).
 
 ## Configuration
 

@@ -22,23 +22,70 @@ Before you begin, ensure you have:
   Velld only installs the database clients you need. This keeps the Docker image lightweight and secure.
 </Callout>
 
-## Quick Start (All Databases)
+## Quick Start
 
-If you want to backup multiple database types, use this installation:
+**Fastest way** - Pull and run pre-built images directly (no git clone needed):
 
 ```bash
-# Clone the repository
-git clone https://github.com/dendianugerah/velld.git
-cd velld
+# Pull images
+docker pull ghcr.io/dendianugerah/velld/api:latest
+docker pull ghcr.io/dendianugerah/velld/web:latest
 
-# Start all services
-docker compose up -d
+# Create .env file
+cat > .env << EOF
+NEXT_PUBLIC_API_URL=http://localhost:8080
+JWT_SECRET=your-super-secret-jwt-key
+ENCRYPTION_KEY=your-32-byte-encryption-key
+ADMIN_USERNAME_CREDENTIAL=admin
+ADMIN_PASSWORD_CREDENTIAL=changeme
+ALLOW_REGISTER=true
+EOF
 
-# Access the web interface
-open http://localhost:3000
+# Run API
+docker run -d \
+  --name velld-api \
+  -p 8080:8080 \
+  --env-file .env \
+  -v velld-data:/app/internal/database \
+  -v velld-backups:/app/backups \
+  ghcr.io/dendianugerah/velld/api:latest
+
+# Run Web
+docker run -d \
+  --name velld-web \
+  -p 3000:3000 \
+  -e NEXT_PUBLIC_API_URL=http://localhost:8080 \
+  -e ALLOW_REGISTER=true \
+  ghcr.io/dendianugerah/velld/web:latest
 ```
 
-That's it! Velld is now running with support for PostgreSQL, MySQL, and MongoDB.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+---
+
+## Using Docker Compose
+
+If you prefer docker-compose:
+
+```bash
+git clone https://github.com/dendianugerah/velld.git
+cd velld
+cp .env.example .env
+docker compose -f docker-compose.prebuilt.yml up -d
+```
+
+---
+
+## Build from Source
+
+If you want to build the images yourself:
+
+```bash
+git clone https://github.com/dendianugerah/velld.git
+cd velld
+cp .env.example .env
+docker compose up -d
+```
 
 ---
 
