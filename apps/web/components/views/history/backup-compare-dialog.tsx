@@ -268,7 +268,7 @@ export function BackupCompareDialog({
             Close
           </Button>
           {selectedSourceBackup && selectedCompareBackup && (
-            <Button>
+            <Button disabled={true}>
               <GitCompare className="h-4 w-4 mr-2" />
               Export Diff Report
             </Button>
