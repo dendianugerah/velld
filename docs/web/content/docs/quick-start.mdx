@@ -216,29 +216,37 @@ If you have many databases, organize them by environment:
 
 ## Restoring a Backup
 
-Velld creates standard dump files that you can restore using native database tools:
-
-### PostgreSQL
-```bash
-# Download the backup from Velld first
-psql -U postgres -d myapp_production < backup_2024-01-15.sql
-```
-
-### MySQL
-```bash
-# Download the backup from Velld first
-mysql -u root -p myapp_production < backup_2024-01-15.sql
-```
-
-### MongoDB
-```bash
-# Download the backup from Velld first
-mongorestore --archive=backup_2024-01-15.archive --gzip
-```
-
 <Callout type="warning">
-  Always test restores on a non-production database first!
+  Always restore to an empty database. See [Restore Best Practices](/docs/restore-best-practices).
 </Callout>
+
+### Using Velld UI
+
+1. Go to **History** page
+2. Click **Restore** on your backup
+3. Select target database (must be empty)
+4. Confirm
+
+**For production:** Create new database → Restore → Test → Switch app connection.
+
+### Manual Restoration
+
+#### PostgreSQL
+```bash
+createdb myapp_new
+psql -U postgres -d myapp_new < backup.sql
+```
+
+#### MySQL
+```bash
+mysql -u root -p -e "CREATE DATABASE myapp_new;"
+mysql -u root -p myapp_new < backup.sql
+```
+
+#### MongoDB
+```bash
+mongorestore --archive=backup.archive --gzip
+```
 
 ---
 

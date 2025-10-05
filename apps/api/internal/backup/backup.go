@@ -221,3 +221,29 @@ func (h *BackupHandler) DownloadBackup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
+
+func (h *BackupHandler) RestoreBackup(w http.ResponseWriter, r *http.Request) {
+	var req RestoreRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.SendError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	if req.BackupID == "" {
+		response.SendError(w, http.StatusBadRequest, "backup_id is required")
+		return
+	}
+
+	if req.ConnectionID == "" {
+		response.SendError(w, http.StatusBadRequest, "connection_id is required")
+		return
+	}
+
+	err := h.backupService.RestoreBackup(req.BackupID, req.ConnectionID)
+	if err != nil {
+		response.SendError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	response.SendSuccess(w, "Backup restored successfully", nil)
+}

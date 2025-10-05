@@ -1,0 +1,80 @@
+---
+title: Restore Best Practices
+description: Safe database restoration practices for production environments.
+---
+
+# Database Restore Best Practices
+
+## The Rule
+
+**Always restore to an empty database.** This prevents conflicts, ensures atomic operations, and allows safe rollback.
+
+## Why
+
+Restoring to a database with existing tables causes:
+- Schema conflicts and partial restores
+- Data corruption from mixed sources
+- Foreign key violations
+
+An empty database guarantees the restore either fully succeeds or fully fails—no mixed states.
+
+---
+
+## How to Restore Safely
+
+### Development
+
+```bash
+DROP DATABASE myapp_dev;
+CREATE DATABASE myapp_dev;
+# Restore via Velld: https://velld.vercel.app
+```
+
+### Production
+
+```bash
+# 1. Create new empty database
+CREATE DATABASE myapp_production_new;
+
+# 2. Restore to new database (via Velld)
+
+# 3. Test thoroughly
+
+# 4. Switch application connection string
+
+# 5. Drop old database after verification
+DROP DATABASE myapp_production;
+```
+
+**Why Blue-Green:**
+- Zero downtime
+- Safe rollback (just switch back)
+- Production data untouched until verified
+
+---
+
+## Troubleshooting
+
+### "Target database must be empty"
+
+Create a new database:
+```sql
+CREATE DATABASE myapp_new;
+```
+
+Then restore to `myapp_new`.
+
+### Application fails after restore
+
+Check:
+- Schema version matches application
+- Database migrations are current
+- User permissions are correct
+
+---
+
+## References
+
+- [PostgreSQL Backup Best Practices](https://www.postgresql.org/docs/current/backup-dump.html#BACKUP-DUMP-RESTORE)
+- [MySQL Point-in-Time Recovery](https://dev.mysql.com/doc/refman/8.0/en/point-in-time-recovery.html)
+- [Blue-Green Deployment Pattern](https://martinfowler.com/bliki/BlueGreenDeployment.html)

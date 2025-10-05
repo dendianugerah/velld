@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Database, Download, MoreVertical, History, GitCompare, RefreshCw } from "lucide-react";
+import { Database, Download, MoreVertical, History, GitCompare, RefreshCw, RotateCcw } from "lucide-react";
 import { formatDistanceToNow, parseISO, subDays, isAfter } from "date-fns";
 import { useBackup } from "@/hooks/use-backup";
 import { BackupList } from "@/types/backup";
@@ -16,6 +16,7 @@ import { CustomPagination } from "@/components/ui/custom-pagination";
 import { useNotifications } from '@/hooks/use-notifications';
 import { NotificationSidebar } from "./notification-sidebar";
 import { BackupCompareDialog } from "./backup-compare-dialog";
+import { RestoreDialog } from "./restore-dialog";
 import { useState, useMemo } from "react";
 import { useIsFetching } from "@tanstack/react-query";
 
@@ -24,6 +25,8 @@ export function HistoryList() {
   const { notifications, isLoading: isLoadingNotifications, markNotificationsAsRead } = useNotifications();
   const [compareDialogOpen, setCompareDialogOpen] = useState(false);
   const [selectedBackupForCompare, setSelectedBackupForCompare] = useState<BackupList | undefined>();
+  const [restoreDialogOpen, setRestoreDialogOpen] = useState(false);
+  const [selectedBackupForRestore, setSelectedBackupForRestore] = useState<BackupList | null>(null);
   const isFetchingBackups = useIsFetching({ queryKey: ['backups'] });
   
   const [dateRange, setDateRange] = useState("all");
@@ -39,6 +42,11 @@ export function HistoryList() {
       setSelectedBackupForCompare(filteredBackups[0]);
     }
     setCompareDialogOpen(true);
+  };
+
+  const handleRestore = (backup: BackupList) => {
+    setSelectedBackupForRestore(backup);
+    setRestoreDialogOpen(true);
   };
 
   const handleResetFilters = () => {
@@ -150,25 +158,36 @@ export function HistoryList() {
                             </p>
                           </div>
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex flex-col gap-2">
+                          <div className="flex gap-2">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleRestore(item)}
+                              className="flex-1"
+                            >
+                              <RotateCcw className="h-4 w-4 mr-1" />
+                              Restore
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={() => downloadBackupFile({ id: item.id, path: item.path })}
+                              disabled={isDownloading}
+                              className="flex-1"
+                            >
+                              <Download className="h-4 w-4 mr-1" />
+                              Download
+                            </Button>
+                          </div>
                           <Button 
                             variant="outline" 
                             size="sm"
                             onClick={() => handleCompare(item)}
-                            className="flex-1"
+                            className="w-full"
                           >
                             <GitCompare className="h-4 w-4 mr-1" />
-                            Compare
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            onClick={() => downloadBackupFile({ id: item.id, path: item.path })}
-                            disabled={isDownloading}
-                            className="flex-1"
-                          >
-                            <Download className="h-4 w-4 mr-1" />
-                            Download
+                            Compare with Another
                           </Button>
                         </div>
                       </div>
@@ -204,6 +223,14 @@ export function HistoryList() {
                             </p>
                           </div>
                           <div className="flex space-x-2">
+                            <Button 
+                              variant="ghost" 
+                              size="icon"
+                              onClick={() => handleRestore(item)}
+                              title="Restore this backup"
+                            >
+                              <RotateCcw className="h-4 w-4" />
+                            </Button>
                             <Button 
                               variant="ghost" 
                               size="icon"
@@ -264,6 +291,12 @@ export function HistoryList() {
         }}
         backups={filteredBackups || []}
         selectedBackup={selectedBackupForCompare}
+      />
+
+      <RestoreDialog
+        backup={selectedBackupForRestore}
+        open={restoreDialogOpen}
+        onOpenChange={setRestoreDialogOpen}
       />
     </Card>
   );
