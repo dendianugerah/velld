@@ -37,7 +37,7 @@ export function ConnectionsList() {
 
   return (
     <Card className="col-span-3 bg-card border">
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         <ConnectionListHeader 
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
@@ -48,7 +48,7 @@ export function ConnectionsList() {
         {isLoading ? (
           <ConnectionListSkeleton />
         ) : filteredConnections && filteredConnections.length > 0 ? (
-          <div className="space-y-3">
+          <div className="space-y-2 sm:space-y-3">
             {filteredConnections.map((connection) => (
               <ConnectionCard
                 key={connection.id}

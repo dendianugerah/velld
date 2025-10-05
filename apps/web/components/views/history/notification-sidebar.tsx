@@ -16,7 +16,7 @@ export function NotificationSidebar({ notifications, isLoading, onMarkAsRead }: 
   const recentNotifications = notifications.slice(0, 5);
 
   return (
-    <div className="w-80 border-l pl-4">
+    <div className="w-full lg:w-80 lg:border-l lg:pl-4">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <h4 className="text-sm font-semibold">Recent Notifications</h4>
@@ -27,7 +27,7 @@ export function NotificationSidebar({ notifications, isLoading, onMarkAsRead }: 
           )}
         </div>
       </div>
-      <ScrollArea className="h-[400px]">
+      <ScrollArea className="h-[300px] lg:h-[400px]">
         <div className="space-y-3 pr-4">
           {isLoading ? (
             Array.from({ length: 3 }).map((_, i) => (

@@ -40,18 +40,18 @@ export function StatsCards() {
   ];
 
   return (
-    <div className="grid gap-4 md:grid-cols-3">
+    <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
       {statsData.map((stat) => (
         <Card
           key={stat.name}
-          className="p-6 bg-card border"
+          className="p-4 sm:p-6 bg-card border"
         >
           <div className="flex justify-between items-start">
             <div className="space-y-2">
               <p className="text-sm font-medium text-muted-foreground">
                 {stat.name}
               </p>
-              <p className="text-2xl font-semibold">{stat.value}</p>
+              <p className="text-xl sm:text-2xl font-semibold">{stat.value}</p>
             </div>
             {!stat.showProgress && (
               <div className={`flex items-center ${

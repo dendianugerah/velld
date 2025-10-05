@@ -44,18 +44,18 @@ export function HistoryStats() {
   ];
 
   return (
-    <div className="grid gap-4 md:grid-cols-4">
+    <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
       {statsData.map((stat) => (
         <Card
           key={stat.name}
-          className="p-6 bg-background border border-border/50 hover:border-border/80 transition-colors"
+          className="p-4 sm:p-6 bg-background border border-border/50 hover:border-border/80 transition-colors"
         >
           <div className="flex justify-between items-start">
             <div className="space-y-2">
-              <p className="text-sm font-medium text-muted-foreground">
+              <p className="text-xs sm:text-sm font-medium text-muted-foreground">
                 {stat.name}
               </p>
-              <p className="text-2xl font-semibold">{stat.value}</p>
+              <p className="text-xl sm:text-2xl font-semibold">{stat.value}</p>
             </div>
             {stat.trend && (
               <div className={`flex items-center ${

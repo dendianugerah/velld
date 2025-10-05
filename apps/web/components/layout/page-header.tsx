@@ -63,14 +63,14 @@ export function PageHeader({ title, description, action }: PageHeaderProps) {
         </BreadcrumbList>
       </Breadcrumb>
       
-      <div className="flex items-start justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
         <div className="space-y-1">
-          <h2 className="text-3xl font-bold tracking-tight">{title}</h2>
+          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">{title}</h2>
           {description && (
-            <p className="text-base text-muted-foreground">{description}</p>
+            <p className="text-sm sm:text-base text-muted-foreground">{description}</p>
           )}
         </div>
-        {action && <div>{action}</div>}
+        {action && <div className="shrink-0">{action}</div>}
       </div>
     </div>
   );

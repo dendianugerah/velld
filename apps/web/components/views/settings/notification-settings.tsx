@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Bell, Mail, Webhook, Info } from "lucide-react";
+import { Bell, Mail, Info } from "lucide-react";
 import { useSettings } from "@/hooks/use-settings";
 import { Skeleton } from "@/components/ui/skeleton";
 import { UpdateSettingsRequest } from "@/types/settings";
@@ -180,8 +180,9 @@ export function NotificationSettings() {
             )}
           </div>
 
-          {/* Webhook Notifications */}
-          <div className="space-y-3">
+          {/* Webhook Notifications - Commented out until proper implementation */}
+          {/* TODO: Implement proper webhook formatting for Slack/Discord/etc */}
+          {/* <div className="space-y-3">
             <div className="flex items-center justify-between p-4 rounded-lg border bg-background/50">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-md bg-primary/10">
@@ -216,7 +217,7 @@ export function NotificationSettings() {
                 </div>
               </div>
             )}
-          </div>
+          </div> */}
 
           {Object.keys(formValues).length > 0 && (
             <div className="pt-4 border-t flex justify-end">

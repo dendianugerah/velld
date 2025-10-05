@@ -40,8 +40,8 @@ export function HistoryFilters({
 }: HistoryFiltersProps) {
   
   return (
-    <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-      <div className="relative flex-1 w-full">
+    <div className="flex flex-col gap-3">
+      <div className="relative w-full">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           type="text"
@@ -53,7 +53,7 @@ export function HistoryFilters({
         />
       </div>
       
-      <div className="flex items-center gap-2 w-full sm:w-auto">
+      <div className="flex flex-wrap items-center gap-2">
         <Select value={dateRange} onValueChange={onDateRangeChange}>
           <SelectTrigger className="w-full sm:w-[140px]">
             <SelectValue placeholder="Last 7 Days" />
@@ -95,15 +95,15 @@ export function HistoryFilters({
             variant="ghost" 
             size="sm"
             onClick={onCompare}
-            className="gap-2"
+            className="gap-2 w-full sm:w-auto"
           >
             <GitCompare className="h-4 w-4" />
-            <span className="hidden sm:inline">Compare</span>
+            <span className="sm:inline">Compare</span>
           </Button>
         )}
 
-        <Button variant="ghost" size="sm" onClick={onReset}>
-          Reset Filters
+        <Button variant="ghost" size="sm" onClick={onReset} className="w-full sm:w-auto">
+          Reset
         </Button>
       </div>
     </div>

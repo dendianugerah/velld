@@ -85,9 +85,9 @@ export function HistoryList() {
   return (
     <Card className="col-span-3 bg-card border">
       <div className="flex flex-col h-full">
-        <div className="p-6 border-b">
+        <div className="p-4 sm:p-6 border-b">
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <h3 className="text-lg font-semibold">Recent Backups</h3>
               {isFetchingBackups > 0 && !isLoading && (
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -111,8 +111,8 @@ export function HistoryList() {
             />
           </div>
         </div>
-        <div className="flex flex-row p-6 space-x-4 flex-1">
-          <div className="flex-1 flex flex-col">
+        <div className="flex flex-col lg:flex-row p-4 sm:p-6 gap-4 flex-1">
+          <div className="flex-1 flex flex-col min-w-0">
             <div className="flex-1 space-y-4">
               {isLoading ? (
                 <HistoryListSkeleton />
@@ -123,15 +123,66 @@ export function HistoryList() {
                       key={item.id}
                       className="p-4 rounded-lg bg-background/50 hover:bg-background/60 transition-colors border"
                     >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-4">
-                          <div className="p-2 rounded-md bg-primary/10">
+                      {/* Mobile Layout */}
+                      <div className="flex md:hidden flex-col gap-3">
+                        <div className="flex items-start gap-3">
+                          <div className="p-2 rounded-md bg-primary/10 shrink-0">
                             <Database className="h-5 w-5 text-primary" />
                           </div>
-                          <div>
-                            <div className="flex items-center space-x-2">
-                              <h4 className="font-medium">{item.path.split('\\').pop()}</h4>
+                          <div className="min-w-0 flex-1">
+                            <h4 className="font-medium truncate">{item.path.split('\\').pop()}</h4>
+                            <div className="flex items-center gap-2 mt-1 flex-wrap">
                               <Badge variant="secondary" className="text-xs">
+                                {item.database_type}
+                              </Badge>
+                              <Badge
+                                variant="secondary"
+                                className={statusColors[item.status as keyof typeof statusColors]}
+                              >
+                                {item.status}
+                              </Badge>
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-2">
+                              {formatDistanceToNow(parseISO(item.created_at), { addSuffix: true })}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {formatSize(item.size)} • {calculateDuration(item.started_time, item.completed_time)}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleCompare(item)}
+                            className="flex-1"
+                          >
+                            <GitCompare className="h-4 w-4 mr-1" />
+                            Compare
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => downloadBackupFile({ id: item.id, path: item.path })}
+                            disabled={isDownloading}
+                            className="flex-1"
+                          >
+                            <Download className="h-4 w-4 mr-1" />
+                            Download
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Desktop Layout */}
+                      <div className="hidden md:flex items-center justify-between">
+                        <div className="flex items-center space-x-4 min-w-0 flex-1">
+                          <div className="p-2 rounded-md bg-primary/10 shrink-0">
+                            <Database className="h-5 w-5 text-primary" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center space-x-2">
+                              <h4 className="font-medium truncate">{item.path.split('\\').pop()}</h4>
+                              <Badge variant="secondary" className="text-xs shrink-0">
                                 {item.database_type}
                               </Badge>
                             </div>
@@ -140,7 +191,7 @@ export function HistoryList() {
                             </p>
                           </div>
                         </div>
-                        <div className="flex items-center space-x-4">
+                        <div className="flex items-center space-x-4 shrink-0">
                           <div className="text-right">
                             <Badge
                               variant="secondary"
@@ -170,9 +221,6 @@ export function HistoryList() {
                             >
                               <Download className="h-4 w-4" />
                             </Button>
-                            {/* <Button variant="ghost" size="icon" title="More options">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button> */}
                           </div>
                         </div>
                       </div>
@@ -190,7 +238,7 @@ export function HistoryList() {
             </div>
             
             {pagination && filteredBackups && filteredBackups.length > 0 && (
-              <div className="pt-6 flex justify-end border-t mt-4">
+              <div className="pt-4 sm:pt-6 flex justify-center sm:justify-end border-t mt-4">
                 <CustomPagination
                   currentPage={page}
                   totalPages={totalPages}

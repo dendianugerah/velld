@@ -24,8 +24,8 @@ export function ConnectionListHeader({
   onSortChange,
 }: ConnectionListHeaderProps) {
   return (
-    <div className="flex items-center justify-between mb-6">
-      <div className="relative w-72">
+    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-6">
+      <div className="relative flex-1 max-w-full sm:max-w-xs">
         <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
         <Input
           placeholder="Search connections..."
@@ -35,7 +35,7 @@ export function ConnectionListHeader({
         />
       </div>
       <Select value={sortBy} onValueChange={onSortChange}>
-        <SelectTrigger className="w-[180px]">
+        <SelectTrigger className="w-full sm:w-[180px]">
           <div className="flex items-center">
             <ArrowUpDown className="mr-2 h-4 w-4" />
             <span>Sort by</span>
