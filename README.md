@@ -1,169 +1,107 @@
 # Velld
 
-A database backup management and automation tool. Velld provides a user-friendly interface for scheduling, managing, and monitoring database backups, ensuring data security and easy recovery.
+A self-hosted database backup management tool. Schedule automated backups, monitor status, and manage multiple databases from one place.
 
-## Table of Contents
-
-- [Velld](#velld)
-  - [Table of Contents](#table-of-contents)
-  - [Features](#features)
-  - [Screenshots](#screenshots)
-    - [Dashboard Overview](#dashboard-overview)
-    - [Connection Management](#connection-management)
-    - [History](#history)
-  - [Supported Databases](#supported-databases)
-  - [Installation](#installation)
-    - [Using Docker](#using-docker)
-  - [Configuration](#configuration)
-    - [Environment Variables](#environment-variables)
-      - [**Environment Variable Details:**](#environment-variable-details)
-    - [Binary Path Detection](#binary-path-detection)
-  - [Development Setup](#development-setup)
-    - [Prerequisites](#prerequisites)
-    - [Running API Locally](#running-api-locally)
-    - [Running Web UI Locally](#running-web-ui-locally)
-  - [Contribution](#contribution)
-    - [Guidelines](#guidelines)
-  - [License](#license)
+**[Documentation](https://velld.vercel.app)** · **[Quick Start](https://velld.vercel.app/docs/quick-start)**
 
 ## Features
 
-- 🗄️ **Support for multiple database types**
-- ⏰ **Automated backup scheduling**
-- 🔔 **Notifications system**
+- Multiple database support (PostgreSQL, MySQL, MongoDB)
+- Automated scheduling with cron syntax
+- S3-compatible storage integration
+- Built-in backup comparison and diff viewer
+- Email notifications for failed backups
+- Responsive web interface
+
+## Getting Started
+
+```bash
+curl -o docker-compose.yml https://raw.githubusercontent.com/dendianugerah/velld/main/docker-compose.prebuilt.yml
+```
+
+Create a `.env` file:
+
+```bash
+NEXT_PUBLIC_API_URL=http://localhost:8080
+JWT_SECRET=$(openssl rand -hex 32)
+ENCRYPTION_KEY=$(openssl rand -hex 32)
+ADMIN_USERNAME_CREDENTIAL=admin
+ADMIN_PASSWORD_CREDENTIAL=changeme
+```
+
+```bash
+docker compose up -d
+```
+
+Visit [localhost:3000](http://localhost:3000) and log in with your admin credentials.
+
+For detailed setup instructions, see the [Installation Guide](https://velld.vercel.app/docs/installation).
 
 ## Screenshots
 
-### Dashboard Overview
-![Dashboard](docs/images/dashboard.png)
-Monitor backup statistics and recent activities.
+<table>
+  <tr>
+    <td><img src="docs/images/dashboard.png" alt="Dashboard" /></td>
+    <td><img src="docs/images/connections.png" alt="Connections" /></td>
+  </tr>
+  <tr>
+    <td align="center"><b>Dashboard</b></td>
+    <td align="center"><b>Connections</b></td>
+  </tr>
+  <tr>
+    <td><img src="docs/images/history.png" alt="History" /></td>
+    <td></td>
+  </tr>
+  <tr>
+    <td align="center"><b>Backup History</b></td>
+    <td></td>
+  </tr>
+</table>
 
-### Connection Management
-![Connections](docs/images/connections.png)
-Easily manage multiple database connections.
+## Documentation
 
-### History
-![History](docs/images/history.png)
-View detailed backup history and logs.
+Complete documentation is available at [velld.vercel.app](https://velld.vercel.app):
 
-## Supported Databases
+- [Installation](https://velld.vercel.app/docs/installation)
+- [Database Configuration](https://velld.vercel.app/docs/databases)
+- [Troubleshooting](https://velld.vercel.app/docs/troubleshooting)
 
-- **PostgreSQL**
-- **MySQL**
-- **MongoDB**
-- **More database support coming soon!**
+## Development
 
-## Installation
+Clone the repository:
 
-### Using Pre-built Docker Images (Recommended)
-
-Pull and run pre-built images directly from GitHub Container Registry:
-
-```sh
-# Pull images
-docker pull ghcr.io/dendianugerah/velld/api:latest
-docker pull ghcr.io/dendianugerah/velld/web:latest
-
-# Clone for docker-compose file
+```bash
 git clone https://github.com/dendianugerah/velld.git
 cd velld
-cp .env.example .env
-
-# Run with pre-built images
-docker compose -f docker-compose.prebuilt.yml up -d
 ```
 
-### Build from Source
+With Docker:
 
-```sh
-git clone https://github.com/dendianugerah/velld.git
-cd velld
+```bash
 cp .env.example .env
 docker compose up -d
 ```
 
-Once started, the application will be available at:
-- **Web Interface**: [http://localhost:3000](http://localhost:3000)
-- **API**: [http://localhost:8080](http://localhost:8080)
+Without Docker - API:
 
-Once started, the application will be available at:
-- **Web Interface**: [http://localhost:3000](http://localhost:3000)
-- **API**: [http://localhost:8080](http://localhost:8080)
-
-> **Note**: Pre-built images are automatically published on every release and are available for both `amd64` and `arm64` architectures (works on Intel/AMD and M1/M2 Macs).
-
-## Configuration
-
-### Environment Variables
-
-Create a `.env` file in the root directory or copy `.env.example`:
-
-```sh
-cp .env.example .env
-```
-
-Then, configure the following environment variables in `.env`:
-
-```env
-NEXT_PUBLIC_API_URL=http://localhost:8080
-
-JWT_SECRET=your-jwt-secret
-ENCRYPTION_KEY=your-encryption-key
-```
-
-#### **Environment Variable Details:**
-
-| Variable          | Description                                                   | Required?     | Default Behavior                  |
-|------------------|---------------------------------------------------------------|--------------|----------------------------------|
-| `JWT_SECRET`     | Secret key for signing JWT tokens.                           | Optional  | Auto-generated if missing        |
-| `ENCRYPTION_KEY` | Key for encrypting sensitive data (e.g., database credentials). | Optional  | Auto-generated if missing        |
-| `NEXT_PUBLIC_API_URL`        | Base URL for the API used by the frontend.                   | Required  | None                             |
-
-> **Note:** If `JWT_SECRET` or `ENCRYPTION_KEY` is missing from `.env`, Velld will automatically generate secure values and save them to the `.env` file.
-
-### Binary Path Detection
-
-By default, Velld will search for database dump binaries (`pg_dump`, `mysqldump`, `mongodump`, etc.) in common system paths:
-
-- **Windows:** `C:\Program Files\<Database>\bin`
-- **Linux:** `/usr/bin`, `/usr/local/bin`, `/opt/<Database>/bin`
-- **MacOS:** `/opt/homebrew/bin`, `/usr/local/bin`
-
-In a future update, users will be able to manually configure the binary path in the web application.
-
-## Development Setup
-
-### Prerequisites
-
-- **Go**
-- **Node.js**
-
-### Running API Locally
-
-```sh
+```bash
 cd apps/api
 go mod download
 go run cmd/api-server/main.go
 ```
 
-### Running Web UI Locally
+Without Docker - Web:
 
-```sh
+```bash
 cd apps/web
 npm install
 npm run dev
 ```
 
-## Contribution
+## Contributing
 
-Contributions are welcome! If you find a bug or have a feature request, please open an issue or submit a pull request.
-
-### Guidelines
-
-1. Fork the repository and create a new branch.
-2. Make your changes and ensure tests pass.
-3. Submit a pull request with a clear description of the change.
+Contributions are welcome! Please feel free to submit issues or pull requests.
 
 ## License
 
-This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) file for details.
+MIT License - see [LICENSE](LICENSE) for details.

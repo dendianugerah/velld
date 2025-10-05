@@ -310,7 +310,7 @@ export default function HomePage() {
             your data?
           </h2>
           <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-            Start backing up your databases in minutes with our open-source solution
+            Start backing up your databases with Velld
           </p>
         </div>
       </section>
