@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { getBackups, saveBackup, scheduleBackup, disableBackupSchedule, updateSchedule, getBackupStats, downloadBackup } from "@/lib/api/backups";
+import { getBackups, saveBackup, scheduleBackup, disableBackupSchedule, updateSchedule, getBackupStats, downloadBackup, restoreBackup } from "@/lib/api/backups";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from 'react';
 
@@ -143,6 +143,25 @@ export function useBackup() {
     },
   });
 
+  const { mutate: restoreBackupToDatabase, isPending: isRestoring } = useMutation({
+    mutationFn: async (params: { backupId: string; connectionId: string }) => {
+      await restoreBackup({ backup_id: params.backupId, connection_id: params.connectionId });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Backup restored successfully to the target database",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to restore backup",
+        variant: "destructive",
+      });
+    },
+  });
+
   return {
     createBackup,
     isCreating,
@@ -154,6 +173,8 @@ export function useBackup() {
     isDisabling,
     downloadBackupFile,
     isDownloading,
+    restoreBackupToDatabase,
+    isRestoring,
     backups: data?.data,
     pagination: data?.pagination,
     isLoading,

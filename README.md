@@ -10,6 +10,7 @@ A self-hosted database backup management tool. Schedule automated backups, monit
 - Automated scheduling with cron syntax
 - S3-compatible storage integration
 - Built-in backup comparison and diff viewer
+- Database restore functionality
 - Email notifications for failed backups
 - Responsive web interface
 

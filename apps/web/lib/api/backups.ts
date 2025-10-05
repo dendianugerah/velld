@@ -7,6 +7,11 @@ export interface GetBackupsParams {
   search?: string;
 }
 
+export interface RestoreBackupParams {
+  backup_id: string;
+  connection_id: string;
+}
+
 export async function saveBackup(connectionId: string): Promise<void> {
   return apiRequest('/api/backups', {
     method: 'POST',
@@ -72,5 +77,12 @@ export async function getBackupStats(): Promise<BackupStatsResponse> {
 export async function compareBackups(sourceId: string, targetId: string): Promise<BackupDiffResponse> {
   return apiRequest<BackupDiffResponse>(`/api/backups/compare/${sourceId}/${targetId}`, {
     method: 'GET',
+  });
+}
+
+export async function restoreBackup(params: RestoreBackupParams): Promise<void> {
+  return apiRequest('/api/backups/restore', {
+    method: 'POST',
+    body: JSON.stringify(params),
   });
 }
