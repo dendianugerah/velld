@@ -35,7 +35,7 @@ docker pull ghcr.io/dendianugerah/velld/web:latest
 cat > .env << EOF
 NEXT_PUBLIC_API_URL=http://localhost:8080
 JWT_SECRET=your-super-secret-jwt-key
-ENCRYPTION_KEY=your-32-byte-encryption-key
+ENCRYPTION_KEY=your-32-byte-encryption-key / $(openssl rand -hex 32)
 ADMIN_USERNAME_CREDENTIAL=admin
 ADMIN_PASSWORD_CREDENTIAL=changeme
 ALLOW_REGISTER=true
