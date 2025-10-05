@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Database, Download, MoreVertical, History, GitCompare } from "lucide-react";
+import { Database, Download, MoreVertical, History, GitCompare, RefreshCw } from "lucide-react";
 import { formatDistanceToNow, parseISO, subDays, isAfter } from "date-fns";
 import { useBackup } from "@/hooks/use-backup";
 import { BackupList } from "@/types/backup";
@@ -17,12 +17,14 @@ import { useNotifications } from '@/hooks/use-notifications';
 import { NotificationSidebar } from "./notification-sidebar";
 import { BackupCompareDialog } from "./backup-compare-dialog";
 import { useState, useMemo } from "react";
+import { useIsFetching } from "@tanstack/react-query";
 
 export function HistoryList() {
   const { backups, isLoading, pagination, page, setPage, downloadBackupFile, isDownloading, search, setSearch } = useBackup();
   const { notifications, isLoading: isLoadingNotifications, markNotificationsAsRead } = useNotifications();
   const [compareDialogOpen, setCompareDialogOpen] = useState(false);
   const [selectedBackupForCompare, setSelectedBackupForCompare] = useState<BackupList | undefined>();
+  const isFetchingBackups = useIsFetching({ queryKey: ['backups'] });
   
   const [dateRange, setDateRange] = useState("all");
   const [status, setStatus] = useState("all");
@@ -85,7 +87,15 @@ export function HistoryList() {
       <div className="flex flex-col h-full">
         <div className="p-6 border-b">
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Recent Backups</h3>
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold">Recent Backups</h3>
+              {isFetchingBackups > 0 && !isLoading && (
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <RefreshCw className="h-3 w-3 animate-spin" />
+                  <span>Updating...</span>
+                </div>
+              )}
+            </div>
             <HistoryFilters 
               onCompare={filteredBackups && filteredBackups.length > 1 ? () => handleCompare() : undefined}
               search={search}

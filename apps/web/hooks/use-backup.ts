@@ -21,11 +21,15 @@ export function useBackup() {
     queryKey: ['backups', { page, limit, search }],
     queryFn: () => getBackups({ page, limit, search }),
     placeholderData: (previousData) => previousData,
+    refetchInterval: 30000,
+    refetchIntervalInBackground: false,
   });
 
   const { data: stats, isLoading: isLoadingStats } = useQuery({
     queryKey: ['backup-stats'],
     queryFn: () => getBackupStats(),
+    refetchInterval: 30000,
+    refetchIntervalInBackground: false,
   });
 
   const { mutate: createBackup, isPending: isCreating } = useMutation({
