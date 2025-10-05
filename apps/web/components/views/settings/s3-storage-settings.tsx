@@ -384,7 +384,8 @@ export function S3StorageSettings() {
               <Button
                 onClick={handleTestConnection}
                 variant="outline"
-                disabled={isTesting || !formData.s3_endpoint || !formData.s3_bucket}
+                // disabled={isTesting || !formData.s3_endpoint || !formData.s3_bucket}
+                disabled={true}
               >
                 {isTesting ? (
                   <>

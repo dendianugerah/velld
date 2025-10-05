@@ -9,15 +9,35 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useBackup } from "@/hooks/use-backup";
 import { Search, GitCompare } from "lucide-react";
 
 interface HistoryFiltersProps {
   onCompare?: () => void;
+  search: string;
+  onSearchChange: (value: string) => void;
+  dateRange: string;
+  onDateRangeChange: (value: string) => void;
+  status: string;
+  onStatusChange: (value: string) => void;
+  databaseType: string;
+  onDatabaseTypeChange: (value: string) => void;
+  onReset: () => void;
+  isLoading?: boolean;
 }
 
-export function HistoryFilters({ onCompare }: HistoryFiltersProps) {
-  const { search, setSearch, isLoading } = useBackup();
+export function HistoryFilters({ 
+  onCompare, 
+  search,
+  onSearchChange,
+  dateRange,
+  onDateRangeChange,
+  status,
+  onStatusChange,
+  databaseType,
+  onDatabaseTypeChange,
+  onReset,
+  isLoading
+}: HistoryFiltersProps) {
   
   return (
     <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
@@ -27,26 +47,26 @@ export function HistoryFilters({ onCompare }: HistoryFiltersProps) {
           type="text"
           placeholder="Search history..."
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => onSearchChange(e.target.value)}
           className="pl-10"
           disabled={isLoading}
         />
       </div>
       
       <div className="flex items-center gap-2 w-full sm:w-auto">
-        <Select defaultValue="7days">
+        <Select value={dateRange} onValueChange={onDateRangeChange}>
           <SelectTrigger className="w-full sm:w-[140px]">
             <SelectValue placeholder="Last 7 Days" />
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value="all">All Time</SelectItem>
             <SelectItem value="24hours">Last 24 Hours</SelectItem>
             <SelectItem value="7days">Last 7 Days</SelectItem>
             <SelectItem value="30days">Last 30 Days</SelectItem>
-            <SelectItem value="custom">Custom Range</SelectItem>
           </SelectContent>
         </Select>
 
-        <Select defaultValue="all">
+        <Select value={status} onValueChange={onStatusChange}>
           <SelectTrigger className="w-full sm:w-[130px]">
             <SelectValue placeholder="All Status" />
           </SelectTrigger>
@@ -58,7 +78,7 @@ export function HistoryFilters({ onCompare }: HistoryFiltersProps) {
           </SelectContent>
         </Select>
 
-        <Select defaultValue="all">
+        <Select value={databaseType} onValueChange={onDatabaseTypeChange}>
           <SelectTrigger className="w-full sm:w-[140px]">
             <SelectValue placeholder="All Databases" />
           </SelectTrigger>
@@ -82,7 +102,7 @@ export function HistoryFilters({ onCompare }: HistoryFiltersProps) {
           </Button>
         )}
 
-        <Button variant="ghost" size="sm">
+        <Button variant="ghost" size="sm" onClick={onReset}>
           Reset Filters
         </Button>
       </div>

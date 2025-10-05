@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Database, Download, MoreVertical, History, GitCompare } from "lucide-react";
-import { formatDistanceToNow, parseISO } from "date-fns";
+import { formatDistanceToNow, parseISO, subDays, isAfter } from "date-fns";
 import { useBackup } from "@/hooks/use-backup";
 import { BackupList } from "@/types/backup";
 import { statusColors } from "@/types/base";
@@ -16,24 +16,69 @@ import { CustomPagination } from "@/components/ui/custom-pagination";
 import { useNotifications } from '@/hooks/use-notifications';
 import { NotificationSidebar } from "./notification-sidebar";
 import { BackupCompareDialog } from "./backup-compare-dialog";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 
 export function HistoryList() {
-  const { backups, isLoading, pagination, page, setPage, downloadBackupFile, isDownloading } = useBackup();
+  const { backups, isLoading, pagination, page, setPage, downloadBackupFile, isDownloading, search, setSearch } = useBackup();
   const { notifications, isLoading: isLoadingNotifications, markNotificationsAsRead } = useNotifications();
   const [compareDialogOpen, setCompareDialogOpen] = useState(false);
   const [selectedBackupForCompare, setSelectedBackupForCompare] = useState<BackupList | undefined>();
+  
+  const [dateRange, setDateRange] = useState("all");
+  const [status, setStatus] = useState("all");
+  const [databaseType, setDatabaseType] = useState("all");
+
   const totalPages = pagination?.total_pages || 1;
 
   const handleCompare = (backup?: BackupList) => {
     if (backup) {
       setSelectedBackupForCompare(backup);
-    } else if (backups && backups.length > 0) {
-      // Default to first backup if no backup specified
-      setSelectedBackupForCompare(backups[0]);
+    } else if (filteredBackups && filteredBackups.length > 0) {
+      setSelectedBackupForCompare(filteredBackups[0]);
     }
     setCompareDialogOpen(true);
   };
+
+  const handleResetFilters = () => {
+    setSearch("");
+    setDateRange("all");
+    setStatus("all");
+    setDatabaseType("all");
+  };
+
+  const filteredBackups = useMemo(() => {
+    if (!backups) return [];
+
+    return backups.filter((backup) => {
+      const searchLower = search.toLowerCase();
+      const matchesSearch = !search || 
+        backup.path.toLowerCase().includes(searchLower) ||
+        backup.database_type.toLowerCase().includes(searchLower);
+
+      let matchesDateRange = true;
+      if (dateRange !== "all") {
+        const backupDate = parseISO(backup.created_at);
+        const now = new Date();
+        
+        switch (dateRange) {
+          case "24hours":
+            matchesDateRange = isAfter(backupDate, subDays(now, 1));
+            break;
+          case "7days":
+            matchesDateRange = isAfter(backupDate, subDays(now, 7));
+            break;
+          case "30days":
+            matchesDateRange = isAfter(backupDate, subDays(now, 30));
+            break;
+        }
+      }
+
+      const matchesStatus = status === "all" || backup.status.toLowerCase() === status.toLowerCase();
+      const matchesDatabaseType = databaseType === "all" || backup.database_type.toLowerCase() === databaseType.toLowerCase();
+
+      return matchesSearch && matchesDateRange && matchesStatus && matchesDatabaseType;
+    });
+  }, [backups, search, dateRange, status, databaseType]);
 
   return (
     <Card className="col-span-3 bg-card border">
@@ -42,7 +87,17 @@ export function HistoryList() {
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">Recent Backups</h3>
             <HistoryFilters 
-              onCompare={backups && backups.length > 1 ? () => handleCompare() : undefined}
+              onCompare={filteredBackups && filteredBackups.length > 1 ? () => handleCompare() : undefined}
+              search={search}
+              onSearchChange={setSearch}
+              dateRange={dateRange}
+              onDateRangeChange={setDateRange}
+              status={status}
+              onStatusChange={setStatus}
+              databaseType={databaseType}
+              onDatabaseTypeChange={setDatabaseType}
+              onReset={handleResetFilters}
+              isLoading={isLoading}
             />
           </div>
         </div>
@@ -51,9 +106,9 @@ export function HistoryList() {
             <div className="flex-1 space-y-4">
               {isLoading ? (
                 <HistoryListSkeleton />
-              ) : backups && backups.length > 0 ? (
+              ) : filteredBackups && filteredBackups.length > 0 ? (
                 <>
-                  {backups.map((item: BackupList) => (
+                  {filteredBackups.map((item: BackupList) => (
                     <div
                       key={item.id}
                       className="p-4 rounded-lg bg-background/50 hover:bg-background/60 transition-colors border"
@@ -105,9 +160,9 @@ export function HistoryList() {
                             >
                               <Download className="h-4 w-4" />
                             </Button>
-                            <Button variant="ghost" size="icon" title="More options">
+                            {/* <Button variant="ghost" size="icon" title="More options">
                               <MoreVertical className="h-4 w-4" />
-                            </Button>
+                            </Button> */}
                           </div>
                         </div>
                       </div>
@@ -124,7 +179,7 @@ export function HistoryList() {
               )}
             </div>
             
-            {pagination && backups && backups.length > 0 && (
+            {pagination && filteredBackups && filteredBackups.length > 0 && (
               <div className="pt-6 flex justify-end border-t mt-4">
                 <CustomPagination
                   currentPage={page}
@@ -149,7 +204,7 @@ export function HistoryList() {
           setCompareDialogOpen(false);
           setSelectedBackupForCompare(undefined);
         }}
-        backups={backups || []}
+        backups={filteredBackups || []}
         selectedBackup={selectedBackupForCompare}
       />
     </Card>
