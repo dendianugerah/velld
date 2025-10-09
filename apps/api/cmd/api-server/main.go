@@ -76,6 +76,8 @@ func main() {
 	protected.HandleFunc("/auth/profile", authHandler.GetProfile).Methods("GET", "OPTIONS")
 
 	protected.HandleFunc("/connections/test", connHandler.TestConnection).Methods("POST", "OPTIONS")
+	protected.HandleFunc("/connections/{id}", connHandler.GetConnection).Methods("GET", "OPTIONS")
+	protected.HandleFunc("/connections/{id}", connHandler.DeleteConnection).Methods("DELETE", "OPTIONS")
 	protected.HandleFunc("/connections", connHandler.SaveConnection).Methods("POST", "OPTIONS")
 	protected.HandleFunc("/connections", connHandler.ListConnections).Methods("GET", "OPTIONS")
 	protected.HandleFunc("/connections", connHandler.UpdateConnection).Methods("PUT", "OPTIONS")
