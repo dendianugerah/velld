@@ -13,7 +13,6 @@ import {
 } from '@/components/ui/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { 
-  Clock, 
   Play, 
   CheckCircle2, 
   Pencil, 

@@ -51,7 +51,6 @@ export function EditConnectionDialog({
   const [sshAuthMethod, setSSHAuthMethod] = useState<"password" | "key">("password");
 
   const { editConnection, isEditing } = useConnections();
-  const { toast } = useToast();
 
   useEffect(() => {
     if (connection) {
