@@ -116,7 +116,13 @@ func (s *BackupService) CreateBackup(connectionID string) (*Backup, error) {
 	backupID := uuid.New()
 	timestamp := time.Now().Format("20060102_150405")
 	filename := fmt.Sprintf("%s_%s.sql", conn.DatabaseName, timestamp)
-	backupPath := filepath.Join(s.backupDir, filename)
+
+	connectionFolder := filepath.Join(s.backupDir, common.SanitizeConnectionName(conn.Name))
+	if err := os.MkdirAll(connectionFolder, 0755); err != nil {
+		return nil, fmt.Errorf("failed to create connection backup folder: %v", err)
+	}
+
+	backupPath := filepath.Join(connectionFolder, filename)
 
 	backup := &Backup{
 		ID:           backupID,
