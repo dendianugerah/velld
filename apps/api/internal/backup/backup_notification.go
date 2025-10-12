@@ -32,7 +32,7 @@ func (s *BackupService) createFailureNotification(connID string, backupErr error
 		return fmt.Errorf("invalid user ID for connection: %s", connID)
 	}
 
-	userSettings, err := s.settingsRepo.GetUserSettings(conn.UserID)
+	userSettings, err := s.settingsService.GetUserSettingsInternal(conn.UserID)
 	if err != nil {
 		log.Printf("Failed to get user settings: %v", err)
 		return fmt.Errorf("failed to get user settings: %v", err)
@@ -102,32 +102,40 @@ func (s *BackupService) sendWebhookNotification(webhookURL string, data map[stri
 	}
 }
 
-func (s *BackupService) sendEmailNotification(email string, settings *settings.UserSettings, data map[string]interface{}) error {
-	if settings == nil {
+func (s *BackupService) sendEmailNotification(email string, userSettings *settings.UserSettings, data map[string]interface{}) error {
+	if userSettings == nil {
 		return fmt.Errorf("settings cannot be nil")
 	}
 
-	if settings.SMTPHost == nil || settings.SMTPUsername == nil ||
-		settings.SMTPPassword == nil || settings.SMTPPort == nil {
+	if userSettings.SMTPHost == nil || userSettings.SMTPUsername == nil ||
+		userSettings.SMTPPassword == nil || userSettings.SMTPPort == nil {
 		return fmt.Errorf("incomplete SMTP configuration")
 	}
 
-	decryptedPassword, err := s.cryptoService.Decrypt(*settings.SMTPPassword)
-	if err != nil {
-		return fmt.Errorf("failed to decrypt SMTP password: %v", err)
+	// Check if password is from environment variable (plain text) or database (encrypted)
+	password := *userSettings.SMTPPassword
+
+	// If password is configured via env var, it's already plain text
+	// Otherwise, it's encrypted in the database and needs to be decrypted
+	if userSettings.EnvConfigured == nil || !userSettings.EnvConfigured["smtp_password"] {
+		decryptedPassword, err := s.cryptoService.Decrypt(password)
+		if err != nil {
+			return fmt.Errorf("failed to decrypt SMTP password: %v", err)
+		}
+		password = decryptedPassword
 	}
 
 	smtpConfig := &mail.SMTPConfig{
-		Host:     *settings.SMTPHost,
-		Port:     *settings.SMTPPort,
-		Username: *settings.SMTPUsername,
-		Password: decryptedPassword,
+		Host:     *userSettings.SMTPHost,
+		Port:     *userSettings.SMTPPort,
+		Username: *userSettings.SMTPUsername,
+		Password: password,
 	}
 
 	msg := &mail.Message{
-		From:    *settings.SMTPUsername,
+		From:    *userSettings.SMTPUsername,
 		To:      email,
-		Subject: "Backup Failed",
+		Subject: "Velld - Backup Failed",
 		Body:    fmt.Sprintf("Backup failed for database '%s'. Error: %v", data["database_name"], data["error"]),
 	}
 

@@ -29,6 +29,7 @@ type UserSettings struct {
 	S3PathPrefix *string   `json:"s3_path_prefix,omitempty"`
 	CreatedAt    time.Time `json:"created_at"`
 	UpdatedAt    time.Time `json:"updated_at"`
+	EnvConfigured map[string]bool `json:"env_configured,omitempty"`
 }
 
 type UpdateSettingsRequest struct {

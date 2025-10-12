@@ -388,7 +388,11 @@ cp .env.example .env
 
 ### Optional: Email Notifications
 
-Configure SMTP to get notified when backups fail:
+Configure SMTP to get notified when backups fail. You can configure these either:
+- **Via UI**: Go to Settings → Notifications (recommended for most users)
+- **Via Environment Variables**: Set below variables (useful for Docker/Kubernetes deployments)
+
+When configured via environment variables, these settings become **read-only in the UI** and cannot be changed from the web interface.
 
 | Variable | Description | Default |
 |----------|-------------|---------|

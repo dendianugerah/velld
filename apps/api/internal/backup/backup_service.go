@@ -22,7 +22,7 @@ type BackupService struct {
 	backupRepo       *BackupRepository
 	cronManager      *cron.Cron
 	cronEntries      map[string]cron.EntryID // map[scheduleID]entryID
-	settingsRepo     *settings.SettingsRepository
+	settingsService  *settings.SettingsService
 	notificationRepo *notification.NotificationRepository
 	cryptoService    *common.EncryptionService
 }
@@ -31,7 +31,7 @@ func NewBackupService(
 	connStorage *connection.ConnectionRepository,
 	backupDir string,
 	backupRepo *BackupRepository,
-	settingsRepo *settings.SettingsRepository,
+	settingsService *settings.SettingsService,
 	notificationRepo *notification.NotificationRepository,
 	cryptoService *common.EncryptionService,
 ) *BackupService {
@@ -44,7 +44,7 @@ func NewBackupService(
 		connStorage:      connStorage,
 		backupDir:        backupDir,
 		backupRepo:       backupRepo,
-		settingsRepo:     settingsRepo,
+		settingsService:  settingsService,
 		notificationRepo: notificationRepo,
 		cryptoService:    cryptoService,
 		cronManager:      cronManager,
@@ -201,7 +201,7 @@ func (s *BackupService) GetBackupStats(userID uuid.UUID) (*BackupStats, error) {
 }
 
 func (s *BackupService) uploadToS3IfEnabled(backup *Backup, userID uuid.UUID) error {
-	userSettings, err := s.settingsRepo.GetUserSettings(userID)
+	userSettings, err := s.settingsService.GetUserSettings(userID)
 	if err != nil {
 		return fmt.Errorf("failed to get user settings: %w", err)
 	}
