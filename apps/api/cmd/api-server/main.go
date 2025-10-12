@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net/http"
+	"os"
 	"path/filepath"
 
 	"github.com/dendianugerah/velld/internal"
@@ -20,7 +21,17 @@ import (
 
 func main() {
 	secrets := common.GetSecrets()
-	dbPath := filepath.Join("internal", "database", "velld.db")
+
+	dbPath := os.Getenv("DB_PATH")
+	if dbPath == "" {
+		dbPath = filepath.Join("data", "velld.db")
+	}
+
+	dbDir := filepath.Dir(dbPath)
+	if err := os.MkdirAll(dbDir, 0755); err != nil {
+		log.Fatalf("Failed to create database directory: %v", err)
+	}
+
 	db, err := database.Init(dbPath)
 	if err != nil {
 		log.Fatalf("Failed to initialize database: %v", err)
@@ -61,7 +72,6 @@ func main() {
 	r := mux.NewRouter()
 	r.Use(middleware.CORS)
 
-	// Add health check endpoint
 	healthHandler := internal.NewHealthHandler(db)
 	r.HandleFunc("/health", healthHandler.CheckHealth).Methods("GET", "OPTIONS")
 
@@ -120,7 +130,6 @@ func main() {
 	protected.HandleFunc("/notifications", notificationHandler.GetNotifications).Methods("GET", "OPTIONS")
 	protected.HandleFunc("/notifications/mark-read", notificationHandler.MarkAsRead).Methods("POST", "OPTIONS")
 
-	// Start server
 	log.Println("Server starting on :8080")
 	if err := http.ListenAndServe(":8080", r); err != nil {
 		log.Fatal(err)
