@@ -6,7 +6,9 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"runtime"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -105,4 +107,24 @@ func GetPlatformExecutableName(name string) string {
 		return name + ".exe"
 	}
 	return name
+}
+
+func SanitizeConnectionName(name string) string {
+	name = strings.ToLower(name)
+
+	re := regexp.MustCompile(`[^a-z0-9]+`)
+	sanitized := re.ReplaceAllString(name, "_")
+
+	sanitized = strings.Trim(sanitized, "_")
+
+	if len(sanitized) > 200 {
+		sanitized = sanitized[:200]
+		sanitized = strings.TrimRight(sanitized, "_")
+	}
+
+	if sanitized == "" {
+		sanitized = "backup"
+	}
+
+	return sanitized
 }
