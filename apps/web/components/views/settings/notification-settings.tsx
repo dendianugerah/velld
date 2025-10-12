@@ -127,50 +127,85 @@ export function NotificationSettings() {
             {settings?.notify_email && (
               <div className="ml-4 pl-6 border-l-2 space-y-4">
                 <div className="grid gap-2">
-                  <Label className="text-sm">Email Address</Label>
+                  <Label className="text-sm">
+                    Email Address
+                    {settings?.env_configured?.email && (
+                      <span className="ml-2 text-xs text-muted-foreground">(set via environment variable)</span>
+                    )}
+                  </Label>
                   <Input
                     type="email"
                     placeholder="your@email.com"
                     defaultValue={settings?.email || ''}
                     onChange={(e) => handleChange('email', e.target.value)}
+                    disabled={settings?.env_configured?.email}
+                    className={settings?.env_configured?.email ? 'bg-muted cursor-not-allowed' : ''}
                   />
                 </div>
                 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
-                    <Label className="text-sm">SMTP Host</Label>
+                    <Label className="text-sm">
+                      SMTP Host
+                      {settings?.env_configured?.smtp_host && (
+                        <span className="ml-2 text-xs text-muted-foreground">(env var)</span>
+                      )}
+                    </Label>
                     <Input
                       placeholder="smtp.gmail.com"
                       defaultValue={settings.smtp_host}
                       onChange={(e) => handleChange('smtp_host', e.target.value)}
+                      disabled={settings?.env_configured?.smtp_host}
+                      className={settings?.env_configured?.smtp_host ? 'bg-muted cursor-not-allowed' : ''}
                     />
                   </div>
                   <div className="grid gap-2">
-                    <Label className="text-sm">SMTP Port</Label>
+                    <Label className="text-sm">
+                      SMTP Port
+                      {settings?.env_configured?.smtp_port && (
+                        <span className="ml-2 text-xs text-muted-foreground">(env var)</span>
+                      )}
+                    </Label>
                     <Input
                       type="number"
                       placeholder="587"
                       defaultValue={settings?.smtp_port?.toString() || ''}
                       onChange={(e) => handleChange('smtp_port', parseInt(e.target.value))}
+                      disabled={settings?.env_configured?.smtp_port}
+                      className={settings?.env_configured?.smtp_port ? 'bg-muted cursor-not-allowed' : ''}
                     />
                   </div>
                 </div>
 
                 <div className="grid gap-2">
-                  <Label className="text-sm">SMTP Username</Label>
+                  <Label className="text-sm">
+                    SMTP Username
+                    {settings?.env_configured?.smtp_username && (
+                      <span className="ml-2 text-xs text-muted-foreground">(env var)</span>
+                    )}
+                  </Label>
                   <Input
                     placeholder="username"
                     defaultValue={settings.smtp_username}
                     onChange={(e) => handleChange('smtp_username', e.target.value)}
+                    disabled={settings?.env_configured?.smtp_username}
+                    className={settings?.env_configured?.smtp_username ? 'bg-muted cursor-not-allowed' : ''}
                   />
                 </div>
                 
                 <div className="grid gap-2">
-                  <Label className="text-sm">SMTP Password</Label>
+                  <Label className="text-sm">
+                    SMTP Password
+                    {settings?.env_configured?.smtp_password && (
+                      <span className="ml-2 text-xs text-muted-foreground">(env var)</span>
+                    )}
+                  </Label>
                   <Input
                     type="password"
                     placeholder="••••••••"
                     onChange={(e) => handleChange('smtp_password', e.target.value)}
+                    disabled={settings?.env_configured?.smtp_password}
+                    className={settings?.env_configured?.smtp_password ? 'bg-muted cursor-not-allowed' : ''}
                   />
                   <p className="text-xs text-muted-foreground">
                     Leave empty to keep current password

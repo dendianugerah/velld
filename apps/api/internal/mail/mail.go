@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"log"
+	"net"
 	"net/smtp"
 )
 
@@ -22,11 +23,6 @@ type Message struct {
 }
 
 func SendEmail(config *SMTPConfig, msg *Message) error {
-	tlsConfig := &tls.Config{
-		ServerName:         config.Host,
-		InsecureSkipVerify: false,
-	}
-
 	addr := fmt.Sprintf("%s:%d", config.Host, config.Port)
 	auth := smtp.PlainAuth("", config.Username, config.Password, config.Host)
 
@@ -38,9 +34,9 @@ func SendEmail(config *SMTPConfig, msg *Message) error {
 		"\r\n"+
 		"%s\r\n", msg.From, msg.To, msg.Subject, msg.Body)
 
-	conn, err := tls.Dial("tcp", addr, tlsConfig)
+	conn, err := net.Dial("tcp", addr)
 	if err != nil {
-		log.Printf("Failed to create TLS connection: %v", err)
+		log.Printf("Failed to connect to SMTP server: %v", err)
 		return err
 	}
 	defer conn.Close()
@@ -52,6 +48,21 @@ func SendEmail(config *SMTPConfig, msg *Message) error {
 	}
 	defer client.Close()
 
+	if err = client.Hello("localhost"); err != nil {
+		log.Printf("Failed to send EHLO: %v", err)
+		return err
+	}
+
+	tlsConfig := &tls.Config{
+		ServerName:         config.Host,
+		InsecureSkipVerify: false,
+	}
+
+	if err = client.StartTLS(tlsConfig); err != nil {
+		log.Printf("Failed to start TLS: %v", err)
+		return err
+	}
+
 	if err = client.Auth(auth); err != nil {
 		log.Printf("Failed to authenticate: %v", err)
 		return err
@@ -61,6 +72,7 @@ func SendEmail(config *SMTPConfig, msg *Message) error {
 		log.Printf("Failed to set sender: %v", err)
 		return err
 	}
+
 	if err = client.Rcpt(msg.To); err != nil {
 		log.Printf("Failed to set recipient: %v", err)
 		return err

@@ -95,12 +95,13 @@ func main() {
 	backupRepo := backup.NewBackupRepository(db)
 	settingsRepo := settings.NewSettingsRepository(db)
 	notificationRepo := notification.NewNotificationRepository(db)
+	settingsService := settings.NewSettingsService(settingsRepo, cryptoService)
 
 	backupService := backup.NewBackupService(
 		connRepo,
 		"./backups",
 		backupRepo,
-		settingsRepo,
+		settingsService,
 		notificationRepo,
 		cryptoService,
 	)
@@ -118,7 +119,6 @@ func main() {
 	protected.HandleFunc("/backups/{connection_id}/schedule/disable", backupHandler.DisableBackupSchedule).Methods("POST", "OPTIONS")
 	protected.HandleFunc("/backups/{connection_id}/schedule", backupHandler.UpdateBackupSchedule).Methods("PUT", "OPTIONS")
 
-	settingsService := settings.NewSettingsService(settingsRepo, cryptoService)
 	settingsHandler := settings.NewSettingsHandler(settingsService)
 
 	protected.HandleFunc("/settings", settingsHandler.GetSettings).Methods("GET", "OPTIONS")

@@ -21,6 +21,7 @@ export interface UserSettings {
   s3_secret_key?: string;
   s3_use_ssl: boolean;
   s3_path_prefix?: string;
+  env_configured?: Record<string, boolean>;
 }
 
 export type UpdateSettingsRequest = Partial<Omit<UserSettings, 'id' | 'user_id'>>;
