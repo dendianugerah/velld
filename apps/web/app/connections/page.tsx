@@ -3,7 +3,6 @@
 import { Sidebar } from "@/components/layout/sidebar";
 import { PageHeader } from "@/components/layout/page-header";
 import { ConnectionsList } from "@/components/views/connections/connection-list";
-import { AddConnectionDialog } from "@/components/views/connections/add-connection-dialog";
 
 export default function ConnectionsPage() {
   return (
@@ -14,7 +13,6 @@ export default function ConnectionsPage() {
           <PageHeader
             title="Connections"
             description="Manage your database connections and sources"
-            action={<AddConnectionDialog />}
           />
 
           <ConnectionsList />

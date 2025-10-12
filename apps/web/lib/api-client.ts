@@ -45,5 +45,13 @@ export async function apiRequest<T>(
     throw new ApiError(response.status, error || `HTTP error! status: ${response.status}`);
   }
 
-  return options.responseType === 'blob' ? response.blob() : response.json();
+  if (response.status === 204) {
+    return undefined as T;
+  }
+
+  if (options.responseType === 'blob') {
+    return response.blob() as T;
+  }
+
+  return response.json();
 }
