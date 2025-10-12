@@ -17,7 +17,8 @@ RUN apk add --no-cache \
     sqlite-libs \
     postgresql-client \
     mysql-client \
-    mongodb-tools
+    mongodb-tools \
+    redis
 
 WORKDIR /app
 

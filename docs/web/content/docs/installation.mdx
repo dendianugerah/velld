@@ -16,7 +16,7 @@ Before you begin, ensure you have:
 
 - **Docker** and **Docker Compose** installed
 - At least **512MB RAM** and **1GB disk space**
-- A database you want to backup (PostgreSQL, MySQL, or MongoDB)
+- A database you want to backup (PostgreSQL, MySQL, MongoDB, or Redis)
 
 <Callout type="info">
   Velld only installs the database clients you need. This keeps the Docker image lightweight and secure.
@@ -60,7 +60,7 @@ docker run -d \
 ```
 
 <Callout type="warning">
-  **Important:** The data directory has changed from `/app/internal/database` to `/app/data`. If you're upgrading from an older version, see the [migration guide](#migrating-from-older-versions).
+  **Important:** The data directory has changed from `/app/internal/database` to `/app/data`.
 </Callout>
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
@@ -477,11 +477,3 @@ lsof -i :8080
 - Check backup directory permissions
 
 ---
-
-## Next Steps
-
-<Cards>
-  <Card title="Quick Start Guide" href="/docs/quick-start" description="Learn how to create your first backup" />
-  <Card title="Configuration" href="/docs/configuration" description="Configure Velld for your needs" />
-  <Card title="Database Setup" href="/docs/databases" description="Connect your databases" />
-</Cards>

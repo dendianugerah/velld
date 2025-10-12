@@ -136,6 +136,8 @@ func (s *BackupService) CreateBackup(connectionID string) (*Backup, error) {
 		cmd = s.createMySQLDumpCmd(conn, backupPath)
 	case "mongodb":
 		cmd = s.createMongoDumpCmd(conn, backupPath)
+	case "redis":
+		cmd = s.createRedisDumpCmd(conn, backupPath)
 	default:
 		return nil, fmt.Errorf("unsupported database type for backup: %s", conn.Type)
 	}

@@ -6,7 +6,7 @@ A self-hosted database backup management tool. Schedule automated backups, monit
 
 ## Features
 
-- Multiple database support (PostgreSQL, MySQL, MongoDB)
+- Multiple database support (PostgreSQL, MySQL, MongoDB, Redis)
 - Automated scheduling with cron syntax
 - S3-compatible storage integration
 - Built-in backup comparison and diff viewer

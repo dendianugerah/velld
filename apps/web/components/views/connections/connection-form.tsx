@@ -64,6 +64,8 @@ export function ConnectionForm({ onSuccess, onCancel }: ConnectionFormProps) {
         'mysql': 'mysql',
         'mongodb': 'mongodb',
         'mongo': 'mongodb',
+        'redis': 'redis',
+        'rediss': 'redis',
       };
       
       const mappedType = typeMapping[type];
@@ -72,7 +74,7 @@ export function ConnectionForm({ onSuccess, onCancel }: ConnectionFormProps) {
         toast({
           variant: "destructive",
           title: "Unsupported Database Type",
-          description: `The database type "${type}" is not supported. Supported types: PostgreSQL, MySQL, MongoDB`,
+          description: `The database type "${type}" is not supported. Supported types: PostgreSQL, MySQL, MongoDB, Redis`,
         });
         return false;
       }
@@ -115,6 +117,7 @@ export function ConnectionForm({ onSuccess, onCancel }: ConnectionFormProps) {
       'postgresql': 5432,
       'mysql': 3306,
       'mongodb': 27017,
+      'redis': 6379,
     };
     return ports[type] || 5432;
   };
@@ -250,6 +253,7 @@ export function ConnectionForm({ onSuccess, onCancel }: ConnectionFormProps) {
             <SelectItem value="mysql">MySQL</SelectItem>
             <SelectSeparator />
             <SelectItem value="mongodb">MongoDB</SelectItem>
+            <SelectItem value="redis">Redis</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -278,20 +282,24 @@ export function ConnectionForm({ onSuccess, onCancel }: ConnectionFormProps) {
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="username">Username</Label>
+          <Label htmlFor="username">
+            Username {formData.type === 'redis' && <span className="text-xs text-muted-foreground">(optional)</span>}
+          </Label>
           <Input
             id="username"
-            required
+            required={formData.type !== 'redis'}
             value={formData.username || ''}
             onChange={(e) => setFormData({ ...formData, username: e.target.value })}
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="password">Password</Label>
+          <Label htmlFor="password">
+            Password {formData.type === 'redis' && <span className="text-xs text-muted-foreground">(optional)</span>}
+          </Label>
           <Input
             id="password"
             type="password"
-            required
+            required={formData.type !== 'redis'}
             value={formData.password || ''}
             onChange={(e) => setFormData({ ...formData, password: e.target.value })}
           />
@@ -299,10 +307,15 @@ export function ConnectionForm({ onSuccess, onCancel }: ConnectionFormProps) {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="database">Database Name</Label>
+        <Label htmlFor="database">
+          Database Name
+          {formData.type === 'redis' && <span className="text-xs text-muted-foreground ml-1">(optional)</span>}
+          {formData.type === 'mongodb' && <span className="text-xs text-muted-foreground ml-1">(optional)</span>}
+        </Label>
         <Input
           id="database"
-          required
+          required={formData.type !== 'redis' && formData.type !== 'mongodb'}
+          placeholder={formData.type === 'redis' ? 'Leave empty for default (0)' : formData.type === 'mongodb' ? 'Leave empty for admin' : ''}
           value={formData.database || ''}
           onChange={(e) => setFormData({ ...formData, database: e.target.value })}
         />
@@ -507,7 +520,7 @@ export function ConnectionForm({ onSuccess, onCancel }: ConnectionFormProps) {
       <div className="flex space-x-2 pt-2">
         <Button 
           type="submit" 
-          disabled={isAdding || !formData.type || !formData.host || !formData.database}
+          disabled={isAdding || !formData.type || !formData.host}
         >
           {isAdding ? (
             <>

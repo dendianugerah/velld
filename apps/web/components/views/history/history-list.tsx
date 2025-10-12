@@ -17,6 +17,7 @@ import { useNotifications } from '@/hooks/use-notifications';
 import { NotificationSidebar } from "./notification-sidebar";
 import { BackupCompareDialog } from "./backup-compare-dialog";
 import { RestoreDialog } from "./restore-dialog";
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import { useState, useMemo } from "react";
 import { useIsFetching } from "@tanstack/react-query";
 
@@ -223,31 +224,53 @@ export function HistoryList() {
                             </p>
                           </div>
                           <div className="flex space-x-2">
-                            <Button 
-                              variant="ghost" 
-                              size="icon"
-                              onClick={() => handleRestore(item)}
-                              title="Restore this backup"
-                            >
-                              <RotateCcw className="h-4 w-4" />
-                            </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="icon"
-                              onClick={() => handleCompare(item)}
-                              title="Compare with another backup"
-                            >
-                              <GitCompare className="h-4 w-4" />
-                            </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              onClick={() => downloadBackupFile({ id: item.id, path: item.path })}
-                              disabled={isDownloading}
-                              title="Download backup"
-                            >
-                              <Download className="h-4 w-4" />
-                            </Button>
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => handleRestore(item)}
+                                    >
+                                    <RotateCcw className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent side="top">
+                                  <p className="text-xs">Restore this backup</p>
+                                </TooltipContent>
+                              </Tooltip>
+
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => handleCompare(item)}
+                                    >
+                                    <GitCompare className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent side="top">
+                                  <p className="text-xs">Compare with another backup</p>
+                                </TooltipContent>
+                              </Tooltip>
+
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => downloadBackupFile({ id: item.id, path: item.path })}
+                                    disabled={isDownloading}
+                                    >
+                                    <Download className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent side="top">
+                                  <p className="text-xs">Download backup</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
                           </div>
                         </div>
                       </div>
