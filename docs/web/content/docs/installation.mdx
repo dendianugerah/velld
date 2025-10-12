@@ -34,8 +34,8 @@ docker pull ghcr.io/dendianugerah/velld/web:latest
 # Create .env file
 cat > .env << EOF
 NEXT_PUBLIC_API_URL=http://localhost:8080
-JWT_SECRET=your-super-secret-jwt-key
-ENCRYPTION_KEY=your-32-byte-encryption-key / $(openssl rand -hex 32)
+JWT_SECRET=$(openssl rand -hex 32)
+ENCRYPTION_KEY=$(openssl rand -hex 32)
 ADMIN_USERNAME_CREDENTIAL=admin
 ADMIN_PASSWORD_CREDENTIAL=changeme
 ALLOW_REGISTER=true
@@ -46,7 +46,7 @@ docker run -d \
   --name velld-api \
   -p 8080:8080 \
   --env-file .env \
-  -v velld-data:/app/internal/database \
+  -v velld-data:/app/data \
   -v velld-backups:/app/backups \
   ghcr.io/dendianugerah/velld/api:latest
 
@@ -58,6 +58,10 @@ docker run -d \
   -e ALLOW_REGISTER=true \
   ghcr.io/dendianugerah/velld/web:latest
 ```
+
+<Callout type="warning">
+  **Important:** The data directory has changed from `/app/internal/database` to `/app/data`. If you're upgrading from an older version, see the [migration guide](#migrating-from-older-versions).
+</Callout>
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
@@ -145,7 +149,7 @@ Choose only the database client you need to keep your installation lightweight:
         env_file:
           - .env
         volumes:
-          - api_data:/app/internal/database
+          - api_data:/app/data
           - backup_data:/app/backups
         restart: unless-stopped
 
@@ -229,7 +233,7 @@ Choose only the database client you need to keep your installation lightweight:
         env_file:
           - .env
         volumes:
-          - api_data:/app/internal/database
+          - api_data:/app/data
           - backup_data:/app/backups
         restart: unless-stopped
 
@@ -313,7 +317,7 @@ Choose only the database client you need to keep your installation lightweight:
         env_file:
           - .env
         volumes:
-          - api_data:/app/internal/database
+          - api_data:/app/data
           - backup_data:/app/backups
         restart: unless-stopped
 
@@ -351,32 +355,58 @@ Choose only the database client you need to keep your installation lightweight:
 
 ## Environment Configuration
 
-Create a `.env` file in the project root or copy from `.env.example`:
+Create a `.env` file in the project root:
 
 ```bash
 cp .env.example .env
 ```
 
-### Environment Variables
+### Required Variables
 
-| Variable | Description | Required | Default Behavior |
-|----------|-------------|----------|------------------|
-| `NEXT_PUBLIC_API_URL` | Base URL for the API server | Yes | `http://localhost:8080` |
-| `JWT_SECRET` | Secret key for JWT token signing | Optional | Auto-generated if missing |
-| `ENCRYPTION_KEY` | Key for encrypting sensitive data (database credentials) | Optional | Auto-generated if missing |
-| `ALLOW_REGISTER` | Enable/disable user registration | Optional | `true` |
-| `ADMIN_USERNAME_CREDENTIAL` | Admin username for login | Only if `ALLOW_REGISTER=false` | - |
-| `ADMIN_PASSWORD_CREDENTIAL` | Admin password for login | Only if `ALLOW_REGISTER=false` | - |
-| `SMTP_HOST` | SMTP server hostname for email notifications | Optional | - |
-| `SMTP_PORT` | SMTP server port | Optional | `587` |
-| `SMTP_USER` | Email address for sending notifications | Optional | - |
-| `SMTP_PASSWORD` | SMTP password or app-specific password | Optional | - |
-| `SMTP_FROM` | "From" address in notification emails | Optional | - |
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `NEXT_PUBLIC_API_URL` | API server URL (must be accessible from browser) | `http://localhost:8080` |
+| `JWT_SECRET` | JWT signing key - generate with `openssl rand -hex 32` | 64 hex characters |
+| `ENCRYPTION_KEY` | Database credential encryption key - generate with `openssl rand -hex 32` | 64 hex characters |
+
+<Callout type="error">
+  **Production:** Always set `JWT_SECRET` and `ENCRYPTION_KEY` manually. While they auto-generate if missing, changing keys will log out users and break database connections.
+  
+  ```bash
+  # Generate secure keys
+  openssl rand -hex 32  # Run twice, once for each
+  ```
+</Callout>
+
+### Authentication
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `ALLOW_REGISTER` | Enable public registration | `true` |
+| `ADMIN_USERNAME_CREDENTIAL` | Admin username (required if `ALLOW_REGISTER=false`) | - |
+| `ADMIN_PASSWORD_CREDENTIAL` | Admin password (required if `ALLOW_REGISTER=false`) | - |
+
+### Optional: Email Notifications
+
+Configure SMTP to get notified when backups fail:
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `SMTP_HOST` | SMTP server hostname | - |
+| `SMTP_PORT` | SMTP port | `587` |
+| `SMTP_USER` | SMTP username/email | - |
+| `SMTP_PASSWORD` | SMTP password (use [App Password](https://support.google.com/accounts/answer/185833) for Gmail) | - |
+| `SMTP_FROM` | From address | - |
+
+### Advanced
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `DB_PATH` | Path to Velld's SQLite database | `/app/data/velld.db` |
+| `PORT` | API server port | `8080` |
 
 <Callout type="info">
-  **`ALLOW_REGISTER` Behavior:**
-  - `true` (default) - Anyone can register via `/register`. Admin credentials are not required.
-  - `false` - Registration disabled. `ADMIN_USERNAME_CREDENTIAL` and `ADMIN_PASSWORD_CREDENTIAL` are required for login.
+  **Data Persistence:** Ensure `/app/data` is mounted as a volume to persist your database.
 </Callout>
 
 ---

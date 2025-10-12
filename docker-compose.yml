@@ -9,7 +9,7 @@ services:
     env_file:
       - .env
     volumes:
-      - api_data:/app/internal/database
+      - api_data:/app/data
       - backup_data:/app/backups
     restart: unless-stopped
 

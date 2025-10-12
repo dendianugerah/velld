@@ -12,7 +12,6 @@ A self-hosted database backup management tool. Schedule automated backups, monit
 - Built-in backup comparison and diff viewer
 - Database restore functionality
 - Email notifications for failed backups
-- Responsive web interface
 
 ## Getting Started
 
@@ -24,11 +23,32 @@ Create a `.env` file:
 
 ```bash
 NEXT_PUBLIC_API_URL=http://localhost:8080
+
+# Generate secure keys (IMPORTANT!)
 JWT_SECRET=$(openssl rand -hex 32)
 ENCRYPTION_KEY=$(openssl rand -hex 32)
+
+# Admin credentials
 ADMIN_USERNAME_CREDENTIAL=admin
 ADMIN_PASSWORD_CREDENTIAL=changeme
+
+# Registration (set to false in production)
+ALLOW_REGISTER=true
 ```
+
+> **Important:** The `ENCRYPTION_KEY` must be a **64-character hex string**. Don't use shell commands like `$(openssl rand -hex 32)` directly in `.env` files - they won't execute. Instead, run the command in your terminal and paste the output.
+
+**Generate keys properly:**
+
+```bash
+# Generate and display keys
+echo "JWT_SECRET=$(openssl rand -hex 32)"
+echo "ENCRYPTION_KEY=$(openssl rand -hex 32)"
+
+# Copy the output to your .env file
+```
+
+Start the containers:
 
 ```bash
 docker compose up -d

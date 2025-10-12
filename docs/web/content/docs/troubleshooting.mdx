@@ -317,13 +317,13 @@ See [Installation Guide](/docs/installation) for details.
 
 2. **Check database size:**
    ```bash
-   docker exec velld-api-1 ls -lh /app/internal/database/
+   docker exec velld-api-1 ls -lh /app/data/
    ```
 
 3. **Optimize SQLite database:**
    ```bash
    docker exec velld-api-1 sh
-   sqlite3 /app/internal/database/velld.db "VACUUM;"
+   sqlite3 /app/data/velld.db "VACUUM;"
    ```
 
 ### Backups are Slow
