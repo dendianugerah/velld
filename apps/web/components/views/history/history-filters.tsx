@@ -87,6 +87,7 @@ export function HistoryFilters({
             <SelectItem value="mysql">MySQL</SelectItem>
             <SelectItem value="postgresql">PostgreSQL</SelectItem>
             <SelectItem value="mongodb">MongoDB</SelectItem>
+            <SelectItem value="redis">Redis</SelectItem>
           </SelectContent>
         </Select>
 

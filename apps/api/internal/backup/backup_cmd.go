@@ -15,6 +15,7 @@ var requiredTools = map[string]string{
 	"mysql":      "mysqldump",
 	"mariadb":    "mysqldump",
 	"mongodb":    "mongodump",
+	"redis":      "redis-cli",
 }
 
 func (s *BackupService) verifyBackupTools(dbType string) error {
@@ -120,6 +121,32 @@ func (s *BackupService) createMongoDumpCmd(conn *connection.StoredConnection, ou
 	if conn.Password != "" {
 		args = append(args, "--password", conn.Password)
 	}
+
+	return exec.Command(binPath, args...)
+}
+
+func (s *BackupService) createRedisDumpCmd(conn *connection.StoredConnection, outputPath string) *exec.Cmd {
+	binaryPath := s.findDatabaseBinaryPath("redis")
+	if binaryPath == "" {
+		fmt.Printf("ERROR: redis-cli binary not found. Please install Redis tools.\n")
+		return nil
+	}
+
+	binPath := filepath.Join(binaryPath, common.GetPlatformExecutableName(requiredTools["redis"]))
+	args := []string{
+		"-h", conn.Host,
+		"-p", fmt.Sprintf("%d", conn.Port),
+	}
+
+	if conn.Password != "" {
+		args = append(args, "-a", conn.Password)
+	}
+
+	if conn.DatabaseName != "" {
+		args = append(args, "-n", conn.DatabaseName)
+	}
+
+	args = append(args, "--rdb", outputPath)
 
 	return exec.Command(binPath, args...)
 }

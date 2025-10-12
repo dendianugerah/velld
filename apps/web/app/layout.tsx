@@ -21,7 +21,7 @@ export const metadata: Metadata = {
     default: "Velld",
     template: "%s | Velld",
   },
-  description: "Automated scheduling, monitoring, and recovery for PostgreSQL, MySQL, and MongoDB.",
+  description: "Automated scheduling, monitoring, and recovery for PostgreSQL, MySQL, MongoDB, and Redis.",
   icons: {
     icon: "/logo.ico",
     shortcut: "/logo.ico",
