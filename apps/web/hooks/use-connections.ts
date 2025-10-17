@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { saveConnection, testConnection, getConnections, updateConnection, deleteConnection } from '@/lib/api/connections';
+import { saveConnection, testConnection, getConnection, getConnections, updateConnection, deleteConnection } from '@/lib/api/connections';
 import { ConnectionForm } from '@/types/connection';
 import { useToast } from '@/hooks/use-toast';
 
@@ -40,10 +40,9 @@ export function useConnections() {
       await testConnection(connection);
       await updateConnection(connection);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ 
-        queryKey: ['connections']
-      });
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['connections'] });
+      queryClient.invalidateQueries({ queryKey: ['connection', variables.id] });
       toast({
         title: "Success",
         description: "Connection updated successfully",
@@ -60,10 +59,9 @@ export function useConnections() {
 
   const { mutate: removeConnection, isPending: isDeleting } = useMutation({
     mutationFn: deleteConnection,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ 
-        queryKey: ['connections']
-      });
+    onSuccess: (_data, id) => {
+      queryClient.invalidateQueries({ queryKey: ['connections'] });
+      queryClient.invalidateQueries({ queryKey: ['connection', id] });
       toast({
         title: "Success",
         description: "Connection deleted successfully",
@@ -88,4 +86,14 @@ export function useConnections() {
     removeConnection,
     isDeleting
   };
+}
+
+export function useConnection(id: string | null) {
+  return useQuery({
+    queryKey: ['connection', id],
+    queryFn: () => {
+      return getConnection(id!);
+    },
+    enabled: !!id,
+  });
 }

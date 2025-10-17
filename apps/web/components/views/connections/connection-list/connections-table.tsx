@@ -13,14 +13,12 @@ import {
 } from '@/components/ui/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { 
-  Clock, 
   Play, 
   CheckCircle2, 
   Pencil, 
   Trash2,
   Settings2,
-  ArrowUpDown,
-  Circle
+  ArrowUpDown
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Connection } from '@/types/connection';
@@ -30,7 +28,7 @@ import { useState } from 'react';
 
 interface ConnectionsTableProps {
   connections: Connection[];
-  onEdit: (connection: Connection) => void;
+  onEdit: (connectionId: string) => void;
   onDelete: (connection: Connection) => void;
   onSchedule: (connectionId: string) => void;
 }
@@ -95,13 +93,6 @@ export function ConnectionsTable({
       )} />
     </button>
   );
-
-  const getStatusIcon = (status: string) => {
-    if (status === 'connected') {
-      return <Circle className="h-2 w-2 fill-green-500 text-green-500" />;
-    }
-    return <Circle className="h-2 w-2 fill-gray-400 text-gray-400" />;
-  };
 
   return (
     <div className="w-full">
@@ -253,7 +244,7 @@ export function ConnectionsTable({
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => onEdit(connection)}
+                                onClick={() => onEdit(connection.id)}
                                 className="h-8 w-8 p-0 hover:bg-accent/80 transition-all duration-150 hover:scale-105"
                               >
                                 <Pencil className="h-3.5 w-3.5" />

@@ -9,6 +9,7 @@ export interface Connection {
   username: string;
   password: string;
   database: string;
+  database_name: string;
   database_size: number;
   ssl: boolean;
   ssh_enabled: boolean;
