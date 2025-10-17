@@ -17,7 +17,7 @@ export function ConnectionsList() {
   const { connections, isLoading } = useConnections();
   const [searchQuery, setSearchQuery] = useState('');
   const [scheduleDialogConnection, setScheduleDialogConnection] = useState<string | null>(null);
-  const [editDialogConnection, setEditDialogConnection] = useState<Connection | null>(null);
+  const [editDialogConnection, setEditDialogConnection] = useState<string | null>(null);
   const [deleteDialogConnection, setDeleteDialogConnection] = useState<Connection | null>(null);
 
   const filteredConnections = connections?.filter(connection => 
@@ -61,7 +61,7 @@ export function ConnectionsList() {
       />
 
       <EditConnectionDialog
-        connection={editDialogConnection}
+        connectionId={editDialogConnection}
         onClose={() => setEditDialogConnection(null)}
       />
 

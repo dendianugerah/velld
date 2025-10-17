@@ -15,19 +15,17 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectSeparator, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { useConnections } from "@/hooks/use-connections";
-import { useToast } from "@/hooks/use-toast";
+import { useConnections, useConnection } from "@/hooks/use-connections";
 import { type ConnectionForm as ConnectionFormType } from "@/types/connection";
 import { type DatabaseType } from "@/types/base";
-import type { Connection } from "@/types/connection";
 
 interface EditConnectionDialogProps {
-  connection: Connection | null;
+  connectionId: string | null;
   onClose: () => void;
 }
 
 export function EditConnectionDialog({
-  connection,
+  connectionId,
   onClose,
 }: EditConnectionDialogProps) {
   const [formData, setFormData] = useState<ConnectionFormType & { id?: string }>({
@@ -46,36 +44,56 @@ export function EditConnectionDialog({
     ssh_password: "",
     ssh_private_key: "",
   });
-  
   const [sshExpanded, setSSHExpanded] = useState(false);
   const [sshAuthMethod, setSSHAuthMethod] = useState<"password" | "key">("password");
 
   const { editConnection, isEditing } = useConnections();
-  const { toast } = useToast();
+  const { data: connectionDetail, isLoading: isLoadingConnection } = useConnection(connectionId);
 
   useEffect(() => {
-    if (connection) {
+    if (!connectionId) return;
+
+    if (isLoadingConnection) {
       setFormData({
-        id: connection.id,
-        name: connection.name,
-        type: connection.type,
-        host: connection.host,
-        port: connection.port,
-        username: connection.username,
-        password: connection.password,
-        database: connection.database,
-        ssl: connection.ssl,
-        ssh_enabled: connection.ssh_enabled,
-        ssh_host: connection.ssh_host || "",
-        ssh_port: connection.ssh_port || 0,
-        ssh_username: connection.ssh_username || "",
-        ssh_password: connection.ssh_password || "",
-        ssh_private_key: connection.ssh_private_key || "",
+        name: "",
+        type: "" as DatabaseType,
+        host: "",
+        port: 0,
+        username: "",
+        password: "",
+        database: "",
+        ssl: true,
+        ssh_enabled: false,
+        ssh_host: "",
+        ssh_port: 0,
+        ssh_username: "",
+        ssh_password: "",
+        ssh_private_key: "",
       });
-      setSSHExpanded(connection.ssh_enabled);
-      setSSHAuthMethod(connection.ssh_private_key ? "key" : "password");
+      setSSHExpanded(false);
+      setSSHAuthMethod("password");
+    } else if (connectionDetail) {
+      setFormData({
+        id: connectionDetail.id,
+        name: connectionDetail.name,
+        type: connectionDetail.type,
+        host: connectionDetail.host,
+        port: connectionDetail.port,
+        username: connectionDetail.username,
+        password: connectionDetail.password,
+        database: connectionDetail.database_name,
+        ssl: connectionDetail.ssl,
+        ssh_enabled: connectionDetail.ssh_enabled,
+        ssh_host: connectionDetail.ssh_host || "",
+        ssh_port: connectionDetail.ssh_port || 0,
+        ssh_username: connectionDetail.ssh_username || "",
+        ssh_password: connectionDetail.ssh_password || "",
+        ssh_private_key: connectionDetail.ssh_private_key || "",
+      });
+      setSSHExpanded(connectionDetail.ssh_enabled);
+      setSSHAuthMethod(connectionDetail.ssh_private_key ? "key" : "password");
     }
-  }, [connection]);
+  }, [connectionId, isLoadingConnection, connectionDetail]);
 
   const getDefaultPort = (type: string): number => {
     const ports: Record<string, number> = {
@@ -89,9 +107,7 @@ export function EditConnectionDialog({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!formData.id) return;
-    
     editConnection(formData as ConnectionFormType & { id: string }, {
       onSuccess: () => {
         onClose();
@@ -99,8 +115,10 @@ export function EditConnectionDialog({
     });
   };
 
+  if (!connectionId) return null;
+
   return (
-    <Dialog open={!!connection} onOpenChange={() => onClose()}>
+    <Dialog open={!!connectionId} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Edit Connection</DialogTitle>
@@ -109,7 +127,12 @@ export function EditConnectionDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        {isLoadingConnection || !formData.id ? (
+          <div className="flex items-center justify-center p-8">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="edit-name">Connection Name</Label>
             <Input
@@ -231,36 +254,62 @@ export function EditConnectionDialog({
             />
           </div>
 
-          <div className="space-y-2">
+          <div className="border rounded-lg">
             <button
               type="button"
-              onClick={() => setSSHExpanded(!sshExpanded)}
-              className="flex items-center justify-between w-full p-3 rounded-lg border hover:bg-accent transition-colors"
+              onClick={() => {
+                setSSHExpanded(!sshExpanded);
+                if (!sshExpanded) {
+                  setFormData({ ...formData, ssh_enabled: true });
+                }
+              }}
+              className="w-full flex items-center justify-between p-4 hover:bg-accent/50 transition-colors rounded-lg"
             >
-              <div className="flex items-center space-x-2">
-                <span className="font-medium">SSH Tunnel (Optional)</span>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Info className="h-4 w-4 text-muted-foreground" />
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Connect through an SSH tunnel for additional security</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-md bg-primary/10">
+                  <KeyRound className="h-4 w-4 text-primary" />
+                </div>
+                <div className="text-left">
+                  <div className="font-medium">SSH Tunnel (Optional)</div>
+                  <div className="text-sm text-muted-foreground">
+                    {formData.ssh_enabled 
+                      ? `Connect via ${formData.ssh_host || 'SSH server'}` 
+                      : "Connect to databases behind a firewall"}
+                  </div>
+                </div>
               </div>
-              {sshExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              <div className="flex items-center gap-2">
+                {formData.ssh_enabled && (
+                  <div className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary">
+                    Enabled
+                  </div>
+                )}
+                {sshExpanded ? (
+                  <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                ) : (
+                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                )}
+              </div>
             </button>
 
             {sshExpanded && (
-              <div className="space-y-4 p-4 rounded-lg border bg-muted/50">
+              <div className="px-4 pb-4 space-y-4 border-t pt-4">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="edit-ssh-enabled">Enable SSH Tunnel</Label>
+                  <div className="space-y-0.5">
+                    <Label htmlFor="ssh-enabled">Enable SSH Tunnel</Label>
+                    <div className="text-sm text-muted-foreground">
+                      Use an SSH server as a jump host to reach your database
+                    </div>
+                  </div>
                   <Switch
-                    id="edit-ssh-enabled"
+                    id="ssh-enabled"
                     checked={formData.ssh_enabled}
-                    onCheckedChange={(checked) => setFormData({ ...formData, ssh_enabled: checked })}
+                    onCheckedChange={(checked) => {
+                      setFormData({ ...formData, ssh_enabled: checked });
+                      if (!checked) {
+                        setSSHExpanded(false);
+                      }
+                    }}
                   />
                 </div>
 
@@ -268,78 +317,100 @@ export function EditConnectionDialog({
                   <>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="edit-ssh-host">SSH Host</Label>
+                        <Label htmlFor="ssh-host">SSH Host</Label>
                         <Input
-                          id="edit-ssh-host"
+                          id="ssh-host"
+                          placeholder="bastion.example.com"
                           value={formData.ssh_host || ''}
                           onChange={(e) => setFormData({ ...formData, ssh_host: e.target.value })}
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="edit-ssh-port">SSH Port</Label>
+                        <Label htmlFor="ssh-port">SSH Port</Label>
                         <Input
-                          id="edit-ssh-port"
+                          id="ssh-port"
                           type="number"
-                          value={formData.ssh_port || 22}
-                          onChange={(e) => setFormData({ ...formData, ssh_port: parseInt(e.target.value) })}
+                          placeholder="22"
+                          value={formData.ssh_port}
+                          onChange={(e) => setFormData({ ...formData, ssh_port: parseInt(e.target.value) || 22 })}
                         />
                       </div>
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="edit-ssh-username">SSH Username</Label>
+                      <Label htmlFor="ssh-username">SSH Username</Label>
                       <Input
-                        id="edit-ssh-username"
+                        id="ssh-username"
+                        placeholder="ubuntu"
                         value={formData.ssh_username || ''}
                         onChange={(e) => setFormData({ ...formData, ssh_username: e.target.value })}
                       />
                     </div>
 
-                    <div className="flex items-center space-x-2 rounded-lg border p-2">
-                      <Button
-                        type="button"
-                        variant={sshAuthMethod === "password" ? "default" : "ghost"}
-                        size="sm"
-                        onClick={() => setSSHAuthMethod("password")}
-                        className="flex-1"
-                      >
-                        <KeyRound className="h-3 w-3 mr-1" />
-                        Password
-                      </Button>
-                      <Button
-                        type="button"
-                        variant={sshAuthMethod === "key" ? "default" : "ghost"}
-                        size="sm"
-                        onClick={() => setSSHAuthMethod("key")}
-                        className="flex-1"
-                      >
-                        <KeyRound className="h-3 w-3 mr-1" />
-                        Private Key
-                      </Button>
+                    <div className="space-y-2">
+                      <Label>Authentication Method</Label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Button
+                          type="button"
+                          variant={sshAuthMethod === "password" ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => {
+                            setSSHAuthMethod("password");
+                            setFormData({ ...formData, ssh_private_key: "" });
+                          }}
+                        >
+                          Password
+                        </Button>
+                        <Button
+                          type="button"
+                          variant={sshAuthMethod === "key" ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => {
+                            setSSHAuthMethod("key");
+                            setFormData({ ...formData, ssh_password: "" });
+                          }}
+                        >
+                          Private Key
+                        </Button>
+                      </div>
                     </div>
 
                     {sshAuthMethod === "password" ? (
                       <div className="space-y-2">
-                        <Label htmlFor="edit-ssh-password">SSH Password</Label>
+                        <Label htmlFor="ssh-password">SSH Password</Label>
                         <Input
-                          id="edit-ssh-password"
+                          id="ssh-password"
                           type="password"
+                          placeholder="Your SSH password"
                           value={formData.ssh_password || ''}
-                          onChange={(e) => setFormData({ ...formData, ssh_password: e.target.value, ssh_private_key: "" })}
+                          onChange={(e) => setFormData({ ...formData, ssh_password: e.target.value })}
                         />
                       </div>
                     ) : (
                       <div className="space-y-2">
-                        <Label htmlFor="edit-ssh-private-key">SSH Private Key</Label>
+                        <Label htmlFor="ssh-key">SSH Private Key</Label>
                         <textarea
-                          id="edit-ssh-private-key"
-                          className="w-full min-h-[100px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                          placeholder="-----BEGIN OPENSSH PRIVATE KEY-----"
+                          id="ssh-key"
+                          placeholder="-----BEGIN OPENSSH PRIVATE KEY-----&#10;...&#10;-----END OPENSSH PRIVATE KEY-----"
                           value={formData.ssh_private_key || ''}
-                          onChange={(e) => setFormData({ ...formData, ssh_private_key: e.target.value, ssh_password: "" })}
+                          onChange={(e) => setFormData({ ...formData, ssh_private_key: e.target.value })}
+                          rows={6}
+                          className="w-full px-3 py-2 text-sm rounded-md border border-input bg-background font-mono"
                         />
+                        <p className="text-xs text-muted-foreground">
+                          Paste your private SSH key. It will be encrypted and stored securely.
+                        </p>
                       </div>
                     )}
+
+                    <div className="bg-muted/50 p-3 rounded-md text-sm">
+                      <p className="font-medium mb-1">How it works:</p>
+                      <p className="text-muted-foreground text-xs">
+                        Velld will connect to <span className="font-mono">{formData.ssh_host || 'your SSH server'}</span>, 
+                        then tunnel through to <span className="font-mono">{formData.host || 'your database'}:{formData.port || 'port'}</span>.
+                        This allows you to reach databases behind firewalls or on private networks.
+                      </p>
+                    </div>
                   </>
                 )}
               </div>
@@ -362,6 +433,7 @@ export function EditConnectionDialog({
             </Button>
           </div>
         </form>
+        )}
       </DialogContent>
     </Dialog>
   );
