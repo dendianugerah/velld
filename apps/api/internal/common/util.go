@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"runtime"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -70,7 +71,23 @@ var CommonBinaryPaths = map[string][]string{
 	},
 }
 
+// Cache for binary paths to avoid repeated filesystem searches
+var (
+	binaryPathCache = make(map[string]string)
+	binaryPathMutex sync.RWMutex
+)
+
 func FindBinaryPath(dbType, toolName string) string {
+	cacheKey := dbType + ":" + toolName
+	
+	// Check cache first
+	binaryPathMutex.RLock()
+	if cachedPath, found := binaryPathCache[cacheKey]; found {
+		binaryPathMutex.RUnlock()
+		return cachedPath
+	}
+	binaryPathMutex.RUnlock()
+
 	execName := GetPlatformExecutableName(toolName)
 
 	// 1. Try user-defined path if provided
@@ -81,6 +98,8 @@ func FindBinaryPath(dbType, toolName string) string {
 	// 	}
 	// }
 
+	var foundPath string
+
 	// 2. Search common installation paths with wildcard support
 	if paths, ok := CommonBinaryPaths[runtime.GOOS]; ok {
 		for _, pathPattern := range paths {
@@ -88,7 +107,8 @@ func FindBinaryPath(dbType, toolName string) string {
 			for _, path := range matches {
 				toolPath := filepath.Join(path, execName)
 				if _, err := os.Stat(toolPath); err == nil {
-					return path
+					foundPath = path
+					goto cacheAndReturn
 				}
 			}
 		}
@@ -96,10 +116,17 @@ func FindBinaryPath(dbType, toolName string) string {
 
 	// 3. Try PATH environment as last resort
 	if path, err := exec.LookPath(execName); err == nil {
-		return filepath.Dir(path)
+		foundPath = filepath.Dir(path)
+		goto cacheAndReturn
 	}
 
-	return ""
+cacheAndReturn:
+	// Cache the result (even if empty) to avoid repeated searches
+	binaryPathMutex.Lock()
+	binaryPathCache[cacheKey] = foundPath
+	binaryPathMutex.Unlock()
+
+	return foundPath
 }
 
 func GetPlatformExecutableName(name string) string {
