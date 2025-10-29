@@ -98,8 +98,6 @@ func FindBinaryPath(dbType, toolName string) string {
 	// 	}
 	// }
 
-	var foundPath string
-
 	// 2. Search common installation paths with wildcard support
 	if paths, ok := CommonBinaryPaths[runtime.GOOS]; ok {
 		for _, pathPattern := range paths {
@@ -107,8 +105,11 @@ func FindBinaryPath(dbType, toolName string) string {
 			for _, path := range matches {
 				toolPath := filepath.Join(path, execName)
 				if _, err := os.Stat(toolPath); err == nil {
-					foundPath = path
-					goto cacheAndReturn
+					// Cache successful result
+					binaryPathMutex.Lock()
+					binaryPathCache[cacheKey] = path
+					binaryPathMutex.Unlock()
+					return path
 				}
 			}
 		}
@@ -116,17 +117,16 @@ func FindBinaryPath(dbType, toolName string) string {
 
 	// 3. Try PATH environment as last resort
 	if path, err := exec.LookPath(execName); err == nil {
-		foundPath = filepath.Dir(path)
-		goto cacheAndReturn
+		foundPath := filepath.Dir(path)
+		// Cache successful result
+		binaryPathMutex.Lock()
+		binaryPathCache[cacheKey] = foundPath
+		binaryPathMutex.Unlock()
+		return foundPath
 	}
 
-cacheAndReturn:
-	// Cache the result (even if empty) to avoid repeated searches
-	binaryPathMutex.Lock()
-	binaryPathCache[cacheKey] = foundPath
-	binaryPathMutex.Unlock()
-
-	return foundPath
+	// Don't cache unsuccessful lookups - binary might be installed later
+	return ""
 }
 
 func GetPlatformExecutableName(name string) string {
