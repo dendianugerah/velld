@@ -1,13 +1,10 @@
 package common
 
 import (
-	"crypto/rand"
-	"encoding/base64"
 	"encoding/hex"
 	"fmt"
 	"log"
 	"os"
-	"path/filepath"
 	"strings"
 	"sync"
 
@@ -22,115 +19,87 @@ type Secrets struct {
 	IsAllowSignup           bool
 }
 
-var secretsFilePath = filepath.Join("..", "..", ".env")
-
 var once sync.Once
 var instance *Secrets
 
 func GetSecrets() *Secrets {
 	once.Do(func() {
-		instance = loadOrGenerateSecrets()
+		instance = loadSecrets()
 	})
 	return instance
 }
 
-func loadOrGenerateSecrets() *Secrets {
-	err := godotenv.Load(secretsFilePath)
+func loadSecrets() *Secrets {
+	_ = godotenv.Load("../../.env")
+	_ = godotenv.Load(".env")
+
+	jwtSecret, err := getRequiredSecret("JWT_SECRET")
 	if err != nil {
-		log.Println("[WARN] No .env file found, will generate secrets if missing")
+		log.Fatal(err)
 	}
 
-	jwtSecret := getOrGenerateSecret("JWT_SECRET")
-	encryptionKey := getOrGenerateSecret("ENCRYPTION_KEY")
-	adminUsernameCredential, _ := getWithoutGenerateSecret("ADMIN_USERNAME_CREDENTIAL")
-	adminPasswordCredential, _ := getWithoutGenerateSecret("ADMIN_PASSWORD_CREDENTIAL")
-	isAllowSignup := getOrGenerateSecret("ALLOW_REGISTER")
+	encryptionKey, err := getRequiredSecret("ENCRYPTION_KEY")
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	saveSecretsToFile(jwtSecret, encryptionKey, isAllowSignup)
+	if err := validateEncryptionKey(encryptionKey); err != nil {
+		log.Fatal(err)
+	}
+
+	// Optional admin credentials (for initial setup)
+	adminUsernameCredential := os.Getenv("ADMIN_USERNAME_CREDENTIAL")
+	adminPasswordCredential := os.Getenv("ADMIN_PASSWORD_CREDENTIAL")
+
+	isAllowSignup := getWithDefault("ALLOW_REGISTER", "true")
 
 	return &Secrets{
 		JWTSecret:               jwtSecret,
 		EncryptionKey:           encryptionKey,
 		AdminUsernameCredential: adminUsernameCredential,
 		AdminPasswordCredential: adminPasswordCredential,
-		IsAllowSignup:           isAllowSignup == "true",
+		IsAllowSignup:           strings.ToLower(isAllowSignup) == "true",
 	}
 }
 
-// getWithoutGenerateSecret retrieves a secret from the environment variables without generating a new one
-func getWithoutGenerateSecret(envVar string) (string, error) {
-	if secret := os.Getenv(envVar); secret != "" {
-		return secret, nil
-	}
-	return "", fmt.Errorf("secret not found in env")
-}
-
-func getOrGenerateSecret(envVar string) string {
-	if secret := os.Getenv(envVar); secret != "" {
-		return secret
+func getRequiredSecret(envVar string) (string, error) {
+	secret := strings.TrimSpace(os.Getenv(envVar))
+	if secret == "" {
+		return "", fmt.Errorf("[ERROR] %s is required but not set. Please set it in your environment or .env file", envVar)
 	}
 
-	var newSecret string
-	if envVar == "ENCRYPTION_KEY" {
-		newSecret = generateSecureHexKey()
-	} else if envVar == "ALLOW_REGISTER" {
-		newSecret = generateAllowSingup()
-	} else {
-		newSecret = generateSecureBase64Key()
+	if strings.HasPrefix(secret, "$(") && strings.HasSuffix(secret, ")") {
+		return "", fmt.Errorf("[ERROR] %s appears to be a shell command: %s\n"+
+			"Shell commands in .env files are not executed.\n"+
+			"Please run the command manually and paste the output:\n"+
+			"  Example: openssl rand -hex 32", envVar, secret)
 	}
 
-	fmt.Printf("[INFO] %s not found in env. Generated new key.\n", envVar)
-	return newSecret
+	return secret, nil
 }
 
-// Generate allow signup
-func generateAllowSingup() string {
-	return "true"
-}
-
-// Generate a secure random hex key (for AES encryption)
-func generateSecureHexKey() string {
-	key := make([]byte, 32) // 32 bytes = 64 hex characters
-	if _, err := rand.Read(key); err != nil {
-		log.Fatal("Failed to generate encryption key:", err)
+func getWithDefault(envVar, defaultValue string) string {
+	value := strings.TrimSpace(os.Getenv(envVar))
+	if value == "" {
+		return defaultValue
 	}
-	return hex.EncodeToString(key) // Convert to hex string
+	return value
 }
 
-// Generate a secure random base64 key (for JWT)
-func generateSecureBase64Key() string {
-	bytes := make([]byte, 32)
-	_, err := rand.Read(bytes)
+func validateEncryptionKey(key string) error {
+	key = strings.TrimSpace(key)
+
+	if len(key) != 64 {
+		return fmt.Errorf("[ERROR] ENCRYPTION_KEY must be exactly 64 hexadecimal characters (32 bytes), got %d characters.\n"+
+			"Generate a valid key with: openssl rand -hex 32", len(key))
+	}
+
+	_, err := hex.DecodeString(key)
 	if err != nil {
-		panic("Failed to generate secure key")
-	}
-	return base64.StdEncoding.EncodeToString(bytes)
-}
-
-func saveSecretsToFile(jwtSecret, encryptionKey, isAllowSignup string) {
-	existingContent, _ := os.ReadFile(secretsFilePath)
-	existingEnv := string(existingContent)
-
-	if !containsLine(existingEnv, "JWT_SECRET=") {
-		existingEnv += fmt.Sprintf("\nJWT_SECRET=%s", jwtSecret)
+		return fmt.Errorf("[ERROR] ENCRYPTION_KEY must be a valid hexadecimal string.\n"+
+			"Generate a valid key with: openssl rand -hex 32\n"+
+			"Error: %v", err)
 	}
 
-	if !containsLine(existingEnv, "ENCRYPTION_KEY=") {
-		existingEnv += fmt.Sprintf("\nENCRYPTION_KEY=%s", encryptionKey)
-	}
-	if !containsLine(existingEnv, "ALLOW_REGISTER=") {
-		existingEnv += fmt.Sprintf("\nALLOW_REGISTER=%s", isAllowSignup)
-	}
-
-	os.WriteFile(secretsFilePath, []byte(existingEnv), 0600)
-}
-
-func containsLine(envContent, prefix string) bool {
-	lines := strings.Split(envContent, "\n")
-	for _, line := range lines {
-		if strings.HasPrefix(line, prefix) {
-			return true
-		}
-	}
-	return false
+	return nil
 }
