@@ -1,9 +1,11 @@
 -- +goose Up
 -- +goose StatementBegin
-SELECT 'up SQL query';
+
+ALTER TABLE connections ADD COLUMN selected_databases TEXT DEFAULT '';
+
 -- +goose StatementEnd
 
 -- +goose Down
 -- +goose StatementBegin
-SELECT 'down SQL query';
+ALTER TABLE connections DROP COLUMN selected_databases;
 -- +goose StatementEnd

@@ -281,3 +281,110 @@ func (cm *ConnectionManager) getRedisSize(client *redis.Client) (int64, error) {
 
 	return 0, nil
 }
+
+func (cm *ConnectionManager) DiscoverDatabases(config ConnectionConfig) ([]string, error) {
+	tempConfig := config
+	tempConfig.ID = "temp_discovery_" + config.ID
+
+	if err := cm.Connect(tempConfig); err != nil {
+		return nil, fmt.Errorf("failed to connect for discovery: %w", err)
+	}
+	defer cm.Disconnect(tempConfig.ID)
+
+	conn, exists := cm.connections[tempConfig.ID]
+	if !exists {
+		return nil, fmt.Errorf("connection not found after connecting")
+	}
+
+	var databases []string
+	var err error
+
+	switch config.Type {
+	case "postgresql":
+		databases, err = cm.discoverPostgresDatabases(conn.(*sql.DB))
+	case "mysql", "mariadb":
+		databases, err = cm.discoverMySQLDatabases(conn.(*sql.DB))
+	case "mongodb":
+		databases, err = cm.discoverMongoDBDatabases(conn.(*mongo.Client))
+	case "redis":
+		// Redis doesn't have multiple databases in the traditional sense
+		// Return the 16 default database numbers
+		databases = []string{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15"}
+	default:
+		return nil, fmt.Errorf("unsupported database type for discovery: %s", config.Type)
+	}
+
+	return databases, err
+}
+
+func (cm *ConnectionManager) discoverPostgresDatabases(db *sql.DB) ([]string, error) {
+	query := `
+		SELECT datname 
+		FROM pg_database 
+		WHERE datistemplate = false 
+		AND datname NOT IN ('postgres')
+		ORDER BY datname
+	`
+
+	rows, err := db.Query(query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query databases: %w", err)
+	}
+	defer rows.Close()
+
+	var databases []string
+	for rows.Next() {
+		var dbName string
+		if err := rows.Scan(&dbName); err != nil {
+			return nil, err
+		}
+		databases = append(databases, dbName)
+	}
+
+	return databases, rows.Err()
+}
+
+func (cm *ConnectionManager) discoverMySQLDatabases(db *sql.DB) ([]string, error) {
+	query := `
+		SELECT SCHEMA_NAME 
+		FROM information_schema.SCHEMATA 
+		WHERE SCHEMA_NAME NOT IN ('information_schema', 'mysql', 'performance_schema', 'sys')
+		ORDER BY SCHEMA_NAME
+	`
+
+	rows, err := db.Query(query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query databases: %w", err)
+	}
+	defer rows.Close()
+
+	var databases []string
+	for rows.Next() {
+		var dbName string
+		if err := rows.Scan(&dbName); err != nil {
+			return nil, err
+		}
+		databases = append(databases, dbName)
+	}
+
+	return databases, rows.Err()
+}
+
+func (cm *ConnectionManager) discoverMongoDBDatabases(client *mongo.Client) ([]string, error) {
+	ctx := context.Background()
+
+	databases, err := client.ListDatabaseNames(ctx, bson.D{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to list databases: %w", err)
+	}
+
+	// Filter out system databases
+	var filtered []string
+	for _, db := range databases {
+		if db != "admin" && db != "local" && db != "config" {
+			filtered = append(filtered, db)
+		}
+	}
+
+	return filtered, nil
+}
