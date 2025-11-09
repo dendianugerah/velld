@@ -12,6 +12,13 @@ import {
   TableRow 
 } from '@/components/ui/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { 
   Play, 
   CheckCircle2, 
@@ -19,7 +26,8 @@ import {
   Trash2,
   Settings2,
   ArrowUpDown,
-  Database
+  Database,
+  MoreHorizontal
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Connection } from '@/types/connection';
@@ -48,6 +56,7 @@ export function ConnectionsTable({
   const { createBackup, isCreating } = useBackup();
   const [sortField, setSortField] = useState<SortField>('name');
   const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
+  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -208,7 +217,7 @@ export function ConnectionsTable({
                         </span>
                       </TableCell>
                       <TableCell className="text-right py-3.5">
-                        <div className="flex items-center justify-end gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                        <div className="flex items-center justify-end gap-1">
                           <Tooltip delayDuration={300}>
                             <TooltipTrigger asChild>
                               <Button
@@ -216,7 +225,7 @@ export function ConnectionsTable({
                                 size="sm"
                                 onClick={() => createBackup(connection.id)}
                                 disabled={isCreating}
-                                className="h-8 w-8 p-0 hover:bg-accent/80 transition-all duration-150 hover:scale-105"
+                                className="h-8 w-8 p-0 hover:bg-accent/80 transition-all duration-150"
                               >
                                 <Play className="h-3.5 w-3.5" />
                               </Button>
@@ -226,71 +235,62 @@ export function ConnectionsTable({
                             </TooltipContent>
                           </Tooltip>
                           
-                          {onDiscover && connection.type !== 'redis' && (
-                            <Tooltip delayDuration={300}>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => onDiscover(connection)}
-                                  className="h-8 w-8 p-0 hover:bg-accent/80 transition-all duration-150 hover:scale-105"
+                          <DropdownMenu 
+                            open={openDropdownId === connection.id}
+                            onOpenChange={(open) => setOpenDropdownId(open ? connection.id : null)}
+                          >
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 w-8 p-0 hover:bg-accent/80 transition-all duration-150"
+                              >
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-[160px]">
+                              {onDiscover && connection.type !== 'redis' && (
+                                <DropdownMenuItem 
+                                  onClick={() => {
+                                    setOpenDropdownId(null);
+                                    onDiscover(connection);
+                                  }}
                                 >
-                                  <Database className="h-3.5 w-3.5" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent side="top">
-                                <p className="text-xs">Discover Databases</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          )}
-                          
-                          <Tooltip delayDuration={300}>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => onSchedule(connection.id)}
-                                className="h-8 w-8 p-0 hover:bg-accent/80 transition-all duration-150 hover:scale-105"
+                                  <Database className="mr-2 h-4 w-4" />
+                                  Discover
+                                </DropdownMenuItem>
+                              )}
+                              <DropdownMenuItem 
+                                onClick={() => {
+                                  setOpenDropdownId(null);
+                                  onSchedule(connection.id);
+                                }}
                               >
-                                <Settings2 className="h-3.5 w-3.5" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent side="top">
-                              <p className="text-xs">Schedule Backup</p>
-                            </TooltipContent>
-                          </Tooltip>
-                          
-                          <Tooltip delayDuration={300}>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => onEdit(connection.id)}
-                                className="h-8 w-8 p-0 hover:bg-accent/80 transition-all duration-150 hover:scale-105"
+                                <Settings2 className="mr-2 h-4 w-4" />
+                                Schedule
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                onClick={() => {
+                                  setOpenDropdownId(null);
+                                  onEdit(connection.id);
+                                }}
                               >
-                                <Pencil className="h-3.5 w-3.5" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent side="top">
-                              <p className="text-xs">Edit Connection</p>
-                            </TooltipContent>
-                          </Tooltip>
-                          
-                          <Tooltip delayDuration={300}>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => onDelete(connection)}
-                                className="h-8 w-8 p-0 text-destructive/80 hover:text-destructive hover:bg-destructive/10 transition-all duration-150 hover:scale-105"
+                                <Pencil className="mr-2 h-4 w-4" />
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem 
+                                onClick={() => {
+                                  setOpenDropdownId(null);
+                                  onDelete(connection);
+                                }}
+                                className="text-destructive focus:text-destructive"
                               >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent side="top">
-                              <p className="text-xs">Delete Connection</p>
-                            </TooltipContent>
-                          </Tooltip>
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </TableCell>
                     </TableRow>
