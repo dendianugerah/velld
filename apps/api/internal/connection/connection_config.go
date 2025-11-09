@@ -96,8 +96,15 @@ func (cm *ConnectionManager) connectMySQL(config ConnectionConfig) error {
 	if config.SSL {
 		sslMode = "true"
 	}
+
+	// Use default database if not specified
+	database := config.Database
+	if database == "" {
+		database = "information_schema"
+	}
+
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?tls=%s",
-		config.Username, config.Password, config.Host, config.Port, config.Database, sslMode)
+		config.Username, config.Password, config.Host, config.Port, database, sslMode)
 
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
@@ -117,8 +124,15 @@ func (cm *ConnectionManager) connectPostgres(config ConnectionConfig) error {
 	if config.SSL {
 		sslMode = "require"
 	}
+
+	// Use default database if not specified
+	database := config.Database
+	if database == "" {
+		database = "postgres"
+	}
+
 	dsn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
-		config.Host, config.Port, config.Username, config.Password, config.Database, sslMode)
+		config.Host, config.Port, config.Username, config.Password, database, sslMode)
 
 	db, err := sql.Open("postgres", dsn)
 	if err != nil {
@@ -135,8 +149,15 @@ func (cm *ConnectionManager) connectPostgres(config ConnectionConfig) error {
 
 func (cm *ConnectionManager) connectMongoDB(config ConnectionConfig) error {
 	ctx := context.Background()
+
+	// Use default database if not specified
+	database := config.Database
+	if database == "" {
+		database = "admin"
+	}
+
 	uri := fmt.Sprintf("mongodb://%s:%s@%s:%d/%s",
-		config.Username, config.Password, config.Host, config.Port, config.Database)
+		config.Username, config.Password, config.Host, config.Port, database)
 
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
 	if err != nil {

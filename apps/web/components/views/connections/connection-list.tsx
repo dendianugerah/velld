@@ -9,6 +9,7 @@ import { ConnectionsTable } from './connection-list/connections-table';
 import { BackupScheduleDialog } from './connection-list/backup-schedule-dialog';
 import { EditConnectionDialog } from './connection-list/edit-connection-dialog';
 import { DeleteConnectionDialog } from './connection-list/delete-connection-dialog';
+import { DiscoverDatabasesModal } from './discover-databases-modal';
 import { AddConnectionDialog } from './add-connection-dialog';
 import { Database } from 'lucide-react';
 import type { Connection } from '@/types/connection';
@@ -19,6 +20,7 @@ export function ConnectionsList() {
   const [scheduleDialogConnection, setScheduleDialogConnection] = useState<string | null>(null);
   const [editDialogConnection, setEditDialogConnection] = useState<string | null>(null);
   const [deleteDialogConnection, setDeleteDialogConnection] = useState<Connection | null>(null);
+  const [discoverConnectionId, setDiscoverConnectionId] = useState<string | null>(null);
 
   const filteredConnections = connections?.filter(connection => 
     connection.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -44,6 +46,7 @@ export function ConnectionsList() {
           onEdit={setEditDialogConnection}
           onDelete={setDeleteDialogConnection}
           onSchedule={setScheduleDialogConnection}
+          onDiscover={(connection) => setDiscoverConnectionId(connection.id)}
         />
       ) : (
         <EmptyState
@@ -69,6 +72,14 @@ export function ConnectionsList() {
         connection={deleteDialogConnection}
         onClose={() => setDeleteDialogConnection(null)}
       />
+
+      {discoverConnectionId && (
+        <DiscoverDatabasesModal
+          connectionId={discoverConnectionId}
+          open={!!discoverConnectionId}
+          onOpenChange={(open) => !open && setDiscoverConnectionId(null)}
+        />
+      )}
     </div>
   );
 }

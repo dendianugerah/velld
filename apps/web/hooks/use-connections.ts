@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { saveConnection, testConnection, getConnection, getConnections, updateConnection, deleteConnection } from '@/lib/api/connections';
+import { saveConnection, testConnection, getConnection, getConnections, updateConnection, deleteConnection, updateSelectedDatabases } from '@/lib/api/connections';
 import { ConnectionForm } from '@/types/connection';
 import { useToast } from '@/hooks/use-toast';
 
@@ -76,6 +76,26 @@ export function useConnections() {
     },
   });
 
+  const { mutate: updateDatabases, isPending: isUpdatingDatabases } = useMutation({
+    mutationFn: ({ id, databases }: { id: string; databases: string[] }) => 
+      updateSelectedDatabases(id, databases),
+    onSuccess: (_data, { id, databases }) => {
+      queryClient.invalidateQueries({ queryKey: ['connections'] });
+      queryClient.invalidateQueries({ queryKey: ['connection', id] });
+      toast({
+        title: "Success",
+        description: `${databases.length} database(s) selected for backup`,
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update selected databases",
+        variant: "destructive",
+      });
+    },
+  });
+
   return {
     connections,
     isLoading,
@@ -84,7 +104,9 @@ export function useConnections() {
     editConnection,
     isEditing,
     removeConnection,
-    isDeleting
+    isDeleting,
+    updateDatabases,
+    isUpdatingDatabases,
   };
 }
 

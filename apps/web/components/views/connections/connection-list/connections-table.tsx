@@ -18,7 +18,8 @@ import {
   Pencil, 
   Trash2,
   Settings2,
-  ArrowUpDown
+  ArrowUpDown,
+  Database
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Connection } from '@/types/connection';
@@ -31,6 +32,7 @@ interface ConnectionsTableProps {
   onEdit: (connectionId: string) => void;
   onDelete: (connection: Connection) => void;
   onSchedule: (connectionId: string) => void;
+  onDiscover?: (connection: Connection) => void;
 }
 
 type SortField = 'name' | 'type' | 'status' | 'size' | 'lastBackup';
@@ -41,6 +43,7 @@ export function ConnectionsTable({
   onEdit,
   onDelete,
   onSchedule,
+  onDiscover,
 }: ConnectionsTableProps) {
   const { createBackup, isCreating } = useBackup();
   const [sortField, setSortField] = useState<SortField>('name');
@@ -121,7 +124,7 @@ export function ConnectionsTable({
             <TableBody>
               {sortedConnections.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="h-32">
+                  <TableCell colSpan={8} className="h-32">
                     <div className="flex flex-col items-center justify-center gap-3 text-muted-foreground">
                       <div className="flex items-center justify-center w-12 h-12 rounded-full bg-muted">
                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -222,6 +225,24 @@ export function ConnectionsTable({
                               <p className="text-xs">Backup Now</p>
                             </TooltipContent>
                           </Tooltip>
+                          
+                          {onDiscover && connection.type !== 'redis' && (
+                            <Tooltip delayDuration={300}>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => onDiscover(connection)}
+                                  className="h-8 w-8 p-0 hover:bg-accent/80 transition-all duration-150 hover:scale-105"
+                                >
+                                  <Database className="h-3.5 w-3.5" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent side="top">
+                                <p className="text-xs">Discover Databases</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          )}
                           
                           <Tooltip delayDuration={300}>
                             <TooltipTrigger asChild>
