@@ -9,9 +9,10 @@ interface NotificationSidebarProps {
   notifications: Notification[];
   isLoading: boolean;
   onMarkAsRead: (ids: string) => void;
+  onNotificationClick?: (notification: Notification) => void;
 }
 
-export function NotificationSidebar({ notifications, isLoading, onMarkAsRead }: NotificationSidebarProps) {
+export function NotificationSidebar({ notifications, isLoading, onMarkAsRead, onNotificationClick }: NotificationSidebarProps) {
   const unreadNotifications = notifications.filter(n => n.status === 'unread');
   const recentNotifications = notifications.slice(0, 5);
 
@@ -48,13 +49,17 @@ export function NotificationSidebar({ notifications, isLoading, onMarkAsRead }: 
                   if (notification.status === 'unread') {
                     onMarkAsRead(notification.id);
                   }
+
+                  if (onNotificationClick) {
+                    onNotificationClick(notification);
+                  }
                 }}
                 className={cn(
-                  "p-3 rounded-lg border transition-all",
-                  "hover:shadow-sm",
+                  "p-3 rounded-lg border transition-all cursor-pointer",
+                  "hover:shadow-sm hover:border-destructive/30",
                   notification.status === 'unread' 
-                    ? "bg-background hover:bg-accent/50 cursor-pointer border-primary/20" 
-                    : "bg-muted/30",
+                    ? "bg-background hover:bg-accent/50 border-destructive/20" 
+                    : "bg-muted/30 border-muted",
                 )}
               >
                 <div className="flex gap-4">

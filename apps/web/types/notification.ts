@@ -10,6 +10,11 @@ export interface Notification {
     type: NotificationType;
     status: NotificationStatus;
     created_at: string;
+    metadata?: {
+        connection_id?: string;
+        error?: string;
+        [key: string]: any;
+    };
 }
 
 export type NotificationResponse = Base<Notification[]>;
