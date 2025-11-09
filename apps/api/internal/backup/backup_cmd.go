@@ -88,14 +88,23 @@ func (s *BackupService) createMySQLDumpCmd(conn *connection.StoredConnection, ou
 	}
 
 	binPath := filepath.Join(binaryPath, common.GetPlatformExecutableName(requiredTools[conn.Type]))
-	cmd := exec.Command(binPath,
+
+	args := []string{
 		"-h", conn.Host,
 		"-P", fmt.Sprintf("%d", conn.Port),
 		"-u", conn.Username,
 		fmt.Sprintf("-p%s", conn.Password),
-		conn.DatabaseName,
-		"-r", outputPath,
-	)
+	}
+
+	if !conn.SSL {
+		args = append(args, "--skip-ssl")
+	} else {
+		args = append(args, "--ssl-mode=REQUIRED")
+	}
+
+	args = append(args, conn.DatabaseName, "-r", outputPath)
+
+	cmd := exec.Command(binPath, args...)
 	return cmd
 }
 
