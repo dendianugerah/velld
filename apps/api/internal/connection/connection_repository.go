@@ -98,12 +98,14 @@ func (r *ConnectionRepository) GetConnection(id string) (*StoredConnection, erro
 	var conn StoredConnection
 	var encryptedUsername, encryptedPassword string
 	var encryptedSSHPassword, encryptedSSHPrivateKey sql.NullString
+	var selectedDatabasesStr sql.NullString
 	var sslInt, sshEnabledInt int
 
 	query := `SELECT 
 		id, name, type, host, port, username, password, database_name, ssl, 
 		database_size, created_at, updated_at, last_connected_at, user_id, status,
-		ssh_enabled, ssh_host, ssh_port, ssh_username, ssh_password, ssh_private_key
+		ssh_enabled, ssh_host, ssh_port, ssh_username, ssh_password, ssh_private_key,
+		COALESCE(selected_databases, '') as selected_databases
 	FROM connections WHERE id = $1`
 
 	err := r.db.QueryRow(query, id).Scan(
@@ -128,6 +130,7 @@ func (r *ConnectionRepository) GetConnection(id string) (*StoredConnection, erro
 		&conn.SSHUsername,
 		&encryptedSSHPassword,
 		&encryptedSSHPrivateKey,
+		&selectedDatabasesStr,
 	)
 	if err != nil {
 		return nil, err
@@ -135,6 +138,21 @@ func (r *ConnectionRepository) GetConnection(id string) (*StoredConnection, erro
 
 	conn.SSL = sslInt != 0
 	conn.SSHEnabled = sshEnabledInt != 0
+
+	// Parse selected_databases from comma-separated string
+	if selectedDatabasesStr.Valid && selectedDatabasesStr.String != "" {
+		conn.SelectedDatabases = []string{}
+		for i := 0; i < len(selectedDatabasesStr.String); {
+			end := i
+			for end < len(selectedDatabasesStr.String) && selectedDatabasesStr.String[end] != ',' {
+				end++
+			}
+			if end > i {
+				conn.SelectedDatabases = append(conn.SelectedDatabases, selectedDatabasesStr.String[i:end])
+			}
+			i = end + 1
+		}
+	}
 
 	conn.Username, err = r.crypto.Decrypt(encryptedUsername)
 	if err != nil {
@@ -302,20 +320,25 @@ func (r *ConnectionRepository) ListByUserID(userID uuid.UUID) ([]ConnectionListI
 	return connections, nil
 }
 
-func (r *ConnectionRepository) UpdateLastConnected(id string) error {
-	query := `UPDATE connections SET last_connected_at = NOW() WHERE id = $1`
-	_, err := r.db.Exec(query, id)
-	return err
-}
-
-func (r *ConnectionRepository) UpdateStatus(id string, status string) error {
-	query := `UPDATE connections SET status = $1, updated_at = NOW() WHERE id = $2`
-	_, err := r.db.Exec(query, status, id)
-	return err
-}
-
 func (r *ConnectionRepository) Delete(id string) error {
 	query := `DELETE FROM connections WHERE id = $1`
 	_, err := r.db.Exec(query, id)
+	return err
+}
+
+func (r *ConnectionRepository) UpdateSelectedDatabases(id string, databases []string) error {
+	// Convert []string to comma-separated string for storage
+	var dbString string
+	if len(databases) > 0 {
+		for i, db := range databases {
+			if i > 0 {
+				dbString += ","
+			}
+			dbString += db
+		}
+	}
+
+	query := `UPDATE connections SET selected_databases = $1, updated_at = datetime('now') WHERE id = $2`
+	_, err := r.db.Exec(query, dbString, id)
 	return err
 }

@@ -1,6 +1,8 @@
 package connection
 
 import (
+	"fmt"
+
 	"github.com/google/uuid"
 )
 
@@ -115,10 +117,36 @@ func (s *ConnectionService) UpdateConnection(config ConnectionConfig, userID uui
 	return &storedConn, nil
 }
 
-func (s *ConnectionService) UpdateConnectionStatus(id string, status string) error {
-	return s.repo.UpdateStatus(id, status)
-}
-
 func (s *ConnectionService) DeleteConnection(id string) error {
 	return s.repo.Delete(id)
+}
+
+func (s *ConnectionService) DiscoverDatabases(id string) ([]string, error) {
+	conn, err := s.repo.GetConnection(id)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get connection: %w", err)
+	}
+
+	config := ConnectionConfig{
+		ID:            conn.ID,
+		Type:          conn.Type,
+		Host:          conn.Host,
+		Port:          conn.Port,
+		Username:      conn.Username,
+		Password:      conn.Password,
+		Database:      conn.DatabaseName,
+		SSL:           conn.SSL,
+		SSHEnabled:    conn.SSHEnabled,
+		SSHHost:       conn.SSHHost,
+		SSHPort:       conn.SSHPort,
+		SSHUsername:   conn.SSHUsername,
+		SSHPassword:   conn.SSHPassword,
+		SSHPrivateKey: conn.SSHPrivateKey,
+	}
+
+	return s.manager.DiscoverDatabases(config)
+}
+
+func (s *ConnectionService) UpdateSelectedDatabases(id string, databases []string) error {
+	return s.repo.UpdateSelectedDatabases(id, databases)
 }
