@@ -97,6 +97,130 @@ func (s *BackupService) CreateBackup(connectionID string) (*Backup, error) {
 		return nil, fmt.Errorf("failed to get connection: %v", err)
 	}
 
+	// Check if multi-database backup is needed
+	if len(conn.SelectedDatabases) > 0 {
+		// Create backups for all selected databases
+		return s.createMultiDatabaseBackup(conn)
+	}
+
+	// Single database backup
+	return s.createSingleDatabaseBackup(conn, conn.DatabaseName)
+}
+
+func (s *BackupService) createMultiDatabaseBackup(conn *connection.StoredConnection) (*Backup, error) {
+	if err := s.verifyBackupTools(conn.Type); err != nil {
+		return nil, err
+	}
+
+	tunnel, effectiveHost, effectivePort, err := s.setupSSHTunnelIfNeeded(conn)
+	if err != nil {
+		return nil, fmt.Errorf("failed to setup SSH tunnel: %v", err)
+	}
+	if tunnel != nil {
+		defer tunnel.Stop()
+		conn.Host = effectiveHost
+		conn.Port = effectivePort
+	}
+
+	connectionFolder := filepath.Join(s.backupDir, common.SanitizeConnectionName(conn.Name))
+	if err := os.MkdirAll(connectionFolder, 0755); err != nil {
+		return nil, fmt.Errorf("failed to create connection backup folder: %v", err)
+	}
+
+	timestamp := time.Now().Format("20060102_150405")
+	startTime := time.Now()
+
+	var failedDatabases []string
+	var successfulBackups []*Backup
+
+	for _, dbName := range conn.SelectedDatabases {
+		backupID := uuid.New()
+		filename := fmt.Sprintf("%s_%s.sql", dbName, timestamp)
+		backupPath := filepath.Join(connectionFolder, filename)
+
+		tempConn := *conn
+		tempConn.DatabaseName = dbName
+
+		var cmd *exec.Cmd
+		switch conn.Type {
+		case "postgresql":
+			cmd = s.createPgDumpCmd(&tempConn, backupPath)
+		case "mysql", "mariadb":
+			cmd = s.createMySQLDumpCmd(&tempConn, backupPath)
+		case "mongodb":
+			cmd = s.createMongoDumpCmd(&tempConn, backupPath)
+		case "redis":
+			cmd = s.createRedisDumpCmd(&tempConn, backupPath)
+		default:
+			return nil, fmt.Errorf("unsupported database type for backup: %s", conn.Type)
+		}
+
+		if cmd == nil {
+			fmt.Printf("Warning: backup tool not found for database '%s'\n", dbName)
+			failedDatabases = append(failedDatabases, dbName)
+			continue
+		}
+
+		output, err := cmd.CombinedOutput()
+		if err != nil {
+			fmt.Printf("Warning: Failed to backup database '%s': %s\n", dbName, string(output))
+			failedDatabases = append(failedDatabases, dbName)
+			continue
+		}
+
+		fileInfo, err := os.Stat(backupPath)
+		if err != nil {
+			fmt.Printf("Warning: Failed to get file info for database '%s': %v\n", dbName, err)
+			failedDatabases = append(failedDatabases, dbName)
+			continue
+		}
+
+		backup := &Backup{
+			ID:           backupID,
+			ConnectionID: conn.ID,
+			StartedTime:  startTime,
+			Status:       "completed",
+			Path:         backupPath,
+			Size:         fileInfo.Size(),
+			CreatedAt:    time.Now(),
+			UpdatedAt:    time.Now(),
+		}
+
+		now := time.Now()
+		backup.CompletedTime = &now
+
+		if err := s.uploadToS3IfEnabled(backup, conn.UserID); err != nil {
+			fmt.Printf("Warning: Failed to upload backup '%s' to S3: %v\n", dbName, err)
+		}
+
+		if err := s.backupRepo.CreateBackup(backup); err != nil {
+			fmt.Printf("Warning: Failed to save backup record for '%s': %v\n", dbName, err)
+			failedDatabases = append(failedDatabases, dbName)
+			continue
+		}
+
+		successfulBackups = append(successfulBackups, backup)
+	}
+
+	if len(successfulBackups) == 0 {
+		if len(failedDatabases) > 0 {
+			return nil, fmt.Errorf("all database backups failed: %v", failedDatabases)
+		}
+		return nil, fmt.Errorf("all database backups failed")
+	}
+
+	if len(failedDatabases) > 0 {
+		fmt.Printf("Multi-database backup completed with some failures: %d/%d databases backed up successfully, %d failed: %v\n",
+			len(successfulBackups), len(conn.SelectedDatabases), len(failedDatabases), failedDatabases)
+	} else {
+		fmt.Printf("Multi-database backup completed: %d/%d databases backed up successfully\n",
+			len(successfulBackups), len(conn.SelectedDatabases))
+	}
+
+	return successfulBackups[0], nil
+}
+
+func (s *BackupService) createSingleDatabaseBackup(conn *connection.StoredConnection, dbName string) (*Backup, error) {
 	if err := s.verifyBackupTools(conn.Type); err != nil {
 		return nil, err
 	}
@@ -115,7 +239,7 @@ func (s *BackupService) CreateBackup(connectionID string) (*Backup, error) {
 
 	backupID := uuid.New()
 	timestamp := time.Now().Format("20060102_150405")
-	filename := fmt.Sprintf("%s_%s.sql", conn.DatabaseName, timestamp)
+	filename := fmt.Sprintf("%s_%s.sql", dbName, timestamp)
 
 	connectionFolder := filepath.Join(s.backupDir, common.SanitizeConnectionName(conn.Name))
 	if err := os.MkdirAll(connectionFolder, 0755); err != nil {
@@ -126,7 +250,7 @@ func (s *BackupService) CreateBackup(connectionID string) (*Backup, error) {
 
 	backup := &Backup{
 		ID:           backupID,
-		ConnectionID: connectionID,
+		ConnectionID: conn.ID,
 		StartedTime:  time.Now(),
 		Status:       "in_progress",
 		Path:         backupPath,
@@ -159,7 +283,7 @@ func (s *BackupService) CreateBackup(connectionID string) (*Backup, error) {
 			errorMsg = err.Error()
 		}
 		return nil, fmt.Errorf("backup failed for %s database '%s' on %s:%d - %s",
-			conn.Type, conn.DatabaseName, conn.Host, conn.Port, errorMsg)
+			conn.Type, dbName, conn.Host, conn.Port, errorMsg)
 	}
 
 	// Get file size

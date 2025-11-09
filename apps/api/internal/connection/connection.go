@@ -140,3 +140,53 @@ func (h *ConnectionHandler) DeleteConnection(w http.ResponseWriter, r *http.Requ
 
 	w.WriteHeader(http.StatusNoContent)
 }
+
+func (h *ConnectionHandler) DiscoverDatabases(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	if id == "" {
+		response.SendError(w, http.StatusBadRequest, "connection id is required")
+		return
+	}
+
+	databases, err := h.service.DiscoverDatabases(id)
+	if err != nil {
+		response.SendError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"databases": databases,
+	})
+}
+
+func (h *ConnectionHandler) UpdateSelectedDatabases(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	if id == "" {
+		response.SendError(w, http.StatusBadRequest, "connection id is required")
+		return
+	}
+
+	var req struct {
+		Databases []string `json:"databases"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.SendError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	if err := h.service.UpdateSelectedDatabases(id, req.Databases); err != nil {
+		response.SendError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"message": "Selected databases updated successfully",
+	})
+}

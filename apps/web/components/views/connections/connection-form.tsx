@@ -308,14 +308,18 @@ export function ConnectionForm({ onSuccess, onCancel }: ConnectionFormProps) {
 
       <div className="space-y-2">
         <Label htmlFor="database">
-          Database Name
-          {formData.type === 'redis' && <span className="text-xs text-muted-foreground ml-1">(optional)</span>}
-          {formData.type === 'mongodb' && <span className="text-xs text-muted-foreground ml-1">(optional)</span>}
+          Database Name <span className="text-xs text-muted-foreground ml-1">(optional - use discover to select databases)</span>
         </Label>
         <Input
           id="database"
-          required={formData.type !== 'redis' && formData.type !== 'mongodb'}
-          placeholder={formData.type === 'redis' ? 'Leave empty for default (0)' : formData.type === 'mongodb' ? 'Leave empty for admin' : ''}
+          required={false}
+          placeholder={
+            formData.type === 'redis' ? 'Default: 0' : 
+            formData.type === 'mongodb' ? 'Default: admin' : 
+            formData.type === 'postgresql' ? 'Default: postgres' :
+            formData.type === 'mysql' ? 'Leave empty to discover databases' :
+            'Leave empty to discover databases'
+          }
           value={formData.database || ''}
           onChange={(e) => setFormData({ ...formData, database: e.target.value })}
         />
