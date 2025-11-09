@@ -151,6 +151,8 @@ func (s *BackupService) createMultiDatabaseBackup(conn *connection.StoredConnect
 			cmd = s.createMongoDumpCmd(&tempConn, backupPath)
 		case "redis":
 			cmd = s.createRedisDumpCmd(&tempConn, backupPath)
+		case "mssql":
+			cmd = s.createMSSQLDumpCmd(&tempConn, backupPath)
 		default:
 			return nil, fmt.Errorf("unsupported database type for backup: %s", conn.Type)
 		}

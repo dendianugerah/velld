@@ -243,6 +243,12 @@ mysql -u root -p -e "CREATE DATABASE myapp_new;"
 mysql -u root -p myapp_new < backup.sql
 ```
 
+#### MSSQL
+```bash
+# Restore from backup file
+sqlcmd -S localhost -U sa -P 'YourPassword' -Q "RESTORE DATABASE myapp_new FROM DISK = N'/path/to/backup.bak' WITH REPLACE"
+```
+
 #### MongoDB
 ```bash
 mongorestore --archive=backup.archive --gzip

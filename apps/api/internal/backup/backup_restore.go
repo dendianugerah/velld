@@ -21,6 +21,7 @@ var restoreTools = map[string]string{
 	"mysql":      "mysql",
 	"mariadb":    "mysql",
 	"mongodb":    "mongorestore",
+	"mssql":      "sqlcmd",
 }
 
 // RestoreBackup restores a backup to a target database connection
@@ -61,6 +62,8 @@ func (s *BackupService) RestoreBackup(backupID string, connectionID string) erro
 		cmd = s.createMySQLRestoreCmd(conn, backup.Path)
 	case "mongodb":
 		cmd = s.createMongoRestoreCmd(conn, backup.Path)
+	case "mssql":
+		cmd = s.createMSSQLRestoreCmd(conn, backup.Path)
 	default:
 		return fmt.Errorf("unsupported database type for restore: %s", conn.Type)
 	}
@@ -81,6 +84,8 @@ func (s *BackupService) validateRestoreOutput(dbType, dbName string, output []by
 		return s.validateMySQLRestore(dbName, output, cmdErr)
 	case "mongodb":
 		return s.validateMongoDBRestore(dbName, output, cmdErr)
+	case "mssql":
+		return s.validateMSSQLRestore(dbName, output, cmdErr)
 	default:
 		return fmt.Errorf("unsupported database type: %s", dbType)
 	}
@@ -133,6 +138,28 @@ func (s *BackupService) validateMongoDBRestore(dbName string, output []byte, cmd
 		}
 		return fmt.Errorf("restore failed for database '%s': %s", dbName, outputStr)
 	}
+	return nil
+}
+
+func (s *BackupService) validateMSSQLRestore(dbName string, output []byte, cmdErr error) error {
+	outputStr := string(output)
+
+	if strings.Contains(outputStr, "Msg") && strings.Contains(outputStr, "Level 16") {
+		return fmt.Errorf("MSSQL restore failed with error: %s", outputStr)
+	}
+
+	if cmdErr != nil {
+		return fmt.Errorf("MSSQL restore command failed: %v, output: %s", cmdErr, outputStr)
+	}
+
+	if strings.Contains(outputStr, "RESTORE DATABASE successfully processed") {
+		return nil
+	}
+
+	if cmdErr != nil {
+		return fmt.Errorf("MSSQL restore may have failed: %s", outputStr)
+	}
+
 	return nil
 }
 
@@ -242,6 +269,49 @@ func (s *BackupService) createMongoRestoreCmd(conn *connection.StoredConnection,
 
 	if conn.Password != "" {
 		args = append(args, "--password", conn.Password)
+	}
+
+	return exec.Command(binPath, args...)
+}
+
+func (s *BackupService) createMSSQLRestoreCmd(conn *connection.StoredConnection, backupPath string) *exec.Cmd {
+	binaryPath := s.findDatabaseRestorePath("mssql")
+	if binaryPath == "" {
+		fmt.Printf("ERROR: sqlcmd binary not found. Please install SQL Server command-line tools.\n")
+		return nil
+	}
+
+	binPath := filepath.Join(binaryPath, common.GetPlatformExecutableName(restoreTools["mssql"]))
+
+	scriptPath := backupPath + "_restore.sql"
+	restoreScript := fmt.Sprintf(`
+USE master;
+GO
+ALTER DATABASE [%s] SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+GO
+RESTORE DATABASE [%s]
+FROM DISK = N'%s'
+WITH REPLACE, STATS = 10;
+GO
+ALTER DATABASE [%s] SET MULTI_USER;
+GO
+`, conn.DatabaseName, conn.DatabaseName, backupPath, conn.DatabaseName)
+
+	if err := os.WriteFile(scriptPath, []byte(restoreScript), 0644); err != nil {
+		fmt.Printf("ERROR: Failed to create restore script: %v\n", err)
+		return nil
+	}
+
+	args := []string{
+		"-S", fmt.Sprintf("%s,%d", conn.Host, conn.Port),
+		"-U", conn.Username,
+		"-P", conn.Password,
+		"-d", "master",
+		"-i", scriptPath,
+	}
+
+	if conn.SSL {
+		args = append(args, "-N")
 	}
 
 	return exec.Command(binPath, args...)
