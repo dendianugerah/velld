@@ -12,6 +12,8 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import type { Backup } from '@/types/backup';
+import type { Notification } from '@/types/notification';
+import type { Connection } from '@/types/connection';
 import { useNotifications } from '@/hooks/use-notifications';
 import { useConnections } from '@/hooks/use-connections';
 import { useEffect, useState } from 'react';
@@ -25,12 +27,12 @@ interface BackupDetailsSheetProps {
 export function BackupDetailsSheet({ backup, open, onClose }: BackupDetailsSheetProps) {
   const { notifications } = useNotifications();
   const { connections } = useConnections();
-  const [relatedNotification, setRelatedNotification] = useState<any>(null);
+  const [relatedNotification, setRelatedNotification] = useState<Notification | null>(null);
   const [connectionName, setConnectionName] = useState<string>('Unknown Connection');
 
   useEffect(() => {
     if (backup && connections) {
-      const connection = connections.find((c: any) => c.id === backup.connection_id);
+      const connection = connections.find((c: Connection) => c.id === backup.connection_id);
       setConnectionName(connection?.name || 'Unknown Connection');
     }
   }, [backup, connections]);
@@ -39,12 +41,12 @@ export function BackupDetailsSheet({ backup, open, onClose }: BackupDetailsSheet
     if (backup && backup.status === 'failed' && notifications) {
       // Find notification related to this backup
       const notification = notifications.find(
-        (n: any) => 
+        (n: Notification) => 
           n.type === 'backup_failed' && 
           n.metadata?.connection_id === backup.connection_id &&
           Math.abs(new Date(n.created_at).getTime() - new Date(backup.created_at).getTime()) < 5000
       );
-      setRelatedNotification(notification);
+      setRelatedNotification(notification || null);
     }
   }, [backup, notifications]);
 
