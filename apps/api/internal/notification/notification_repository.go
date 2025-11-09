@@ -27,7 +27,7 @@ func (r *NotificationRepository) CreateNotification(n *Notification) error {
 
 func (r *NotificationRepository) GetUserNotifications(userID uuid.UUID) ([]*NotificationList, error) {
 	query := `
-        SELECT id, title, message, type, status, created_at
+        SELECT id, title, message, type, status, metadata, created_at
         FROM notifications
         WHERE user_id = $1
         AND (status = 'unread' OR created_at > datetime('now', '-7 days'))
@@ -45,7 +45,7 @@ func (r *NotificationRepository) GetUserNotifications(userID uuid.UUID) ([]*Noti
 	var notifications []*NotificationList
 	for rows.Next() {
 		n := &NotificationList{}
-		err := rows.Scan(&n.ID, &n.Title, &n.Message, &n.Type, &n.Status, &n.CreatedAt)
+		err := rows.Scan(&n.ID, &n.Title, &n.Message, &n.Type, &n.Status, &n.Metadata, &n.CreatedAt)
 		if err != nil {
 			return nil, err
 		}

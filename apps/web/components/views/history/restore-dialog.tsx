@@ -68,7 +68,6 @@ export function RestoreDialog({ backup, open, onOpenChange }: RestoreDialogProps
     (conn) => conn.type === backup?.database_type
   );
 
-  console.log(connections)
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">

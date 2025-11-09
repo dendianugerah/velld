@@ -39,6 +39,7 @@ type NotificationList struct {
 	Message   string             `json:"message"`
 	Type      NotificationType   `json:"type"`
 	Status    NotificationStatus `json:"status"`
+	Metadata  json.RawMessage    `json:"metadata,omitempty"`
 	CreatedAt string             `json:"created_at"`
 }
 

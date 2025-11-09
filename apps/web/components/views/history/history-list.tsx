@@ -17,6 +17,7 @@ import { useNotifications } from '@/hooks/use-notifications';
 import { NotificationSidebar } from "./notification-sidebar";
 import { BackupCompareDialog } from "./backup-compare-dialog";
 import { RestoreDialog } from "./restore-dialog";
+import { BackupDetailsSheet } from "./backup-details-sheet";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import { useState, useMemo } from "react";
 import { useIsFetching } from "@tanstack/react-query";
@@ -28,6 +29,8 @@ export function HistoryList() {
   const [selectedBackupForCompare, setSelectedBackupForCompare] = useState<BackupList | undefined>();
   const [restoreDialogOpen, setRestoreDialogOpen] = useState(false);
   const [selectedBackupForRestore, setSelectedBackupForRestore] = useState<BackupList | null>(null);
+  const [detailsSheetOpen, setDetailsSheetOpen] = useState(false);
+  const [selectedBackupForDetails, setSelectedBackupForDetails] = useState<BackupList | null>(null);
   const isFetchingBackups = useIsFetching({ queryKey: ['backups'] });
   
   const [dateRange, setDateRange] = useState("all");
@@ -302,6 +305,29 @@ export function HistoryList() {
             notifications={notifications}
             isLoading={isLoadingNotifications}
             onMarkAsRead={markNotificationsAsRead}
+            onNotificationClick={(notification) => {
+              // For failed backups, create a backup object from notification metadata
+              // since failed backups don't exist in the database
+              if (notification.metadata) {
+                const failedBackup: BackupList = {
+                  id: notification.id,
+                  connection_id: notification.metadata.connection_id || '',
+                  database_name: notification.metadata.database_name || '',
+                  database_type: notification.metadata.database_type || '',
+                  path: '',
+                  size: 0,
+                  status: 'failed',
+                  started_time: notification.created_at,
+                  completed_time: notification.created_at,
+                  created_at: notification.created_at,
+                  scheduled_time: '',
+                  updated_at: notification.created_at,
+                };
+                
+                setSelectedBackupForDetails(failedBackup);
+                setDetailsSheetOpen(true);
+              }
+            }}
           />
         </div>
       </div>
@@ -320,6 +346,15 @@ export function HistoryList() {
         backup={selectedBackupForRestore}
         open={restoreDialogOpen}
         onOpenChange={setRestoreDialogOpen}
+      />
+
+      <BackupDetailsSheet
+        backup={selectedBackupForDetails}
+        open={detailsSheetOpen}
+        onClose={() => {
+          setDetailsSheetOpen(false);
+          setSelectedBackupForDetails(null);
+        }}
       />
     </Card>
   );
