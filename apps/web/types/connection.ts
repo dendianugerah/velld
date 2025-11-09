@@ -11,6 +11,7 @@ export interface Connection {
   database: string;
   database_name: string;
   database_size: number;
+  selected_databases?: string[];
   ssl: boolean;
   ssh_enabled: boolean;
   ssh_host?: string;

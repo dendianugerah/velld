@@ -35,3 +35,14 @@ export async function deleteConnection(id: string) {
     method: "DELETE",
   });
 }
+
+export async function discoverDatabases(id: string): Promise<{ databases: string[] }> {
+  return apiRequest<{ databases: string[] }>(`/api/connections/${id}/discover`);
+}
+
+export async function updateSelectedDatabases(id: string, databases: string[]) {
+  return apiRequest(`/api/connections/${id}/databases`, {
+    method: "PUT",
+    body: JSON.stringify({ databases }),
+  });
+}
