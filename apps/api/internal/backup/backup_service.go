@@ -331,7 +331,7 @@ func (s *BackupService) GetBackupStats(userID uuid.UUID) (*BackupStats, error) {
 }
 
 func (s *BackupService) uploadToS3IfEnabled(backup *Backup, userID uuid.UUID) error {
-	userSettings, err := s.settingsService.GetUserSettings(userID)
+	userSettings, err := s.settingsService.GetUserSettingsInternal(userID)
 	if err != nil {
 		return fmt.Errorf("failed to get user settings: %w", err)
 	}
