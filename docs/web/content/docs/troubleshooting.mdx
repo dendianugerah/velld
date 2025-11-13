@@ -90,18 +90,22 @@ See [Installation Guide](/docs/installation) for details.
    # MySQL
    mysql -h host.docker.internal -u root -p mydb
    
+   # MSSQL
+   sqlcmd -S host.docker.internal -U sa -P 'password' -d mydb
+   
    # MongoDB
    mongosh "mongodb://host.docker.internal:27017/mydb"
    ```
 
 3. **Verify firewall rules:**
-   - Ensure ports 5432 (PostgreSQL), 3306 (MySQL), or 27017 (MongoDB) are open
+   - Ensure ports 5432 (PostgreSQL), 3306 (MySQL), 1433 (MSSQL), or 27017 (MongoDB) are open
    - On Linux, check `ufw` or `iptables`
    - On macOS, check System Preferences → Security & Privacy
 
 4. **Check database configuration:**
    - PostgreSQL: `listen_addresses = '*'` in `postgresql.conf`
    - MySQL: `bind-address = 0.0.0.0` in `my.cnf`
+   - MSSQL: Check SQL Server Configuration Manager for TCP/IP settings
    - MongoDB: `bindIp: 0.0.0.0` in `mongod.conf`
 
 ### Authentication Failed

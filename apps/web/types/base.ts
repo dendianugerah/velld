@@ -23,11 +23,12 @@ export const statusColors: Record<StatusColor, string> = {
   running: "bg-blue-500/15 text-blue-500 border-blue-500/20",
 };
 
-export type DatabaseType = 'mysql' | 'postgresql' | 'mongodb' | 'redis';
+export type DatabaseType = 'mysql' | 'postgresql' | 'mongodb' | 'redis' | 'mssql';
 
 export const typeLabels: Record<DatabaseType, string> = {
   mysql: 'MySQL',
   postgresql: 'PostgreSQL',
   mongodb: 'MongoDB',
   redis: 'Redis',
+  mssql: 'MSSQL',
 } as const;

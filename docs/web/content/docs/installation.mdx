@@ -16,7 +16,7 @@ Before you begin, ensure you have:
 
 - **Docker** and **Docker Compose** installed
 - At least **512MB RAM** and **1GB disk space**
-- A database you want to backup (PostgreSQL, MySQL, MongoDB, or Redis)
+- A database you want to backup (PostgreSQL, MySQL, MSSQL, MongoDB, or Redis)
 
 <Callout type="info">
   Velld only installs the database clients you need. This keeps the Docker image lightweight and secure.
@@ -97,7 +97,7 @@ docker compose up -d
 
 Choose only the database client you need to keep your installation lightweight:
 
-<Tabs items={['PostgreSQL', 'MySQL', 'MongoDB']}>
+<Tabs items={['PostgreSQL', 'MySQL', 'MSSQL', 'MongoDB']}>
   <Tab value="PostgreSQL">
     ### PostgreSQL Only
 
@@ -347,6 +347,108 @@ Choose only the database client you need to keep your installation lightweight:
 
     <Callout type="success">
       Your MongoDB-only installation is now running! Image size: ~60MB lighter.
+    </Callout>
+  </Tab>
+
+  <Tab value="MSSQL">
+    ### MSSQL Only
+
+    **1. Create a custom Dockerfile**
+
+    Create `apps/api/Dockerfile.mssql`:
+
+    ```dockerfile
+    FROM golang:1.24-alpine AS builder
+
+    WORKDIR /app
+
+    RUN apk add --no-cache gcc musl-dev
+
+    COPY go.mod go.sum ./
+    RUN go mod download
+
+    COPY . .
+
+    RUN CGO_ENABLED=1 GOOS=linux go build -o main cmd/api-server/main.go
+
+    FROM alpine:latest
+
+    # Install MSSQL tools
+    RUN apk add --no-cache \
+        sqlite-libs \
+        freetds \
+        curl \
+        gnupg
+
+    # Install Microsoft SQL Server Tools
+    RUN curl -O https://download.microsoft.com/download/b/9/f/b9f3cce4-3925-46d4-9f46-da08869c6486/msodbcsql18_18.1.1.1-1_amd64.apk && \
+        curl -O https://download.microsoft.com/download/b/9/f/b9f3cce4-3925-46d4-9f46-da08869c6486/mssql-tools18_18.1.1.1-1_amd64.apk && \
+        apk add --allow-untrusted msodbcsql18_18.1.1.1-1_amd64.apk && \
+        apk add --allow-untrusted mssql-tools18_18.1.1.1-1_amd64.apk && \
+        rm -f msodbcsql18_18.1.1.1-1_amd64.apk mssql-tools18_18.1.1.1-1_amd64.apk && \
+        apk del curl gnupg
+
+    ENV PATH="${PATH}:/opt/mssql-tools18/bin"
+
+    WORKDIR /app
+
+    COPY --from=builder /app/main .
+    COPY --from=builder /app/internal/database ./internal/database
+
+    EXPOSE 8080
+
+    CMD ["./main"]
+    ```
+
+    **2. Create a custom docker-compose.yml**
+
+    Create `docker-compose.mssql.yml`:
+
+    ```yaml
+    services:
+      api:
+        build:
+          context: ./apps/api
+          dockerfile: Dockerfile.mssql  # Use MSSQL-only Dockerfile
+        ports:
+          - "8080:8080"
+        volumes:
+          - api_data:/app/data
+          - backup_data:/app/backups
+        environment:
+          JWT_SECRET: ${JWT_SECRET}
+          ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+          ADMIN_USERNAME_CREDENTIAL: ${ADMIN_USERNAME_CREDENTIAL}
+          ADMIN_PASSWORD_CREDENTIAL: ${ADMIN_PASSWORD_CREDENTIAL}
+          ALLOW_REGISTER: ${ALLOW_REGISTER}
+        restart: unless-stopped
+
+      web:
+        build:
+          context: ./apps/web
+          dockerfile: Dockerfile
+        ports:
+          - "3000:3000"
+        environment:
+          NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+          ALLOW_REGISTER: ${ALLOW_REGISTER}
+        depends_on:
+          - api
+        restart: unless-stopped
+
+    volumes:
+      api_data:
+      backup_data:
+    ```
+
+    **3. Start the services**
+
+    ```bash
+    docker compose -f docker-compose.mssql.yml up -d
+    ```
+
+    <Callout type="success">
+      Your MSSQL-only installation is now running! Includes SQL Server command-line tools.
     </Callout>
   </Tab>
 </Tabs>

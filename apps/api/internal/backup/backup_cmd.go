@@ -16,6 +16,7 @@ var requiredTools = map[string]string{
 	"mariadb":    "mysqldump",
 	"mongodb":    "mongodump",
 	"redis":      "redis-cli",
+	"mssql":      "sqlcmd",
 }
 
 func (s *BackupService) verifyBackupTools(dbType string) error {
@@ -156,6 +157,43 @@ func (s *BackupService) createRedisDumpCmd(conn *connection.StoredConnection, ou
 	}
 
 	args = append(args, "--rdb", outputPath)
+
+	return exec.Command(binPath, args...)
+}
+
+func (s *BackupService) createMSSQLDumpCmd(conn *connection.StoredConnection, outputPath string) *exec.Cmd {
+	binaryPath := s.findDatabaseBinaryPath("mssql")
+	if binaryPath == "" {
+		fmt.Printf("ERROR: sqlcmd binary not found. Please install SQL Server command-line tools.\n")
+		return nil
+	}
+
+	binPath := filepath.Join(binaryPath, common.GetPlatformExecutableName(requiredTools["mssql"]))
+
+	scriptPath := outputPath + ".sql"
+	backupScript := fmt.Sprintf(`
+BACKUP DATABASE [%s]
+TO DISK = N'%s'
+WITH FORMAT, COMPRESSION, STATS = 10;
+GO
+`, conn.DatabaseName, outputPath)
+
+	if err := os.WriteFile(scriptPath, []byte(backupScript), 0644); err != nil {
+		fmt.Printf("ERROR: Failed to create backup script: %v\n", err)
+		return nil
+	}
+
+	args := []string{
+		"-S", fmt.Sprintf("%s,%d", conn.Host, conn.Port),
+		"-U", conn.Username,
+		"-P", conn.Password,
+		"-d", "master",
+		"-i", scriptPath,
+	}
+
+	if conn.SSL {
+		args = append(args, "-N")
+	}
 
 	return exec.Command(binPath, args...)
 }

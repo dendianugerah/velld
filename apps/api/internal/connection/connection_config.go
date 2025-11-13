@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"fmt"
 
+	_ "github.com/denisenkom/go-mssqldb"
 	"github.com/go-sql-driver/mysql"
 	"github.com/lib/pq"
 	"github.com/mattn/go-sqlite3"
@@ -39,6 +40,8 @@ func (cm *ConnectionManager) Connect(config ConnectionConfig) error {
 		return cm.connectMongoDB(config)
 	case "redis":
 		return cm.connectRedis(config)
+	case "mssql":
+		return cm.connectMSSQL(config)
 	default:
 		return fmt.Errorf("unsupported database type: %s", config.Type)
 	}
@@ -76,6 +79,8 @@ func (cm *ConnectionManager) connectWithSSH(config ConnectionConfig) error {
 		connErr = cm.connectMongoDB(tunnelConfig)
 	case "redis":
 		connErr = cm.connectRedis(tunnelConfig)
+	case "mssql":
+		connErr = cm.connectMSSQL(tunnelConfig)
 	default:
 		tunnel.Stop()
 		return fmt.Errorf("unsupported database type: %s", config.Type)
@@ -202,6 +207,30 @@ func (cm *ConnectionManager) connectRedis(config ConnectionConfig) error {
 	}
 
 	cm.connections[config.ID] = client
+	return nil
+}
+
+func (cm *ConnectionManager) connectMSSQL(config ConnectionConfig) error {
+	dsn := fmt.Sprintf("server=%s;port=%d;user id=%s;password=%s;database=%s",
+		config.Host, config.Port, config.Username, config.Password, config.Database)
+
+	if config.SSL {
+		dsn += ";encrypt=true;TrustServerCertificate=false"
+	} else {
+		dsn += ";encrypt=disable"
+	}
+
+	db, err := sql.Open("sqlserver", dsn)
+	if err != nil {
+		return fmt.Errorf("failed to open MSSQL connection: %w", err)
+	}
+
+	if err := db.Ping(); err != nil {
+		db.Close()
+		return fmt.Errorf("failed to ping MSSQL: %w", err)
+	}
+
+	cm.connections[config.ID] = db
 	return nil
 }
 

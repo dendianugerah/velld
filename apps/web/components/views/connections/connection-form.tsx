@@ -66,6 +66,8 @@ export function ConnectionForm({ onSuccess, onCancel }: ConnectionFormProps) {
         'mongo': 'mongodb',
         'redis': 'redis',
         'rediss': 'redis',
+        'mssql': 'mssql',
+        'sqlserver': 'mssql',
       };
       
       const mappedType = typeMapping[type];
@@ -74,7 +76,7 @@ export function ConnectionForm({ onSuccess, onCancel }: ConnectionFormProps) {
         toast({
           variant: "destructive",
           title: "Unsupported Database Type",
-          description: `The database type "${type}" is not supported. Supported types: PostgreSQL, MySQL, MongoDB, Redis`,
+          description: `The database type "${type}" is not supported. Supported types: PostgreSQL, MySQL, MongoDB, Redis, MSSQL`,
         });
         return false;
       }
@@ -118,6 +120,7 @@ export function ConnectionForm({ onSuccess, onCancel }: ConnectionFormProps) {
       'mysql': 3306,
       'mongodb': 27017,
       'redis': 6379,
+      'mssql': 1433,
     };
     return ports[type] || 5432;
   };
@@ -251,6 +254,7 @@ export function ConnectionForm({ onSuccess, onCancel }: ConnectionFormProps) {
           <SelectContent>
             <SelectItem value="postgresql">PostgreSQL</SelectItem>
             <SelectItem value="mysql">MySQL</SelectItem>
+            <SelectItem value="mssql">MSSQL</SelectItem>
             <SelectSeparator />
             <SelectItem value="mongodb">MongoDB</SelectItem>
             <SelectItem value="redis">Redis</SelectItem>
