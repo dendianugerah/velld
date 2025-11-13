@@ -104,9 +104,19 @@ func (s *BackupService) executeCronBackup(schedule *BackupSchedule) {
 	}
 
 	// Update schedule's next run time and last backup time
-	parser := cron.NewParser(cron.Second | cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow)
-	cronSchedule, _ := parser.Parse(schedule.CronSchedule)
-	nextRun := cronSchedule.Next(time.Now())
+	// Get the next run time from the cron entry to avoid reparsing
+	scheduleID := schedule.ID.String()
+	var nextRun time.Time
+	if entryID, exists := s.cronEntries[scheduleID]; exists {
+		entry := s.cronManager.Entry(entryID)
+		nextRun = entry.Next
+	} else {
+		// Fallback: parse if entry not found (shouldn't happen in normal operation)
+		parser := cron.NewParser(cron.Second | cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow)
+		cronSchedule, _ := parser.Parse(schedule.CronSchedule)
+		nextRun = cronSchedule.Next(time.Now())
+	}
+	
 	schedule.NextRunTime = &nextRun
 	now := time.Now()
 	schedule.LastBackupTime = &now

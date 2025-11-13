@@ -63,6 +63,7 @@ func (h *BackupHandler) CompareBackups(w http.ResponseWriter, r *http.Request) {
 }
 
 // readBackupFile reads a backup file and returns its content
+// For very large files, this limits the content to prevent memory issues
 func readBackupFile(path string) (string, error) {
 	file, err := os.Open(path)
 	if err != nil {
@@ -70,7 +71,22 @@ func readBackupFile(path string) (string, error) {
 	}
 	defer file.Close()
 
+	// Check file size first
+	fileInfo, err := file.Stat()
+	if err != nil {
+		return "", err
+	}
+
+	// Limit file size to 10MB to prevent memory issues
+	const maxFileSize = 10 * 1024 * 1024 // 10MB
+	if fileInfo.Size() > maxFileSize {
+		return "", fmt.Errorf("file too large for comparison (%d bytes). Maximum size is %d bytes", fileInfo.Size(), maxFileSize)
+	}
+
 	var content strings.Builder
+	// Pre-allocate capacity based on file size for better performance
+	content.Grow(int(fileInfo.Size()))
+	
 	scanner := bufio.NewScanner(file)
 
 	// Read file with a larger buffer for big dump files
@@ -101,7 +117,13 @@ func generateDiff(source, target string) DiffResponse {
 	unchanged := 0
 	lineNumber := 0
 
-	// Simple line-by-line comparison
+	// Build a map of target lines for faster lookups
+	targetLineMap := make(map[string][]int)
+	for i, line := range targetLines {
+		targetLineMap[line] = append(targetLineMap[line], i)
+	}
+
+	// Simple line-by-line comparison with optimized matching
 	i, j := 0, 0
 	for i < len(sourceLines) || j < len(targetLines) {
 		lineNumber++
@@ -165,24 +187,28 @@ func generateDiff(source, target string) DiffResponse {
 				i++
 				j++
 			} else {
-				// Try to find matching line in target
+				// Use map lookup instead of nested loop for better performance
 				found := false
-				for k := j + 1; k < min(j+5, len(targetLines)); k++ {
-					if sourceLines[i] == targetLines[k] {
-						// Line was removed from source, added to target
-						for l := j; l < k; l++ {
-							lineNumber++
-							added++
-							changes = append(changes, DiffChange{
-								Type:       "added",
-								Content:    "+ " + targetLines[l],
-								LineNumber: lineNumber,
-								NewLine:    l,
-							})
+				lookAhead := 5
+				if indices, exists := targetLineMap[sourceLines[i]]; exists {
+					// Check if any of the matching indices are within our lookahead window
+					for _, k := range indices {
+						if k > j && k < j+lookAhead {
+							// Line was removed from source, added to target
+							for l := j; l < k; l++ {
+								lineNumber++
+								added++
+								changes = append(changes, DiffChange{
+									Type:       "added",
+									Content:    "+ " + targetLines[l],
+									LineNumber: lineNumber,
+									NewLine:    l,
+								})
+							}
+							j = k
+							found = true
+							break
 						}
-						j = k
-						found = true
-						break
 					}
 				}
 

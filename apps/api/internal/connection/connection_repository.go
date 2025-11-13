@@ -251,6 +251,7 @@ func (r *ConnectionRepository) Update(conn StoredConnection) error {
 }
 
 func (r *ConnectionRepository) ListByUserID(userID uuid.UUID) ([]ConnectionListItem, error) {
+	// Optimized query using window function to avoid correlated subquery
 	query := `
 		SELECT 
 			c.id,
@@ -265,14 +266,16 @@ func (r *ConnectionRepository) ListByUserID(userID uuid.UUID) ([]ConnectionListI
 			bs.retention_days
 		FROM connections c
 		LEFT JOIN backup_schedules bs ON c.id = bs.connection_id AND bs.enabled = true
-		LEFT JOIN backups b ON c.id = b.connection_id
-			AND b.completed_time = (
-				SELECT MAX(completed_time)
-				FROM backups
-				WHERE connection_id = c.id
-			)
+		LEFT JOIN (
+			SELECT 
+				connection_id,
+				completed_time,
+				ROW_NUMBER() OVER (PARTITION BY connection_id ORDER BY completed_time DESC) as rn
+			FROM backups
+			WHERE completed_time IS NOT NULL
+		) b ON c.id = b.connection_id AND b.rn = 1
 		WHERE c.user_id = $1
-		GROUP BY c.id, c.name, c.type, c.host, c.status, c.database_size, b.completed_time, bs.enabled, bs.cron_schedule, bs.retention_days
+		ORDER BY c.name
 	`
 
 	rows, err := r.db.Query(query, userID)

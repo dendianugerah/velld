@@ -405,20 +405,30 @@ func (r *BackupRepository) GetBackupStats(userID uuid.UUID) (*BackupStats, error
 		SuccessRate:     100, // Default to 100% if no backups
 	}
 
+	// Single optimized query to get all stats at once
+	// Use SQL to calculate duration in seconds, then convert to minutes
+	var avgDurationSeconds sql.NullFloat64
 	err := r.db.QueryRow(`
 		SELECT 
-				COALESCE(COUNT(*), 0) as total_backups,
-				COALESCE(SUM(CASE WHEN b.status != 'completed' THEN 1 ELSE 0 END), 0) as failed_backups,
-				COALESCE(SUM(b.size), 0) as total_size
+			COALESCE(COUNT(*), 0) as total_backups,
+			COALESCE(SUM(CASE WHEN b.status != 'completed' THEN 1 ELSE 0 END), 0) as failed_backups,
+			COALESCE(SUM(b.size), 0) as total_size,
+			AVG(
+				CASE 
+					WHEN b.status = 'completed' AND b.completed_time IS NOT NULL 
+					THEN CAST((julianday(b.completed_time) - julianday(b.started_time)) * 86400 AS REAL)
+					ELSE NULL 
+				END
+			) as avg_duration_seconds
 		FROM backups b
 		INNER JOIN connections c ON b.connection_id = c.id
 		WHERE c.user_id = $1
-	`, userID).Scan(&stats.TotalBackups, &stats.FailedBackups, &stats.TotalSize)
+	`, userID).Scan(&stats.TotalBackups, &stats.FailedBackups, &stats.TotalSize, &avgDurationSeconds)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return stats, nil // Return default values if no data
 		}
-		return nil, fmt.Errorf("failed to get backup counts: %v", err)
+		return nil, fmt.Errorf("failed to get backup stats: %v", err)
 	}
 
 	// Calculate success rate only if there are backups
@@ -427,47 +437,9 @@ func (r *BackupRepository) GetBackupStats(userID uuid.UUID) (*BackupStats, error
 		stats.SuccessRate = float64(successfulBackups) / float64(stats.TotalBackups) * 100
 	}
 
-	// Calculate average duration for completed backups
-	var totalDuration float64
-	var completedBackups int
-	rows, err := r.db.Query(`
-		SELECT 
-			b.started_time,
-			b.completed_time
-		FROM backups b
-		INNER JOIN connections c ON b.connection_id = c.id
-		WHERE c.user_id = $1 
-		AND b.status = 'completed'
-		AND b.completed_time IS NOT NULL
-	`, userID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get backup durations: %v", err)
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var startStr, endStr string
-		if err := rows.Scan(&startStr, &endStr); err != nil {
-			continue
-		}
-
-		startTime, err := common.ParseTime(startStr)
-		if err != nil {
-			continue
-		}
-
-		endTime, err := common.ParseTime(endStr)
-		if err != nil {
-			continue
-		}
-
-		duration := endTime.Sub(startTime).Minutes()
-		totalDuration += duration
-		completedBackups++
-	}
-
-	if completedBackups > 0 {
-		stats.AverageDuration = totalDuration / float64(completedBackups)
+	// Convert average duration from seconds to minutes
+	if avgDurationSeconds.Valid {
+		stats.AverageDuration = avgDurationSeconds.Float64 / 60.0
 	}
 
 	return stats, nil
