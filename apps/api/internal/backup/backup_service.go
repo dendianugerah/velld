@@ -393,5 +393,15 @@ func (s *BackupService) uploadToS3IfEnabled(backup *Backup, userID uuid.UUID) er
 	backup.S3ObjectKey = &objectKey
 
 	fmt.Printf("Successfully uploaded backup %s to S3: %s\n", backup.ID, objectKey)
+
+	// Purge local backup file if enabled
+	if userSettings.S3PurgeLocal {
+		if err := os.Remove(backup.Path); err != nil {
+			fmt.Printf("Warning: Failed to purge local backup file %s: %v\n", backup.Path, err)
+		} else {
+			fmt.Printf("Successfully purged local backup file: %s\n", backup.Path)
+		}
+	}
+
 	return nil
 }

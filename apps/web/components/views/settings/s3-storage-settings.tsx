@@ -38,6 +38,7 @@ export function S3StorageSettings() {
     s3_secret_key: "",
     s3_use_ssl: true,
     s3_path_prefix: "",
+    s3_purge_local: false,
   });
 
   // Sync form data when settings load
@@ -52,6 +53,7 @@ export function S3StorageSettings() {
         s3_secret_key: "", // Don't show the secret key for security
         s3_use_ssl: settings.s3_use_ssl ?? true,
         s3_path_prefix: settings.s3_path_prefix || "",
+        s3_purge_local: settings.s3_purge_local || false,
       });
     }
   }, [settings]);
@@ -355,6 +357,23 @@ export function S3StorageSettings() {
                 id="s3-use-ssl"
                 checked={formData.s3_use_ssl}
                 onCheckedChange={(checked) => setFormData({ ...formData, s3_use_ssl: checked })}
+              />
+            </div>
+
+            {/* Purge Local Backup */}
+            <div className="flex items-center justify-between p-4 rounded-lg border bg-background/50">
+              <div className="space-y-0.5">
+                <Label htmlFor="s3-purge-local" className="text-sm font-medium">
+                  Purge Local Backup After Upload
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  Automatically delete local backup files after successful S3 upload to save disk space
+                </p>
+              </div>
+              <Switch
+                id="s3-purge-local"
+                checked={formData.s3_purge_local}
+                onCheckedChange={(checked) => setFormData({ ...formData, s3_purge_local: checked })}
               />
             </div>
 

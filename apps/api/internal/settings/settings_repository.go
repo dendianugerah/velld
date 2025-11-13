@@ -24,7 +24,7 @@ func (r *SettingsRepository) GetUserSettings(userID uuid.UUID) (*UserSettings, e
         SELECT id, user_id, notify_dashboard, notify_email, notify_webhook,
                webhook_url, email, smtp_host, smtp_port, smtp_username, 
                smtp_password, s3_enabled, s3_endpoint, s3_region, s3_bucket,
-               s3_access_key, s3_secret_key, s3_use_ssl, s3_path_prefix,
+               s3_access_key, s3_secret_key, s3_use_ssl, s3_path_prefix, s3_purge_local,
                created_at, updated_at
         FROM user_settings
         WHERE user_id = $1`, userID).Scan(
@@ -34,6 +34,7 @@ func (r *SettingsRepository) GetUserSettings(userID uuid.UUID) (*UserSettings, e
 		&settings.SMTPUsername, &settings.SMTPPassword,
 		&settings.S3Enabled, &settings.S3Endpoint, &settings.S3Region, &settings.S3Bucket,
 		&settings.S3AccessKey, &settings.S3SecretKey, &settings.S3UseSSL, &settings.S3PathPrefix,
+		&settings.S3PurgeLocal,
 		&createdAtStr, &updatedAtStr)
 
 	if err == sql.ErrNoRows {
@@ -74,15 +75,16 @@ func (r *SettingsRepository) CreateUserSettings(settings *UserSettings) error {
             id, user_id, notify_dashboard, notify_email, notify_webhook,
             webhook_url, email, smtp_host, smtp_port, smtp_username, 
             smtp_password, s3_enabled, s3_endpoint, s3_region, s3_bucket,
-            s3_access_key, s3_secret_key, s3_use_ssl, s3_path_prefix,
+            s3_access_key, s3_secret_key, s3_use_ssl, s3_path_prefix, s3_purge_local,
             created_at, updated_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)`,
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)`,
 		settings.ID, settings.UserID, settings.NotifyDashboard,
 		settings.NotifyEmail, settings.NotifyWebhook, settings.WebhookURL,
 		settings.Email, settings.SMTPHost, settings.SMTPPort,
 		settings.SMTPUsername, settings.SMTPPassword,
 		settings.S3Enabled, settings.S3Endpoint, settings.S3Region, settings.S3Bucket,
 		settings.S3AccessKey, settings.S3SecretKey, settings.S3UseSSL, settings.S3PathPrefix,
+		settings.S3PurgeLocal,
 		settings.CreatedAt, settings.UpdatedAt)
 	return err
 }
@@ -96,13 +98,14 @@ func (r *SettingsRepository) UpdateUserSettings(settings *UserSettings) error {
             smtp_username = $8, smtp_password = $9, s3_enabled = $10,
             s3_endpoint = $11, s3_region = $12, s3_bucket = $13,
             s3_access_key = $14, s3_secret_key = $15, s3_use_ssl = $16,
-            s3_path_prefix = $17, updated_at = $18
-        WHERE user_id = $19`,
+            s3_path_prefix = $17, s3_purge_local = $18, updated_at = $19
+        WHERE user_id = $20`,
 		settings.NotifyDashboard, settings.NotifyEmail, settings.NotifyWebhook,
 		settings.WebhookURL, settings.Email, settings.SMTPHost, settings.SMTPPort,
 		settings.SMTPUsername, settings.SMTPPassword,
 		settings.S3Enabled, settings.S3Endpoint, settings.S3Region, settings.S3Bucket,
 		settings.S3AccessKey, settings.S3SecretKey, settings.S3UseSSL, settings.S3PathPrefix,
+		settings.S3PurgeLocal,
 		settings.UpdatedAt, settings.UserID)
 	return err
 }
