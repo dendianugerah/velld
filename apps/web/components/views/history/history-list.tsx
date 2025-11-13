@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Database, Download, History, GitCompare, RefreshCw, RotateCcw } from "lucide-react";
+import { Database, Download, History, GitCompare, RefreshCw, RotateCcw, Cloud } from "lucide-react";
 import { formatDistanceToNow, parseISO, subDays, isAfter } from "date-fns";
 import { useBackup } from "@/hooks/use-backup";
 import { BackupList } from "@/types/backup";
@@ -153,6 +153,12 @@ export function HistoryList() {
                               >
                                 {item.status}
                               </Badge>
+                              {item.s3_object_key && (
+                                <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">
+                                  <Cloud className="h-3 w-3 mr-1" />
+                                  S3
+                                </Badge>
+                              )}
                             </div>
                             <p className="text-xs text-muted-foreground mt-2">
                               {formatDistanceToNow(parseISO(item.created_at), { addSuffix: true })}
@@ -208,6 +214,12 @@ export function HistoryList() {
                               <Badge variant="secondary" className="text-xs shrink-0">
                                 {item.database_type}
                               </Badge>
+                              {item.s3_object_key && (
+                                <Badge variant="secondary" className="text-xs shrink-0 bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">
+                                  <Cloud className="h-3 w-3 mr-1" />
+                                  S3
+                                </Badge>
+                              )}
                             </div>
                             <p className="text-sm text-muted-foreground mt-1">
                               {formatDistanceToNow(parseISO(item.created_at), { addSuffix: true })} | {formatSize(item.size)}

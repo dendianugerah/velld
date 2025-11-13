@@ -9,6 +9,7 @@ export interface Backup {
   size: number;
   status: string;
   path: string;
+  s3_object_key?: string;
   scheduled_time: string;
   started_time: string;
   completed_time: string;

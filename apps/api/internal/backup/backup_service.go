@@ -405,3 +405,93 @@ func (s *BackupService) uploadToS3IfEnabled(backup *Backup, userID uuid.UUID) er
 
 	return nil
 }
+
+// ensureBackupFileAvailable checks if backup file exists locally, if not downloads from S3
+// Returns the path to use and a boolean indicating if it's a temporary file that should be cleaned up
+func (s *BackupService) ensureBackupFileAvailable(backup *Backup, userID uuid.UUID) (string, bool, error) {
+	// Check if local file exists
+	if _, err := os.Stat(backup.Path); err == nil {
+		// Local file exists, use it
+		return backup.Path, false, nil
+	}
+
+	// Local file doesn't exist, check if we have S3 object key
+	if backup.S3ObjectKey == nil || *backup.S3ObjectKey == "" {
+		return "", false, fmt.Errorf("backup file not found locally and no S3 object key available")
+	}
+
+	// Get user settings to configure S3 client
+	userSettings, err := s.settingsService.GetUserSettingsInternal(userID)
+	if err != nil {
+		return "", false, fmt.Errorf("failed to get user settings: %w", err)
+	}
+
+	if !userSettings.S3Enabled {
+		return "", false, fmt.Errorf("backup file not found locally and S3 is not enabled")
+	}
+
+	// Validate S3 configuration
+	if userSettings.S3Endpoint == nil || *userSettings.S3Endpoint == "" {
+		return "", false, fmt.Errorf("S3 endpoint not configured")
+	}
+	if userSettings.S3Bucket == nil || *userSettings.S3Bucket == "" {
+		return "", false, fmt.Errorf("S3 bucket not configured")
+	}
+	if userSettings.S3AccessKey == nil || *userSettings.S3AccessKey == "" {
+		return "", false, fmt.Errorf("S3 access key not configured")
+	}
+	if userSettings.S3SecretKey == nil || *userSettings.S3SecretKey == "" {
+		return "", false, fmt.Errorf("S3 secret key not configured")
+	}
+
+	// Decrypt S3 secret key
+	secretKey, err := s.cryptoService.Decrypt(*userSettings.S3SecretKey)
+	if err != nil {
+		return "", false, fmt.Errorf("failed to decrypt S3 secret key: %w", err)
+	}
+
+	// Configure S3 client
+	region := "us-east-1"
+	if userSettings.S3Region != nil && *userSettings.S3Region != "" {
+		region = *userSettings.S3Region
+	}
+
+	pathPrefix := ""
+	if userSettings.S3PathPrefix != nil {
+		pathPrefix = *userSettings.S3PathPrefix
+	}
+
+	s3Config := S3Config{
+		Endpoint:   *userSettings.S3Endpoint,
+		Region:     region,
+		Bucket:     *userSettings.S3Bucket,
+		AccessKey:  *userSettings.S3AccessKey,
+		SecretKey:  secretKey,
+		UseSSL:     userSettings.S3UseSSL,
+		PathPrefix: pathPrefix,
+	}
+
+	s3Storage, err := NewS3Storage(s3Config)
+	if err != nil {
+		return "", false, fmt.Errorf("failed to create S3 storage client: %w", err)
+	}
+
+	// Create temp file path
+	tempDir := filepath.Join(os.TempDir(), "velld-s3-downloads")
+	if err := os.MkdirAll(tempDir, 0755); err != nil {
+		return "", false, fmt.Errorf("failed to create temp directory: %w", err)
+	}
+
+	tempFilePath := filepath.Join(tempDir, filepath.Base(backup.Path))
+
+	// Download from S3
+	ctx := context.Background()
+	if err := s3Storage.DownloadFile(ctx, *backup.S3ObjectKey, tempFilePath); err != nil {
+		return "", false, fmt.Errorf("failed to download backup from S3: %w", err)
+	}
+
+	fmt.Printf("Successfully downloaded backup %s from S3 to temp location: %s\n", backup.ID, tempFilePath)
+	
+	// Return temp file path and indicate it should be cleaned up
+	return tempFilePath, true, nil
+}

@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/dendianugerah/velld/internal/common"
 	"github.com/dendianugerah/velld/internal/common/response"
 	"github.com/gorilla/mux"
 )
@@ -33,6 +34,12 @@ func (h *BackupHandler) CompareBackups(w http.ResponseWriter, r *http.Request) {
 	sourceID := vars["sourceId"]
 	targetID := vars["targetId"]
 
+	userID, err := common.GetUserIDFromContext(r.Context())
+	if err != nil {
+		response.SendError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
 	sourceBackup, err := h.backupService.GetBackup(sourceID)
 	if err != nil {
 		response.SendError(w, http.StatusNotFound, "Source backup not found")
@@ -45,13 +52,40 @@ func (h *BackupHandler) CompareBackups(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sourceContent, err := readBackupFile(sourceBackup.Path)
+	// Ensure both backup files are available (local or download from S3)
+	sourceFilePath, sourceIsTemp, err := h.backupService.ensureBackupFileAvailable(sourceBackup, userID)
+	if err != nil {
+		response.SendError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to access source backup: %v", err))
+		return
+	}
+
+	targetFilePath, targetIsTemp, err := h.backupService.ensureBackupFileAvailable(targetBackup, userID)
+	if err != nil {
+		response.SendError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to access target backup: %v", err))
+		return
+	}
+
+	// Clean up temp files after comparison
+	defer func() {
+		if sourceIsTemp {
+			if err := os.Remove(sourceFilePath); err != nil {
+				fmt.Printf("Warning: Failed to remove temp source file %s: %v\n", sourceFilePath, err)
+			}
+		}
+		if targetIsTemp {
+			if err := os.Remove(targetFilePath); err != nil {
+				fmt.Printf("Warning: Failed to remove temp target file %s: %v\n", targetFilePath, err)
+			}
+		}
+	}()
+
+	sourceContent, err := readBackupFile(sourceFilePath)
 	if err != nil {
 		response.SendError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to read source backup: %v", err))
 		return
 	}
 
-	targetContent, err := readBackupFile(targetBackup.Path)
+	targetContent, err := readBackupFile(targetFilePath)
 	if err != nil {
 		response.SendError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to read target backup: %v", err))
 		return

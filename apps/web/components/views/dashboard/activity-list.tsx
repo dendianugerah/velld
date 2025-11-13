@@ -6,7 +6,7 @@ import { HistoryListSkeleton } from "@/components/ui/skeleton/history-list";
 import { ConnectionListSkeleton } from "@/components/ui/skeleton/connection-list";
 import { EmptyState } from "@/components/ui/empty-state";
 
-import { Database, Clock, HardDrive, Calendar, Activity, Timer } from "lucide-react";
+import { Database, Clock, HardDrive, Calendar, Activity, Timer, Cloud } from "lucide-react";
 
 import { formatDistanceToNow, parseISO } from "date-fns";
 import { formatSize, getScheduleFrequency } from "@/lib/helper";
@@ -52,6 +52,12 @@ export function ActivityList() {
                   <Badge variant="outline" className="text-xs font-normal">
                     {typeLabels[item.database_type as DatabaseType]}
                   </Badge>
+                  {item.s3_object_key && (
+                    <Badge variant="outline" className="text-xs font-normal bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 border-blue-200 dark:border-blue-800">
+                      <Cloud className="h-3 w-3 mr-1" />
+                      S3
+                    </Badge>
+                  )}
                   <Badge 
                     variant="outline" 
                     className={cn(
