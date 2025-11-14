@@ -85,6 +85,32 @@ func (s *S3Storage) UploadFile(ctx context.Context, localPath string) (string, e
 	return objectKey, nil
 }
 
+// UploadFileWithPath uploads a file to S3 with a custom subfolder path
+func (s *S3Storage) UploadFileWithPath(ctx context.Context, localPath string, subfolder string) (string, error) {
+	file, err := os.Open(localPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to open file: %w", err)
+	}
+	defer file.Close()
+
+	fileInfo, err := file.Stat()
+	if err != nil {
+		return "", fmt.Errorf("failed to stat file: %w", err)
+	}
+
+	fileName := filepath.Base(localPath)
+	objectKey := s.getObjectKeyWithPath(fileName, subfolder)
+
+	_, err = s.client.PutObject(ctx, s.bucket, objectKey, file, fileInfo.Size(), minio.PutObjectOptions{
+		ContentType: "application/octet-stream",
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to upload to S3: %w", err)
+	}
+
+	return objectKey, nil
+}
+
 func (s *S3Storage) DownloadFile(ctx context.Context, objectKey, localPath string) error {
 	object, err := s.client.GetObject(ctx, s.bucket, objectKey, minio.GetObjectOptions{})
 	if err != nil {
@@ -160,4 +186,21 @@ func (s *S3Storage) getObjectKey(fileName string) string {
 	prefix := strings.TrimSuffix(s.prefix, "/")
 	fileName = strings.TrimPrefix(fileName, "/")
 	return fmt.Sprintf("%s/%s", prefix, fileName)
+}
+
+func (s *S3Storage) getObjectKeyWithPath(fileName string, subfolder string) string {
+	// Build path: prefix/subfolder/fileName
+	var parts []string
+	
+	if s.prefix != "" {
+		parts = append(parts, strings.TrimSuffix(s.prefix, "/"))
+	}
+	
+	if subfolder != "" {
+		parts = append(parts, strings.Trim(subfolder, "/"))
+	}
+	
+	parts = append(parts, strings.TrimPrefix(fileName, "/"))
+	
+	return strings.Join(parts, "/")
 }

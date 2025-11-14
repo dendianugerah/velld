@@ -189,7 +189,7 @@ func (s *BackupService) createMultiDatabaseBackup(conn *connection.StoredConnect
 		now := time.Now()
 		backup.CompletedTime = &now
 
-		if err := s.uploadToS3IfEnabled(backup, conn.UserID); err != nil {
+		if err := s.uploadToS3IfEnabled(backup, conn.UserID, conn.Name); err != nil {
 			fmt.Printf("Warning: Failed to upload backup '%s' to S3: %v\n", dbName, err)
 		}
 
@@ -297,7 +297,7 @@ func (s *BackupService) createSingleDatabaseBackup(conn *connection.StoredConnec
 	now := time.Now()
 	backup.CompletedTime = &now
 
-	if err := s.uploadToS3IfEnabled(backup, conn.UserID); err != nil {
+	if err := s.uploadToS3IfEnabled(backup, conn.UserID, conn.Name); err != nil {
 		fmt.Printf("Warning: Failed to upload backup to S3: %v\n", err)
 	}
 
@@ -330,7 +330,7 @@ func (s *BackupService) GetBackupStats(userID uuid.UUID) (*BackupStats, error) {
 	return s.backupRepo.GetBackupStats(userID)
 }
 
-func (s *BackupService) uploadToS3IfEnabled(backup *Backup, userID uuid.UUID) error {
+func (s *BackupService) uploadToS3IfEnabled(backup *Backup, userID uuid.UUID, connectionName string) error {
 	userSettings, err := s.settingsService.GetUserSettingsInternal(userID)
 	if err != nil {
 		return fmt.Errorf("failed to get user settings: %w", err)
@@ -385,7 +385,9 @@ func (s *BackupService) uploadToS3IfEnabled(backup *Backup, userID uuid.UUID) er
 	}
 
 	ctx := context.Background()
-	objectKey, err := s3Storage.UploadFile(ctx, backup.Path)
+	// Use sanitized connection name as subfolder
+	sanitizedConnectionName := common.SanitizeConnectionName(connectionName)
+	objectKey, err := s3Storage.UploadFileWithPath(ctx, backup.Path, sanitizedConnectionName)
 	if err != nil {
 		return fmt.Errorf("failed to upload backup to S3: %w", err)
 	}
