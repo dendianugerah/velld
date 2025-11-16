@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"runtime"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -70,7 +71,23 @@ var CommonBinaryPaths = map[string][]string{
 	},
 }
 
+// Cache for binary paths to avoid repeated filesystem searches
+var (
+	binaryPathCache = make(map[string]string)
+	binaryPathMutex sync.RWMutex
+)
+
 func FindBinaryPath(dbType, toolName string) string {
+	cacheKey := dbType + ":" + toolName
+	
+	// Check cache first
+	binaryPathMutex.RLock()
+	if cachedPath, found := binaryPathCache[cacheKey]; found {
+		binaryPathMutex.RUnlock()
+		return cachedPath
+	}
+	binaryPathMutex.RUnlock()
+
 	execName := GetPlatformExecutableName(toolName)
 
 	// 1. Try user-defined path if provided
@@ -88,6 +105,10 @@ func FindBinaryPath(dbType, toolName string) string {
 			for _, path := range matches {
 				toolPath := filepath.Join(path, execName)
 				if _, err := os.Stat(toolPath); err == nil {
+					// Cache successful result
+					binaryPathMutex.Lock()
+					binaryPathCache[cacheKey] = path
+					binaryPathMutex.Unlock()
 					return path
 				}
 			}
@@ -96,9 +117,15 @@ func FindBinaryPath(dbType, toolName string) string {
 
 	// 3. Try PATH environment as last resort
 	if path, err := exec.LookPath(execName); err == nil {
-		return filepath.Dir(path)
+		foundPath := filepath.Dir(path)
+		// Cache successful result
+		binaryPathMutex.Lock()
+		binaryPathCache[cacheKey] = foundPath
+		binaryPathMutex.Unlock()
+		return foundPath
 	}
 
+	// Don't cache unsuccessful lookups - binary might be installed later
 	return ""
 }
 
