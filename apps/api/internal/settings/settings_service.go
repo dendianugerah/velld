@@ -152,6 +152,9 @@ func (s *SettingsService) UpdateUserSettings(userID uuid.UUID, req *UpdateSettin
 	if req.S3PathPrefix != nil {
 		settings.S3PathPrefix = req.S3PathPrefix
 	}
+	if req.S3PurgeLocal != nil {
+		settings.S3PurgeLocal = *req.S3PurgeLocal
+	}
 
 	if err := s.repo.UpdateUserSettings(settings); err != nil {
 		return nil, err

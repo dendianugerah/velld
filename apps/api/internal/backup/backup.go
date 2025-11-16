@@ -3,6 +3,7 @@ package backup
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -194,6 +195,12 @@ func (h *BackupHandler) DownloadBackup(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	backupID := vars["id"]
 
+	userID, err := common.GetUserIDFromContext(r.Context())
+	if err != nil {
+		response.SendError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
 	backup, err := h.backupService.GetBackup(backupID)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -204,7 +211,23 @@ func (h *BackupHandler) DownloadBackup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	file, err := os.Open(backup.Path)
+	// Ensure backup file is available (local or download from S3)
+	filePath, isTemp, err := h.backupService.ensureBackupFileAvailable(backup, userID)
+	if err != nil {
+		response.SendError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	// Clean up temp file after download if needed
+	if isTemp {
+		defer func() {
+			if err := os.Remove(filePath); err != nil {
+				fmt.Printf("Warning: Failed to remove temp file %s: %v\n", filePath, err)
+			}
+		}()
+	}
+
+	file, err := os.Open(filePath)
 	if err != nil {
 		response.SendError(w, http.StatusInternalServerError, "Failed to open backup file")
 		return

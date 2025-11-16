@@ -27,6 +27,7 @@ type UserSettings struct {
 	S3SecretKey  *string   `json:"s3_secret_key,omitempty"`
 	S3UseSSL     bool      `json:"s3_use_ssl"`
 	S3PathPrefix *string   `json:"s3_path_prefix,omitempty"`
+	S3PurgeLocal bool      `json:"s3_purge_local"`
 	CreatedAt    time.Time `json:"created_at"`
 	UpdatedAt    time.Time `json:"updated_at"`
 	EnvConfigured map[string]bool `json:"env_configured,omitempty"`
@@ -51,4 +52,5 @@ type UpdateSettingsRequest struct {
 	S3SecretKey  *string `json:"s3_secret_key,omitempty"`
 	S3UseSSL     *bool   `json:"s3_use_ssl,omitempty"`
 	S3PathPrefix *string `json:"s3_path_prefix,omitempty"`
+	S3PurgeLocal *bool   `json:"s3_purge_local,omitempty"`
 }

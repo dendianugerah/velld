@@ -21,6 +21,7 @@ export interface UserSettings {
   s3_secret_key?: string;
   s3_use_ssl: boolean;
   s3_path_prefix?: string;
+  s3_purge_local: boolean;
   env_configured?: Record<string, boolean>;
 }
 

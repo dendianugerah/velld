@@ -30,13 +30,24 @@ func (s *BackupService) RestoreBackup(backupID string, connectionID string) erro
 		return fmt.Errorf("failed to get backup: %v", err)
 	}
 
-	if _, err := os.Stat(backup.Path); os.IsNotExist(err) {
-		return fmt.Errorf("backup file not found: %s", backup.Path)
-	}
-
 	conn, err := s.connStorage.GetConnection(connectionID)
 	if err != nil {
 		return fmt.Errorf("failed to get connection: %v", err)
+	}
+
+	// Ensure backup file is available (local or download from S3)
+	filePath, isTemp, err := s.ensureBackupFileAvailable(backup, conn.UserID)
+	if err != nil {
+		return err
+	}
+
+	// Clean up temp file after restore if needed
+	if isTemp {
+		defer func() {
+			if err := os.Remove(filePath); err != nil {
+				fmt.Printf("Warning: Failed to remove temp file %s: %v\n", filePath, err)
+			}
+		}()
 	}
 
 	if err := s.verifyRestoreTools(conn.Type); err != nil {
@@ -56,11 +67,11 @@ func (s *BackupService) RestoreBackup(backupID string, connectionID string) erro
 	var cmd *exec.Cmd
 	switch conn.Type {
 	case "postgresql":
-		cmd = s.createPsqlRestoreCmd(conn, backup.Path)
+		cmd = s.createPsqlRestoreCmd(conn, filePath)
 	case "mysql", "mariadb":
-		cmd = s.createMySQLRestoreCmd(conn, backup.Path)
+		cmd = s.createMySQLRestoreCmd(conn, filePath)
 	case "mongodb":
-		cmd = s.createMongoRestoreCmd(conn, backup.Path)
+		cmd = s.createMongoRestoreCmd(conn, filePath)
 	default:
 		return fmt.Errorf("unsupported database type for restore: %s", conn.Type)
 	}
