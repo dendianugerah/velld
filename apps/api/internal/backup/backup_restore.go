@@ -200,13 +200,22 @@ func (s *BackupService) createMySQLRestoreCmd(conn *connection.StoredConnection,
 
 	binPath := filepath.Join(binaryPath, common.GetPlatformExecutableName(restoreTools[conn.Type]))
 
-	cmd := exec.Command(binPath,
+	args := []string{
 		"-h", conn.Host,
 		"-P", fmt.Sprintf("%d", conn.Port),
 		"-u", conn.Username,
 		fmt.Sprintf("-p%s", conn.Password),
-		conn.DatabaseName,
-	)
+	}
+
+	if !conn.SSL {
+		args = append(args, "--skip-ssl")
+	} else {
+		args = append(args, "--ssl-mode=REQUIRED")
+	}
+
+	args = append(args, conn.DatabaseName)
+
+	cmd := exec.Command(binPath, args...)
 
 	file, err := os.Open(backupPath)
 	if err != nil {
