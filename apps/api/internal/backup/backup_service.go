@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/dendianugerah/velld/internal/common"
@@ -496,4 +497,203 @@ func (s *BackupService) ensureBackupFileAvailable(backup *Backup, userID uuid.UU
 	
 	// Return temp file path and indicate it should be cleaned up
 	return tempFilePath, true, nil
+}
+
+
+// CleanupS3BackupsForConnection deletes all S3 backups for a specific connection
+func (s *BackupService) CleanupS3BackupsForConnection(connectionID string) error {
+	// Get all backups for this connection
+	backups, err := s.backupRepo.GetBackupsByConnectionID(connectionID)
+	if err != nil {
+		return fmt.Errorf("failed to get backups for connection %s: %w", connectionID, err)
+	}
+
+	if len(backups) == 0 {
+		return nil
+	}
+
+	// Get connection to retrieve user settings
+	conn, err := s.connStorage.GetConnection(connectionID)
+	if err != nil {
+		return fmt.Errorf("failed to get connection: %w", err)
+	}
+
+	// Get user settings for S3 configuration
+	userSettings, err := s.settingsService.GetUserSettingsInternal(conn.UserID)
+	if err != nil {
+		return fmt.Errorf("failed to get user settings: %w", err)
+	}
+
+	// Check if S3 is enabled and configured
+	if !userSettings.S3Enabled || 
+	   userSettings.S3Endpoint == nil || *userSettings.S3Endpoint == "" ||
+	   userSettings.S3Bucket == nil || *userSettings.S3Bucket == "" ||
+	   userSettings.S3AccessKey == nil || *userSettings.S3AccessKey == "" ||
+	   userSettings.S3SecretKey == nil || *userSettings.S3SecretKey == "" {
+		// S3 not configured, nothing to clean
+		return nil
+	}
+
+	// Decrypt S3 secret key
+	secretKey, err := s.cryptoService.Decrypt(*userSettings.S3SecretKey)
+	if err != nil {
+		return fmt.Errorf("failed to decrypt S3 secret key: %w", err)
+	}
+
+	// Configure S3 client
+	region := "us-east-1"
+	if userSettings.S3Region != nil && *userSettings.S3Region != "" {
+		region = *userSettings.S3Region
+	}
+
+	pathPrefix := ""
+	if userSettings.S3PathPrefix != nil {
+		pathPrefix = *userSettings.S3PathPrefix
+	}
+
+	s3Config := S3Config{
+		Endpoint:   *userSettings.S3Endpoint,
+		Region:     region,
+		Bucket:     *userSettings.S3Bucket,
+		AccessKey:  *userSettings.S3AccessKey,
+		SecretKey:  secretKey,
+		UseSSL:     userSettings.S3UseSSL,
+		PathPrefix: pathPrefix,
+	}
+
+	s3Storage, err := NewS3Storage(s3Config)
+	if err != nil {
+		return fmt.Errorf("failed to create S3 storage client: %w", err)
+	}
+
+	// Delete S3 objects for all backups
+	ctx := context.Background()
+	deletedCount := 0
+	for _, backup := range backups {
+		if backup.S3ObjectKey != nil && *backup.S3ObjectKey != "" {
+			if err := s3Storage.DeleteFile(ctx, *backup.S3ObjectKey); err != nil {
+				fmt.Printf("Warning: Failed to delete S3 object %s: %v\n", *backup.S3ObjectKey, err)
+			} else {
+				deletedCount++
+				fmt.Printf("Deleted S3 object %s for backup %s (connection cleanup)\n", 
+					*backup.S3ObjectKey, backup.ID)
+			}
+		}
+	}
+
+	fmt.Printf("S3 cleanup completed for connection %s: deleted %d objects\n", connectionID, deletedCount)
+	return nil
+}
+
+
+// RenameS3FolderForConnection renames the S3 folder when connection name changes
+func (s *BackupService) RenameS3FolderForConnection(connectionID string, oldName string, newName string) error {
+	// Get all backups for this connection
+	backups, err := s.backupRepo.GetBackupsByConnectionID(connectionID)
+	if err != nil {
+		return fmt.Errorf("failed to get backups: %w", err)
+	}
+
+	if len(backups) == 0 {
+		return nil // No backups to rename
+	}
+
+	// Get connection to retrieve user settings
+	conn, err := s.connStorage.GetConnection(connectionID)
+	if err != nil {
+		return fmt.Errorf("failed to get connection: %w", err)
+	}
+
+	// Get user settings for S3 configuration
+	userSettings, err := s.settingsService.GetUserSettingsInternal(conn.UserID)
+	if err != nil {
+		return fmt.Errorf("failed to get user settings: %w", err)
+	}
+
+	// Check if S3 is enabled and configured
+	if !userSettings.S3Enabled || 
+	   userSettings.S3Endpoint == nil || *userSettings.S3Endpoint == "" ||
+	   userSettings.S3Bucket == nil || *userSettings.S3Bucket == "" ||
+	   userSettings.S3AccessKey == nil || *userSettings.S3AccessKey == "" ||
+	   userSettings.S3SecretKey == nil || *userSettings.S3SecretKey == "" {
+		return nil // S3 not configured, nothing to rename
+	}
+
+	// Decrypt S3 secret key
+	secretKey, err := s.cryptoService.Decrypt(*userSettings.S3SecretKey)
+	if err != nil {
+		return fmt.Errorf("failed to decrypt S3 secret key: %w", err)
+	}
+
+	// Configure S3 client
+	region := "us-east-1"
+	if userSettings.S3Region != nil && *userSettings.S3Region != "" {
+		region = *userSettings.S3Region
+	}
+
+	pathPrefix := ""
+	if userSettings.S3PathPrefix != nil {
+		pathPrefix = *userSettings.S3PathPrefix
+	}
+
+	s3Config := S3Config{
+		Endpoint:   *userSettings.S3Endpoint,
+		Region:     region,
+		Bucket:     *userSettings.S3Bucket,
+		AccessKey:  *userSettings.S3AccessKey,
+		SecretKey:  secretKey,
+		UseSSL:     userSettings.S3UseSSL,
+		PathPrefix: pathPrefix,
+	}
+
+	s3Storage, err := NewS3Storage(s3Config)
+	if err != nil {
+		return fmt.Errorf("failed to create S3 storage client: %w", err)
+	}
+
+	// Sanitize old and new folder names
+	oldFolder := common.SanitizeConnectionName(oldName)
+	newFolder := common.SanitizeConnectionName(newName)
+
+	if oldFolder == newFolder {
+		return nil // Names are the same after sanitization, no rename needed
+	}
+
+	// Rename S3 objects
+	ctx := context.Background()
+	renamedCount := 0
+	for _, backup := range backups {
+		if backup.S3ObjectKey == nil || *backup.S3ObjectKey == "" {
+			continue // No S3 object, skip
+		}
+
+		oldKey := *backup.S3ObjectKey
+		
+		// Replace old folder with new folder in the object key
+		newKey := strings.Replace(oldKey, oldFolder, newFolder, 1)
+		
+		if oldKey == newKey {
+			continue // No change needed
+		}
+
+		// Move object in S3
+		if err := s3Storage.MoveFile(ctx, oldKey, newKey); err != nil {
+			fmt.Printf("Warning: Failed to rename S3 object %s to %s: %v\n", oldKey, newKey, err)
+			continue
+		}
+
+		// Update database record with new S3 object key
+		backup.S3ObjectKey = &newKey
+		if err := s.backupRepo.UpdateBackupS3ObjectKey(backup.ID.String(), newKey); err != nil {
+			fmt.Printf("Warning: Failed to update S3 object key in database for backup %s: %v\n", backup.ID, err)
+			continue
+		}
+
+		renamedCount++
+		fmt.Printf("Renamed S3 object from %s to %s\n", oldKey, newKey)
+	}
+
+	fmt.Printf("S3 folder rename completed for connection %s: renamed %d objects from %s to %s\n", 
+		connectionID, renamedCount, oldFolder, newFolder)
+	return nil
 }

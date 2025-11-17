@@ -89,25 +89,37 @@ func (s *ConnectionService) UpdateConnection(config ConnectionConfig, userID uui
 		dbSize = 0 // Set to 0 if we can't get the size
 	}
 
+	// Get existing connection to preserve fields that aren't being updated
+	existingConn, err := s.repo.GetConnection(config.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get existing connection: %w", err)
+	}
+
 	storedConn := StoredConnection{
-		ID:            config.ID,
-		Name:          config.Name,
-		Type:          config.Type,
-		Host:          config.Host,
-		Port:          config.Port,
-		Username:      config.Username,
-		Password:      config.Password,
-		DatabaseName:  config.Database,
-		SSL:           config.SSL,
-		SSHEnabled:    config.SSHEnabled,
-		SSHHost:       config.SSHHost,
-		SSHPort:       config.SSHPort,
-		SSHUsername:   config.SSHUsername,
-		SSHPassword:   config.SSHPassword,
-		SSHPrivateKey: config.SSHPrivateKey,
-		UserID:        userID,
-		Status:        "connected",
-		DatabaseSize:  dbSize,
+		ID:                   config.ID,
+		Name:                 config.Name,
+		Type:                 config.Type,
+		Host:                 config.Host,
+		Port:                 config.Port,
+		Username:             config.Username,
+		Password:             config.Password,
+		DatabaseName:         config.Database,
+		SSL:                  config.SSL,
+		SSHEnabled:           config.SSHEnabled,
+		SSHHost:              config.SSHHost,
+		SSHPort:              config.SSHPort,
+		SSHUsername:          config.SSHUsername,
+		SSHPassword:          config.SSHPassword,
+		SSHPrivateKey:        config.SSHPrivateKey,
+		UserID:               userID,
+		Status:               "connected",
+		DatabaseSize:         dbSize,
+		S3CleanupOnRetention: existingConn.S3CleanupOnRetention, // preserve existing value
+	}
+
+	// Update S3 cleanup setting if provided
+	if config.S3CleanupOnRetention != nil {
+		storedConn.S3CleanupOnRetention = *config.S3CleanupOnRetention
 	}
 
 	if err := s.repo.Update(storedConn); err != nil {
@@ -115,6 +127,20 @@ func (s *ConnectionService) UpdateConnection(config ConnectionConfig, userID uui
 	}
 
 	return &storedConn, nil
+}
+
+// UpdateConnectionSettings updates connection settings without testing the connection
+func (s *ConnectionService) UpdateConnectionSettings(id string, s3CleanupOnRetention *bool) error {
+	existingConn, err := s.repo.GetConnection(id)
+	if err != nil {
+		return fmt.Errorf("failed to get connection: %w", err)
+	}
+
+	if s3CleanupOnRetention != nil {
+		existingConn.S3CleanupOnRetention = *s3CleanupOnRetention
+	}
+
+	return s.repo.Update(*existingConn)
 }
 
 func (s *ConnectionService) DeleteConnection(id string) error {

@@ -1,6 +1,6 @@
 'use client';
 
-import { Clock, Calendar } from 'lucide-react';
+import { Clock, Calendar, Cloud } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -18,6 +18,9 @@ import {
 } from "@/components/ui/select";
 import type { Connection } from '@/types/connection';
 import { useBackup } from '@/hooks/use-backup';
+import { useSettings } from '@/hooks/use-settings';
+import { updateConnectionSettings } from '@/lib/api/connections';
+import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
 import { getScheduleFrequency } from '@/lib/helper';
 
@@ -48,7 +51,10 @@ export function BackupScheduleDialog({
   onClose,
 }: BackupScheduleDialogProps) {
   const { createSchedule, updateExistingSchedule, disableSchedule, isScheduling, isDisabling, isUpdating } = useBackup();
+  const { settings } = useSettings();
+  const { toast } = useToast();
   const [enabled, setEnabled] = useState(false);
+  const [s3Cleanup, setS3Cleanup] = useState(true);
 
   const getRetentionFromDays = (days?: number | null) => {
     if (!days) return '30';
@@ -63,6 +69,7 @@ export function BackupScheduleDialog({
       setEnabled(connection.backup_enabled);
       setSchedule(getScheduleFrequency(connection.cron_schedule) || 'daily');
       setRetention(getRetentionFromDays(connection.retention_days));
+      setS3Cleanup(connection.s3_cleanup_on_retention ?? true);
     }
   }, [connection]);
 
@@ -182,6 +189,47 @@ export function BackupScheduleDialog({
                   </SelectContent>
                 </Select>
               </div>
+
+              {settings?.s3_enabled && (
+                <div className="flex items-center justify-between space-x-4 rounded-lg border p-4 bg-background/50">
+                  <div className="space-y-0.5">
+                    <Label className="text-sm font-medium flex items-center gap-2">
+                      <Cloud className="h-4 w-4" />
+                      Cleanup S3 Backups on Retention
+                    </Label>
+                    <div className="text-sm text-muted-foreground">
+                      Automatically delete S3 backups older than retention period
+                    </div>
+                  </div>
+                  <Switch
+                    checked={s3Cleanup}
+                    onCheckedChange={async (checked) => {
+                      const previousValue = s3Cleanup;
+                      setS3Cleanup(checked);
+                      if (connectionId) {
+                        try {
+                          await updateConnectionSettings(connectionId, {
+                            s3_cleanup_on_retention: checked,
+                          });
+                          toast({
+                            title: "Success",
+                            description: `S3 cleanup on retention ${checked ? 'enabled' : 'disabled'}`,
+                          });
+                        } catch (error) {
+                          setS3Cleanup(previousValue);
+                          const errorMessage = error instanceof Error ? error.message : 'Failed to update S3 cleanup setting';
+                          console.error('S3 cleanup setting error:', error);
+                          toast({
+                            title: "Error",
+                            description: errorMessage,
+                            variant: "destructive",
+                          });
+                        }
+                      }
+                    }}
+                  />
+                </div>
+              )}
             </>
           )}
         </div>

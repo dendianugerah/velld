@@ -229,7 +229,7 @@ func (r *BackupRepository) UpdateBackupStatus(id string, status string) error {
 
 func (r *BackupRepository) GetBackupsOlderThan(connectionID string, cutoffTime time.Time) ([]*Backup, error) {
 	rows, err := r.db.Query(`
-		SELECT id, path, created_at 
+		SELECT id, path, s3_object_key, created_at 
 		FROM backups 
 		WHERE connection_id = $1 
 		AND created_at < $2 
@@ -244,7 +244,7 @@ func (r *BackupRepository) GetBackupsOlderThan(connectionID string, cutoffTime t
 	for rows.Next() {
 		backup := &Backup{}
 		var createdAtStr string
-		err := rows.Scan(&backup.ID, &backup.Path, &createdAtStr)
+		err := rows.Scan(&backup.ID, &backup.Path, &backup.S3ObjectKey, &createdAtStr)
 		if err != nil {
 			return nil, err
 		}
@@ -471,4 +471,71 @@ func (r *BackupRepository) GetBackupStats(userID uuid.UUID) (*BackupStats, error
 	}
 
 	return stats, nil
+}
+
+func (r *BackupRepository) GetBackupsByConnectionID(connectionID string) ([]*Backup, error) {
+	rows, err := r.db.Query(`
+		SELECT id, connection_id, schedule_id, status, path, s3_object_key, size,
+		       started_time, completed_time, created_at, updated_at
+		FROM backups
+		WHERE connection_id = $1
+		ORDER BY created_at DESC`,
+		connectionID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var backups []*Backup
+	for rows.Next() {
+		backup := &Backup{}
+		var startedTimeStr, createdAtStr, updatedAtStr string
+		var completedTimeStr sql.NullString
+
+		err := rows.Scan(
+			&backup.ID, &backup.ConnectionID, &backup.ScheduleID, &backup.Status,
+			&backup.Path, &backup.S3ObjectKey, &backup.Size,
+			&startedTimeStr, &completedTimeStr, &createdAtStr, &updatedAtStr,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		backup.StartedTime, err = common.ParseTime(startedTimeStr)
+		if err != nil {
+			return nil, err
+		}
+
+		if completedTimeStr.Valid {
+			completedTime, err := common.ParseTime(completedTimeStr.String)
+			if err != nil {
+				return nil, err
+			}
+			backup.CompletedTime = &completedTime
+		}
+
+		backup.CreatedAt, err = common.ParseTime(createdAtStr)
+		if err != nil {
+			return nil, err
+		}
+
+		backup.UpdatedAt, err = common.ParseTime(updatedAtStr)
+		if err != nil {
+			return nil, err
+		}
+
+		backups = append(backups, backup)
+	}
+
+	return backups, rows.Err()
+}
+
+
+func (r *BackupRepository) UpdateBackupS3ObjectKey(backupID string, s3ObjectKey string) error {
+	_, err := r.db.Exec(`
+		UPDATE backups 
+		SET s3_object_key = $1, updated_at = datetime('now') 
+		WHERE id = $2`,
+		s3ObjectKey, backupID)
+	return err
 }

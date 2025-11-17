@@ -24,6 +24,7 @@ export interface Connection {
   backup_enabled: boolean;
   cron_schedule?: string;
   retention_days?: number;
+  s3_cleanup_on_retention: boolean;
 }
 
 export type ConnectionForm = Pick<Connection, 
@@ -41,7 +42,9 @@ export type ConnectionForm = Pick<Connection,
   | "ssh_username"
   | "ssh_password"
   | "ssh_private_key"
->;
+> & {
+  s3_cleanup_on_retention?: boolean;
+};
 
 export type ConnectionListResponse = Base<Connection[]>;
 
