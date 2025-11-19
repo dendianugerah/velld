@@ -204,3 +204,29 @@ func (s *S3Storage) getObjectKeyWithPath(fileName string, subfolder string) stri
 	
 	return strings.Join(parts, "/")
 }
+
+// MoveFile moves/renames an object in S3 (copy then delete)
+func (s *S3Storage) MoveFile(ctx context.Context, oldKey, newKey string) error {
+	// Copy to new location
+	src := minio.CopySrcOptions{
+		Bucket: s.bucket,
+		Object: oldKey,
+	}
+	dst := minio.CopyDestOptions{
+		Bucket: s.bucket,
+		Object: newKey,
+	}
+	
+	_, err := s.client.CopyObject(ctx, dst, src)
+	if err != nil {
+		return fmt.Errorf("failed to copy object: %w", err)
+	}
+
+	// Delete old object
+	err = s.client.RemoveObject(ctx, s.bucket, oldKey, minio.RemoveObjectOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to delete old object: %w", err)
+	}
+
+	return nil
+}

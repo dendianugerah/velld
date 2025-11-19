@@ -64,7 +64,6 @@ func main() {
 	connRepo := connection.NewConnectionRepository(db, cryptoService)
 	connService := connection.NewConnectionService(connRepo, connManager)
 
-	connHandler := connection.NewConnectionHandler(connService)
 	authHandler := auth.NewAuthHandler(authService)
 
 	authMiddleware := middleware.NewAuthMiddleware(secrets.JWTSecret)
@@ -85,15 +84,6 @@ func main() {
 	protected.Use(authMiddleware.RequireAuth)
 	protected.HandleFunc("/auth/profile", authHandler.GetProfile).Methods("GET", "OPTIONS")
 
-	protected.HandleFunc("/connections/test", connHandler.TestConnection).Methods("POST", "OPTIONS")
-	protected.HandleFunc("/connections/{id}/discover", connHandler.DiscoverDatabases).Methods("GET", "OPTIONS")
-	protected.HandleFunc("/connections/{id}/databases", connHandler.UpdateSelectedDatabases).Methods("PUT", "OPTIONS")
-	protected.HandleFunc("/connections/{id}", connHandler.GetConnection).Methods("GET", "OPTIONS")
-	protected.HandleFunc("/connections/{id}", connHandler.DeleteConnection).Methods("DELETE", "OPTIONS")
-	protected.HandleFunc("/connections", connHandler.SaveConnection).Methods("POST", "OPTIONS")
-	protected.HandleFunc("/connections", connHandler.ListConnections).Methods("GET", "OPTIONS")
-	protected.HandleFunc("/connections", connHandler.UpdateConnection).Methods("PUT", "OPTIONS")
-
 	backupRepo := backup.NewBackupRepository(db)
 	settingsRepo := settings.NewSettingsRepository(db)
 	notificationRepo := notification.NewNotificationRepository(db)
@@ -107,6 +97,19 @@ func main() {
 		notificationRepo,
 		cryptoService,
 	)
+
+	// Create connHandler after backupService is available
+	connHandler := connection.NewConnectionHandler(connService, backupService)
+
+	protected.HandleFunc("/connections/test", connHandler.TestConnection).Methods("POST", "OPTIONS")
+	protected.HandleFunc("/connections/{id}/discover", connHandler.DiscoverDatabases).Methods("GET", "OPTIONS")
+	protected.HandleFunc("/connections/{id}/databases", connHandler.UpdateSelectedDatabases).Methods("PUT", "OPTIONS")
+	protected.HandleFunc("/connections/{id}/settings", connHandler.UpdateConnectionSettings).Methods("POST", "OPTIONS")
+	protected.HandleFunc("/connections/{id}", connHandler.GetConnection).Methods("GET", "OPTIONS")
+	protected.HandleFunc("/connections/{id}", connHandler.DeleteConnection).Methods("DELETE", "OPTIONS")
+	protected.HandleFunc("/connections", connHandler.SaveConnection).Methods("POST", "OPTIONS")
+	protected.HandleFunc("/connections", connHandler.ListConnections).Methods("GET", "OPTIONS")
+	protected.HandleFunc("/connections", connHandler.UpdateConnection).Methods("PUT", "OPTIONS")
 
 	backupHandler := backup.NewBackupHandler(backupService)
 

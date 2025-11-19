@@ -2,6 +2,7 @@ package connection
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/dendianugerah/velld/internal/common"
@@ -9,13 +10,20 @@ import (
 	"github.com/gorilla/mux"
 )
 
-type ConnectionHandler struct {
-	service *ConnectionService
+type BackupService interface {
+	CleanupS3BackupsForConnection(connectionID string) error
+	RenameS3FolderForConnection(connectionID string, oldName string, newName string) error
 }
 
-func NewConnectionHandler(service *ConnectionService) *ConnectionHandler {
+type ConnectionHandler struct {
+	service       *ConnectionService
+	backupService BackupService
+}
+
+func NewConnectionHandler(service *ConnectionService, backupService BackupService) *ConnectionHandler {
 	return &ConnectionHandler{
-		service: service,
+		service:       service,
+		backupService: backupService,
 	}
 }
 
@@ -114,14 +122,55 @@ func (h *ConnectionHandler) UpdateConnection(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	// Get existing connection to check if name changed
+	existingConn, err := h.service.GetConnection(config.ID)
+	if err != nil {
+		response.SendError(w, http.StatusInternalServerError, "Failed to get existing connection")
+		return
+	}
+
 	storedConn, err := h.service.UpdateConnection(config, userID)
 	if err != nil {
 		response.SendError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
+	// Rename S3 folder if connection name changed
+	if existingConn.Name != config.Name && h.backupService != nil {
+		if err := h.backupService.RenameS3FolderForConnection(config.ID, existingConn.Name, config.Name); err != nil {
+			fmt.Printf("Warning: Failed to rename S3 folder for connection %s: %v\n", config.ID, err)
+			// Continue even if S3 rename fails
+		}
+	}
+
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(storedConn)
+}
+
+func (h *ConnectionHandler) UpdateConnectionSettings(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	if id == "" {
+		response.SendError(w, http.StatusBadRequest, "connection id is required")
+		return
+	}
+
+	var req struct {
+		S3CleanupOnRetention *bool `json:"s3_cleanup_on_retention"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.SendError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	if err := h.service.UpdateConnectionSettings(id, req.S3CleanupOnRetention); err != nil {
+		response.SendError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	response.SendSuccess(w, "Connection settings updated successfully", nil)
 }
 
 func (h *ConnectionHandler) DeleteConnection(w http.ResponseWriter, r *http.Request) {
@@ -131,6 +180,17 @@ func (h *ConnectionHandler) DeleteConnection(w http.ResponseWriter, r *http.Requ
 	if id == "" {
 		response.SendError(w, http.StatusBadRequest, "connection id is required")
 		return
+	}
+
+	// Check if cleanup_s3 query parameter is provided
+	cleanupS3 := r.URL.Query().Get("cleanup_s3") == "true"
+
+	// Cleanup S3 backups if requested
+	if cleanupS3 && h.backupService != nil {
+		if err := h.backupService.CleanupS3BackupsForConnection(id); err != nil {
+			fmt.Printf("Warning: Failed to cleanup S3 backups for connection %s: %v\n", id, err)
+			// Continue with connection deletion even if S3 cleanup fails
+		}
 	}
 
 	if err := h.service.DeleteConnection(id); err != nil {

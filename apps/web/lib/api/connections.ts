@@ -30,8 +30,9 @@ export async function updateConnection(connection: ConnectionForm & { id: string
   });
 }
 
-export async function deleteConnection(id: string) {
-  return apiRequest(`/api/connections/${id}`, {
+export async function deleteConnection(params: { id: string; cleanupS3?: boolean }) {
+  const url = `/api/connections/${params.id}${params.cleanupS3 ? '?cleanup_s3=true' : ''}`;
+  return apiRequest(url, {
     method: "DELETE",
   });
 }
@@ -44,5 +45,12 @@ export async function updateSelectedDatabases(id: string, databases: string[]) {
   return apiRequest(`/api/connections/${id}/databases`, {
     method: "PUT",
     body: JSON.stringify({ databases }),
+  });
+}
+
+export async function updateConnectionSettings(id: string, settings: { s3_cleanup_on_retention?: boolean }) {
+  return apiRequest(`/api/connections/${id}/settings`, {
+    method: "POST",
+    body: JSON.stringify(settings),
   });
 }
