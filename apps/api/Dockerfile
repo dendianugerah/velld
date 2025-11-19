@@ -18,7 +18,8 @@ RUN apk add --no-cache \
     postgresql-client \
     mysql-client \
     mongodb-tools \
-    redis
+    redis \
+    mariadb-connector-c
 
 WORKDIR /app
 
