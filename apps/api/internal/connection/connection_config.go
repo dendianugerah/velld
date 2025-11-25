@@ -335,6 +335,11 @@ func (cm *ConnectionManager) DiscoverDatabases(config ConnectionConfig) ([]strin
 		return nil, fmt.Errorf("unsupported database type for discovery: %s", config.Type)
 	}
 
+	// Ensure we never return nil, always return an empty array
+	if databases == nil {
+		databases = []string{}
+	}
+
 	return databases, err
 }
 
@@ -353,7 +358,7 @@ func (cm *ConnectionManager) discoverPostgresDatabases(db *sql.DB) ([]string, er
 	}
 	defer rows.Close()
 
-	var databases []string
+	databases := []string{}
 	for rows.Next() {
 		var dbName string
 		if err := rows.Scan(&dbName); err != nil {
@@ -379,7 +384,7 @@ func (cm *ConnectionManager) discoverMySQLDatabases(db *sql.DB) ([]string, error
 	}
 	defer rows.Close()
 
-	var databases []string
+	databases := []string{}
 	for rows.Next() {
 		var dbName string
 		if err := rows.Scan(&dbName); err != nil {
@@ -400,7 +405,7 @@ func (cm *ConnectionManager) discoverMongoDBDatabases(client *mongo.Client) ([]s
 	}
 
 	// Filter out system databases
-	var filtered []string
+	filtered := []string{}
 	for _, db := range databases {
 		if db != "admin" && db != "local" && db != "config" {
 			filtered = append(filtered, db)
