@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/dendianugerah/velld/internal/common"
 	"github.com/dendianugerah/velld/internal/common/response"
 )
 
@@ -16,6 +17,11 @@ func NewAuthHandler(authService *AuthService) *AuthHandler {
 }
 
 func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
+	if !common.GetSecrets().IsAllowSignup {
+		response.SendError(w, http.StatusForbidden, "Registration is disabled")
+		return
+	}
+
 	var req LoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.SendError(w, http.StatusBadRequest, "Invalid request body")
