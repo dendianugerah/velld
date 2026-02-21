@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -29,7 +30,8 @@ const CRON_SCHEDULES = {
   'hourly': '0 0 * * * *',
   'daily': '0 0 0 * * *',
   'weekly': '0 0 0 * * 0',
-  'monthly': '0 0 0 1 * *'
+  'monthly': '0 0 0 1 * *',
+  'custom': 'custom'
 };
 
 const RETENTION_DAYS = {
@@ -63,11 +65,16 @@ export function BackupScheduleDialog({
 
   const [schedule, setSchedule] = useState(getScheduleFrequency(connection?.cron_schedule) || 'daily');
   const [retention, setRetention] = useState(getRetentionFromDays(connection?.retention_days));
+  const [customCron, setCustomCron] = useState(connection?.cron_schedule || '0 0 * * * *');
 
   useEffect(() => {
     if (connection) {
       setEnabled(connection.backup_enabled);
-      setSchedule(getScheduleFrequency(connection.cron_schedule) || 'daily');
+      const freq = getScheduleFrequency(connection.cron_schedule);
+      setSchedule(freq || 'daily');
+      if (freq === 'custom' && connection.cron_schedule) {
+        setCustomCron(connection.cron_schedule);
+      }
       setRetention(getRetentionFromDays(connection.retention_days));
       setS3Cleanup(connection.s3_cleanup_on_retention ?? true);
     }
@@ -78,9 +85,10 @@ export function BackupScheduleDialog({
   const handleScheduleChange = async (checked: boolean) => {
     try {
       if (checked) {
+        const cronSchedule = schedule === 'custom' ? customCron : CRON_SCHEDULES[schedule as keyof typeof CRON_SCHEDULES];
         await createSchedule({
           connection_id: connectionId,
-          cron_schedule: CRON_SCHEDULES[schedule as keyof typeof CRON_SCHEDULES],
+          cron_schedule: cronSchedule,
           retention_days: RETENTION_DAYS[retention as keyof typeof RETENTION_DAYS]
         });
         setEnabled(true);
@@ -95,14 +103,17 @@ export function BackupScheduleDialog({
     }
   };
 
-  const handleScheduleSubmit = async (newSchedule: string, newRetention: string) => {
+  const handleScheduleSubmit = async (newSchedule: string, newRetention: string, newCustomCron?: string) => {
     try {
+      const cronValue = newCustomCron || customCron;
+      const cronSchedule = newSchedule === 'custom' ? cronValue : CRON_SCHEDULES[newSchedule as keyof typeof CRON_SCHEDULES];
+
       if (enabled) {
         // Update existing schedule
         await updateExistingSchedule({
           connectionId,
           params: {
-            cron_schedule: CRON_SCHEDULES[newSchedule as keyof typeof CRON_SCHEDULES],
+            cron_schedule: cronSchedule,
             retention_days: RETENTION_DAYS[newRetention as keyof typeof RETENTION_DAYS]
           }
         });
@@ -110,7 +121,7 @@ export function BackupScheduleDialog({
         // Create new schedule
         await createSchedule({
           connection_id: connectionId,
-          cron_schedule: CRON_SCHEDULES[newSchedule as keyof typeof CRON_SCHEDULES],
+          cron_schedule: cronSchedule,
           retention_days: RETENTION_DAYS[newRetention as keyof typeof RETENTION_DAYS]
         });
         setEnabled(true);
@@ -164,8 +175,27 @@ export function BackupScheduleDialog({
                     <SelectItem value="daily">Daily</SelectItem>
                     <SelectItem value="weekly">Weekly</SelectItem>
                     <SelectItem value="monthly">Monthly</SelectItem>
+                    <SelectItem value="custom">Custom (Cron)</SelectItem>
                   </SelectContent>
                 </Select>
+
+                {schedule === 'custom' && (
+                  <div className="space-y-2 mt-3">
+                    <Label className="text-sm text-muted-foreground">Custom Cron Expression</Label>
+                    <Input
+                      placeholder="0 0 * * * *"
+                      value={customCron}
+                      onChange={(e) => {
+                        setCustomCron(e.target.value);
+                      }}
+                      onBlur={() => handleScheduleSubmit(schedule, retention, customCron)}
+                      disabled={isScheduling}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Format: seconds minutes hours day-of-month month day-of-week (e.g., &quot;0 0 2 * * *&quot; for 2 AM daily)
+                    </p>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-2">
