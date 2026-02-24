@@ -1,0 +1,78 @@
+# -- Override the chart name
+nameOverride: ""
+# -- Override the full release name
+fullnameOverride: ""
+
+# ---------------------------------------------------------------------------
+# API (Go backend)
+# ---------------------------------------------------------------------------
+api:
+  image:
+    repository: ghcr.io/dendianugerah/velld/api
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    port: 8080
+  ingress:
+    enabled: false
+    host: velld-api.example.com
+    annotations: {}
+    tls: false
+    secretName: ""
+    ingressClassName: ""
+  resources: {}
+    # limits:
+    #   cpu: 500m
+    #   memory: 256Mi
+    # requests:
+    #   cpu: 100m
+    #   memory: 128Mi
+  persistence:
+    data:
+      size: 1Gi
+      storageClass: ""
+    backups:
+      size: 5Gi
+      storageClass: ""
+
+# ---------------------------------------------------------------------------
+# Web (Next.js frontend)
+# ---------------------------------------------------------------------------
+web:
+  image:
+    repository: ghcr.io/dendianugerah/velld/web
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    port: 3000
+  ingress:
+    enabled: false
+    host: velld.example.com
+    annotations: {}
+    tls: false
+    secretName: ""
+    ingressClassName: ""
+  env:
+    ALLOW_REGISTER: "true"
+
+# ---------------------------------------------------------------------------
+# Secrets
+# ---------------------------------------------------------------------------
+# Velld requires a Kubernetes Secret with the keys listed below.
+# You can either let this chart create one (secrets.create=true) or reference
+# an existing secret you manage yourself (secrets.existingSecret).
+secrets:
+  # -- Create a Secret resource from the values in secrets.data
+  create: false
+  # -- Name of a pre-existing Secret to use (ignored when create=true)
+  existingSecret: ""
+  # -- Key/value pairs written into the Secret when create=true.
+  # WARNING: For production, use an external secret manager or sealed-secrets
+  # instead of storing plain-text credentials in values files.
+  data:
+    JWT_SECRET: "changeme-generate-with-openssl-rand-hex-32"
+    ENCRYPTION_KEY: "changeme-generate-with-openssl-rand-hex-32"
+    ADMIN_USERNAME_CREDENTIAL: "admin"
+    ADMIN_PASSWORD_CREDENTIAL: "changeme"
+    NEXT_PUBLIC_API_URL: "http://velld-api:8080"
+    ALLOW_REGISTER: "true"
