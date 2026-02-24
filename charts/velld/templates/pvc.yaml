@@ -1,0 +1,31 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "velld.fullname" . }}-api-data
+  labels:
+    {{- include "velld.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.api.persistence.data.size }}
+  {{- if .Values.api.persistence.data.storageClass }}
+  storageClassName: {{ .Values.api.persistence.data.storageClass }}
+  {{- end }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "velld.fullname" . }}-backup-data
+  labels:
+    {{- include "velld.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.api.persistence.backups.size }}
+  {{- if .Values.api.persistence.backups.storageClass }}
+  storageClassName: {{ .Values.api.persistence.backups.storageClass }}
+  {{- end }}

@@ -1,0 +1,20 @@
+# Patterns to ignore when building packages.
+.DS_Store
+# Git
+.git
+.gitignore
+.gitmodules
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+# CI
+.github/
+.gitlab-ci.yml
+# Documentation sources (the rendered README is kept)
+docs/
+# Testing
+tests/
+*.test.yaml
