@@ -95,6 +95,14 @@ func (s *BackupService) createFailureNotification(connID string, backupErr error
 }
 
 func (s *BackupService) sendWebhookNotification(webhookURL string, data map[string]interface{}) {
+	// Add "text" parameter for Mattermost compatibility
+	// Format: [timestamp] - [database_name]: [error]
+	databaseName, _ := data["database_name"].(string)
+	errorMsg, _ := data["error"].(string)
+	timestamp, _ := data["timestamp"].(string)
+
+	data["text"] = fmt.Sprintf("[%s] - %s: %s", timestamp, databaseName, errorMsg)
+
 	body, _ := json.Marshal(data)
 	_, err := http.Post(webhookURL, "application/json", bytes.NewBuffer(body))
 	if err != nil {
