@@ -156,8 +156,13 @@ func (cm *ConnectionManager) connectMongoDB(config ConnectionConfig) error {
 		database = "admin"
 	}
 
-	uri := fmt.Sprintf("mongodb://%s:%s@%s:%d/%s",
-		config.Username, config.Password, config.Host, config.Port, database)
+	var uri string
+	if config.Username != "" {
+		uri = fmt.Sprintf("mongodb://%s:%s@%s:%d/%s",
+			config.Username, config.Password, config.Host, config.Port, database)
+	} else {
+		uri = fmt.Sprintf("mongodb://%s:%d/%s", config.Host, config.Port, database)
+	}
 
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
 	if err != nil {
