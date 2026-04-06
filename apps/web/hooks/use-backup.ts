@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { getBackups, saveBackup, scheduleBackup, disableBackupSchedule, updateSchedule, getBackupStats, downloadBackup, restoreBackup } from "@/lib/api/backups";
+import { getBackups, saveBackup, scheduleBackup, disableBackupSchedule, updateSchedule, getBackupStats, downloadBackup, restoreBackup, deleteBackup } from "@/lib/api/backups";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from 'react';
 
@@ -162,6 +162,27 @@ export function useBackup() {
     },
   });
 
+  const { mutate: deleteBackupById, isPending: isDeleting } = useMutation({
+    mutationFn: async (backupId: string) => {
+      await deleteBackup(backupId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['backups'] });
+      queryClient.invalidateQueries({ queryKey: ['backup-stats'] });
+      toast({
+        title: "Success",
+        description: "Backup deleted successfully",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete backup",
+        variant: "destructive",
+      });
+    },
+  });
+
   return {
     createBackup,
     isCreating,
@@ -175,6 +196,8 @@ export function useBackup() {
     isDownloading,
     restoreBackupToDatabase,
     isRestoring,
+    deleteBackupById,
+    isDeleting,
     backups: data?.data,
     pagination: data?.pagination,
     isLoading,
