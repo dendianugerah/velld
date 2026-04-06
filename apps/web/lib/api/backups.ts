@@ -86,3 +86,9 @@ export async function restoreBackup(params: RestoreBackupParams): Promise<void> 
     body: JSON.stringify(params),
   });
 }
+
+export async function deleteBackup(backupId: string): Promise<void> {
+  return apiRequest(`/api/backups/${backupId}`, {
+    method: 'DELETE',
+  });
+}

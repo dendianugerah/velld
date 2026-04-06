@@ -118,6 +118,7 @@ func main() {
 	protected.HandleFunc("/backups", backupHandler.CreateBackup).Methods("POST", "OPTIONS")
 	protected.HandleFunc("/backups", backupHandler.ListBackups).Methods("GET", "OPTIONS")
 	protected.HandleFunc("/backups/{id}", backupHandler.GetBackup).Methods("GET", "OPTIONS")
+	protected.HandleFunc("/backups/{id}", backupHandler.DeleteBackup).Methods("DELETE", "OPTIONS")
 	protected.HandleFunc("/backups/{id}/download", backupHandler.DownloadBackup).Methods("GET", "OPTIONS")
 	protected.HandleFunc("/backups/restore", backupHandler.RestoreBackup).Methods("POST", "OPTIONS")
 	protected.HandleFunc("/backups/compare/{sourceId}/{targetId}", backupHandler.CompareBackups).Methods("GET", "OPTIONS")

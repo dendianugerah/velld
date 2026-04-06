@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Database, Download, History, GitCompare, RefreshCw, RotateCcw, Cloud } from "lucide-react";
+import { Database, Download, History, GitCompare, RefreshCw, RotateCcw, Cloud, Trash2 } from "lucide-react";
 import { formatDistanceToNow, parseISO, subDays, isAfter } from "date-fns";
 import { useBackup } from "@/hooks/use-backup";
 import { BackupList } from "@/types/backup";
@@ -19,11 +19,19 @@ import { BackupCompareDialog } from "./backup-compare-dialog";
 import { RestoreDialog } from "./restore-dialog";
 import { BackupDetailsSheet } from "./backup-details-sheet";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useState, useMemo } from "react";
 import { useIsFetching } from "@tanstack/react-query";
 
 export function HistoryList() {
-  const { backups, isLoading, pagination, page, setPage, downloadBackupFile, isDownloading, search, setSearch } = useBackup();
+  const { backups, isLoading, pagination, page, setPage, downloadBackupFile, isDownloading, search, setSearch, deleteBackupById, isDeleting } = useBackup();
   const { notifications, isLoading: isLoadingNotifications, markNotificationsAsRead } = useNotifications();
   const [compareDialogOpen, setCompareDialogOpen] = useState(false);
   const [selectedBackupForCompare, setSelectedBackupForCompare] = useState<BackupList | undefined>();
@@ -31,6 +39,8 @@ export function HistoryList() {
   const [selectedBackupForRestore, setSelectedBackupForRestore] = useState<BackupList | null>(null);
   const [detailsSheetOpen, setDetailsSheetOpen] = useState(false);
   const [selectedBackupForDetails, setSelectedBackupForDetails] = useState<BackupList | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedBackupForDelete, setSelectedBackupForDelete] = useState<BackupList | null>(null);
   const isFetchingBackups = useIsFetching({ queryKey: ['backups'] });
   
   const [dateRange, setDateRange] = useState("all");
@@ -51,6 +61,21 @@ export function HistoryList() {
   const handleRestore = (backup: BackupList) => {
     setSelectedBackupForRestore(backup);
     setRestoreDialogOpen(true);
+  };
+
+  const handleDelete = (backup: BackupList) => {
+    setSelectedBackupForDelete(backup);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (!selectedBackupForDelete) return;
+    deleteBackupById(selectedBackupForDelete.id, {
+      onSuccess: () => {
+        setDeleteDialogOpen(false);
+        setSelectedBackupForDelete(null);
+      },
+    });
   };
 
   const handleResetFilters = () => {
@@ -199,6 +224,15 @@ export function HistoryList() {
                             <GitCompare className="h-4 w-4 mr-1" />
                             Compare with Another
                           </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDelete(item)}
+                            className="w-full text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4 mr-1" />
+                            Delete
+                          </Button>
                         </div>
                       </div>
 
@@ -285,6 +319,22 @@ export function HistoryList() {
                                   <p className="text-xs">Download backup</p>
                                 </TooltipContent>
                               </Tooltip>
+
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => handleDelete(item)}
+                                    className="text-destructive hover:text-destructive"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent side="top">
+                                  <p className="text-xs">Delete backup</p>
+                                </TooltipContent>
+                              </Tooltip>
                             </TooltipProvider>
                           </div>
                         </div>
@@ -368,6 +418,30 @@ export function HistoryList() {
           setSelectedBackupForDetails(null);
         }}
       />
+
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Backup</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this backup? The file will be removed from local storage
+              {selectedBackupForDelete?.s3_object_key ? " and from S3" : ""}. This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)} disabled={isDeleting}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmDelete}
+              disabled={isDeleting}
+            >
+              {isDeleting ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
