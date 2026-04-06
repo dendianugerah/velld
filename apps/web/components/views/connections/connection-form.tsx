@@ -283,23 +283,23 @@ export function ConnectionForm({ onSuccess, onCancel }: ConnectionFormProps) {
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="username">
-            Username {formData.type === 'redis' && <span className="text-xs text-muted-foreground">(optional)</span>}
+            Username {(formData.type === 'redis' || formData.type === 'mongodb') && <span className="text-xs text-muted-foreground">(optional)</span>}
           </Label>
           <Input
             id="username"
-            required={formData.type !== 'redis'}
+            required={formData.type !== 'redis' && formData.type !== 'mongodb'}
             value={formData.username || ''}
             onChange={(e) => setFormData({ ...formData, username: e.target.value })}
           />
         </div>
         <div className="space-y-2">
           <Label htmlFor="password">
-            Password {formData.type === 'redis' && <span className="text-xs text-muted-foreground">(optional)</span>}
+            Password {(formData.type === 'redis' || formData.type === 'mongodb') && <span className="text-xs text-muted-foreground">(optional)</span>}
           </Label>
           <Input
             id="password"
             type="password"
-            required={formData.type !== 'redis'}
+            required={formData.type !== 'redis' && formData.type !== 'mongodb'}
             value={formData.password || ''}
             onChange={(e) => setFormData({ ...formData, password: e.target.value })}
           />
