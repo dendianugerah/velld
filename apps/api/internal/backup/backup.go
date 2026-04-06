@@ -58,6 +58,32 @@ func (h *BackupHandler) GetBackup(w http.ResponseWriter, r *http.Request) {
 	response.SendSuccess(w, "Backup retrieved successfully", backup)
 }
 
+func (h *BackupHandler) DeleteBackup(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	backupID := vars["id"]
+
+	userID, err := common.GetUserIDFromContext(r.Context())
+	if err != nil {
+		response.SendError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	if err := h.backupService.DeleteBackup(backupID, userID); err != nil {
+		if err == sql.ErrNoRows {
+			response.SendError(w, http.StatusNotFound, "Backup not found")
+			return
+		}
+		if err.Error() == "unauthorized" {
+			response.SendError(w, http.StatusForbidden, "Not authorized to delete this backup")
+			return
+		}
+		response.SendError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	response.SendSuccess(w, "Backup deleted successfully", nil)
+}
+
 func (h *BackupHandler) ListBackups(w http.ResponseWriter, r *http.Request) {
 	userID, err := common.GetUserIDFromContext(r.Context())
 	if err != nil {

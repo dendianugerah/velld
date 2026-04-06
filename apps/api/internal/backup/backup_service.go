@@ -313,6 +313,72 @@ func (s *BackupService) GetBackup(id string) (*Backup, error) {
 	return s.backupRepo.GetBackup(id)
 }
 
+func (s *BackupService) DeleteBackup(backupID string, userID uuid.UUID) error {
+	backup, err := s.backupRepo.GetBackup(backupID)
+	if err != nil {
+		return err
+	}
+
+	// Verify ownership via the connection
+	conn, err := s.connStorage.GetConnection(backup.ConnectionID)
+	if err != nil {
+		return fmt.Errorf("failed to verify backup ownership: %v", err)
+	}
+	if conn.UserID != userID {
+		return fmt.Errorf("unauthorized")
+	}
+
+	// Delete from S3 if an object key exists
+	if backup.S3ObjectKey != nil && *backup.S3ObjectKey != "" {
+		userSettings, err := s.settingsService.GetUserSettingsInternal(userID)
+		if err == nil && userSettings != nil && userSettings.S3Enabled &&
+			userSettings.S3Endpoint != nil && *userSettings.S3Endpoint != "" &&
+			userSettings.S3Bucket != nil && *userSettings.S3Bucket != "" &&
+			userSettings.S3AccessKey != nil && *userSettings.S3AccessKey != "" &&
+			userSettings.S3SecretKey != nil && *userSettings.S3SecretKey != "" {
+
+			secretKey, err := s.cryptoService.Decrypt(*userSettings.S3SecretKey)
+			if err == nil {
+				region := "us-east-1"
+				if userSettings.S3Region != nil && *userSettings.S3Region != "" {
+					region = *userSettings.S3Region
+				}
+				pathPrefix := ""
+				if userSettings.S3PathPrefix != nil {
+					pathPrefix = *userSettings.S3PathPrefix
+				}
+				s3Config := S3Config{
+					Endpoint:   *userSettings.S3Endpoint,
+					Region:     region,
+					Bucket:     *userSettings.S3Bucket,
+					AccessKey:  *userSettings.S3AccessKey,
+					SecretKey:  secretKey,
+					UseSSL:     userSettings.S3UseSSL,
+					PathPrefix: pathPrefix,
+				}
+				s3Storage, err := NewS3Storage(s3Config)
+				if err == nil {
+					ctx := context.Background()
+					if err := s3Storage.DeleteFile(ctx, *backup.S3ObjectKey); err != nil {
+						fmt.Printf("Warning: failed to delete S3 object %s: %v\n", *backup.S3ObjectKey, err)
+					}
+				}
+			}
+		}
+	}
+
+	// Delete local file if it exists
+	if backup.Path != "" {
+		if _, err := os.Stat(backup.Path); err == nil {
+			if err := os.Remove(backup.Path); err != nil {
+				fmt.Printf("Warning: failed to delete local backup file %s: %v\n", backup.Path, err)
+			}
+		}
+	}
+
+	return s.backupRepo.DeleteBackup(backupID)
+}
+
 func (s *BackupService) GetAllBackupsWithPagination(opts BackupListOptions) ([]*BackupList, int, error) {
 	if opts.Limit <= 0 {
 		opts.Limit = 10
@@ -494,11 +560,10 @@ func (s *BackupService) ensureBackupFileAvailable(backup *Backup, userID uuid.UU
 	}
 
 	fmt.Printf("Successfully downloaded backup %s from S3 to temp location: %s\n", backup.ID, tempFilePath)
-	
+
 	// Return temp file path and indicate it should be cleaned up
 	return tempFilePath, true, nil
 }
-
 
 // CleanupS3BackupsForConnection deletes all S3 backups for a specific connection
 func (s *BackupService) CleanupS3BackupsForConnection(connectionID string) error {
@@ -525,11 +590,11 @@ func (s *BackupService) CleanupS3BackupsForConnection(connectionID string) error
 	}
 
 	// Check if S3 is enabled and configured
-	if !userSettings.S3Enabled || 
-	   userSettings.S3Endpoint == nil || *userSettings.S3Endpoint == "" ||
-	   userSettings.S3Bucket == nil || *userSettings.S3Bucket == "" ||
-	   userSettings.S3AccessKey == nil || *userSettings.S3AccessKey == "" ||
-	   userSettings.S3SecretKey == nil || *userSettings.S3SecretKey == "" {
+	if !userSettings.S3Enabled ||
+		userSettings.S3Endpoint == nil || *userSettings.S3Endpoint == "" ||
+		userSettings.S3Bucket == nil || *userSettings.S3Bucket == "" ||
+		userSettings.S3AccessKey == nil || *userSettings.S3AccessKey == "" ||
+		userSettings.S3SecretKey == nil || *userSettings.S3SecretKey == "" {
 		// S3 not configured, nothing to clean
 		return nil
 	}
@@ -575,7 +640,7 @@ func (s *BackupService) CleanupS3BackupsForConnection(connectionID string) error
 				fmt.Printf("Warning: Failed to delete S3 object %s: %v\n", *backup.S3ObjectKey, err)
 			} else {
 				deletedCount++
-				fmt.Printf("Deleted S3 object %s for backup %s (connection cleanup)\n", 
+				fmt.Printf("Deleted S3 object %s for backup %s (connection cleanup)\n",
 					*backup.S3ObjectKey, backup.ID)
 			}
 		}
@@ -584,7 +649,6 @@ func (s *BackupService) CleanupS3BackupsForConnection(connectionID string) error
 	fmt.Printf("S3 cleanup completed for connection %s: deleted %d objects\n", connectionID, deletedCount)
 	return nil
 }
-
 
 // RenameS3FolderForConnection renames the S3 folder when connection name changes
 func (s *BackupService) RenameS3FolderForConnection(connectionID string, oldName string, newName string) error {
@@ -611,11 +675,11 @@ func (s *BackupService) RenameS3FolderForConnection(connectionID string, oldName
 	}
 
 	// Check if S3 is enabled and configured
-	if !userSettings.S3Enabled || 
-	   userSettings.S3Endpoint == nil || *userSettings.S3Endpoint == "" ||
-	   userSettings.S3Bucket == nil || *userSettings.S3Bucket == "" ||
-	   userSettings.S3AccessKey == nil || *userSettings.S3AccessKey == "" ||
-	   userSettings.S3SecretKey == nil || *userSettings.S3SecretKey == "" {
+	if !userSettings.S3Enabled ||
+		userSettings.S3Endpoint == nil || *userSettings.S3Endpoint == "" ||
+		userSettings.S3Bucket == nil || *userSettings.S3Bucket == "" ||
+		userSettings.S3AccessKey == nil || *userSettings.S3AccessKey == "" ||
+		userSettings.S3SecretKey == nil || *userSettings.S3SecretKey == "" {
 		return nil // S3 not configured, nothing to rename
 	}
 
@@ -668,10 +732,10 @@ func (s *BackupService) RenameS3FolderForConnection(connectionID string, oldName
 		}
 
 		oldKey := *backup.S3ObjectKey
-		
+
 		// Replace old folder with new folder in the object key
 		newKey := strings.Replace(oldKey, oldFolder, newFolder, 1)
-		
+
 		if oldKey == newKey {
 			continue // No change needed
 		}
@@ -693,7 +757,7 @@ func (s *BackupService) RenameS3FolderForConnection(connectionID string, oldName
 		fmt.Printf("Renamed S3 object from %s to %s\n", oldKey, newKey)
 	}
 
-	fmt.Printf("S3 folder rename completed for connection %s: renamed %d objects from %s to %s\n", 
+	fmt.Printf("S3 folder rename completed for connection %s: renamed %d objects from %s to %s\n",
 		connectionID, renamedCount, oldFolder, newFolder)
 	return nil
 }
