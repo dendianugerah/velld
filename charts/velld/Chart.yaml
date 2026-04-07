@@ -1,0 +1,18 @@
+apiVersion: v2
+name: velld
+description: A self-hosted database backup management tool
+type: application
+version: 0.1.0
+appVersion: "latest"
+home: https://github.com/dendianugerah/velld
+sources:
+  - https://github.com/dendianugerah/velld
+keywords:
+  - backup
+  - database
+  - postgresql
+  - mysql
+  - mongodb
+  - redis
+maintainers:
+  - name: dendianugerah

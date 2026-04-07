@@ -1,0 +1,22 @@
+Velld has been deployed successfully!
+
+Components:
+  - API:  {{ include "velld.fullname" . }}-api  (port {{ .Values.api.service.port }})
+  - Web:  {{ include "velld.fullname" . }}-web  (port {{ .Values.web.service.port }})
+
+{{- if .Values.api.ingress.enabled }}
+
+API Ingress: http{{ if .Values.api.ingress.tls }}s{{ end }}://{{ .Values.api.ingress.host }}
+{{- end }}
+{{- if .Values.web.ingress.enabled }}
+Web Ingress: http{{ if .Values.web.ingress.tls }}s{{ end }}://{{ .Values.web.ingress.host }}
+{{- end }}
+
+{{- if not (or .Values.api.ingress.enabled .Values.web.ingress.enabled) }}
+
+No ingress is enabled. You can access Velld via port-forward:
+
+  kubectl port-forward svc/{{ include "velld.fullname" . }}-web {{ .Values.web.service.port }}:{{ .Values.web.service.port }}
+
+Then open http://localhost:{{ .Values.web.service.port }} in your browser.
+{{- end }}
