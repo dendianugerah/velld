@@ -116,10 +116,14 @@ func (s *BackupService) validatePostgreSQLRestore(output []byte, cmdErr error) e
 	if len(criticalErrors) > 0 {
 		for _, errLine := range criticalErrors {
 			if strings.Contains(errLine, "already exists") {
-				return fmt.Errorf("restore failed: target database must be empty. See documentation for restore best practices")
+				return fmt.Errorf("restore failed: target database must be empty. See documentation for restore best practices.\n\nError details:\n%s", errLine)
 			}
 		}
-		return fmt.Errorf("restore failed with %d error(s)", len(criticalErrors))
+		return fmt.Errorf("restore failed with %d error(s):\n%s", len(criticalErrors), strings.Join(criticalErrors, "\n"))
+	}
+
+	if cmdErr != nil {
+		return fmt.Errorf("restore failed: %s", cmdErr.Error())
 	}
 
 	return nil
