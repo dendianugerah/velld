@@ -1,0 +1,67 @@
+{{- if .Values.api.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "velld.fullname" . }}-api
+  labels:
+    {{- include "velld.labels" . | nindent 4 }}
+  {{- with .Values.api.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if .Values.api.ingress.ingressClassName }}
+  ingressClassName: {{ .Values.api.ingress.ingressClassName }}
+  {{- end }}
+  rules:
+    - host: {{ .Values.api.ingress.host }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "velld.fullname" . }}-api
+                port:
+                  number: {{ .Values.api.service.port }}
+  {{- if .Values.api.ingress.tls }}
+  tls:
+    - hosts:
+        - {{ .Values.api.ingress.host }}
+      secretName: {{ .Values.api.ingress.secretName }}
+  {{- end }}
+{{- end }}
+---
+{{- if .Values.web.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "velld.fullname" . }}-web
+  labels:
+    {{- include "velld.labels" . | nindent 4 }}
+  {{- with .Values.web.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if .Values.web.ingress.ingressClassName }}
+  ingressClassName: {{ .Values.web.ingress.ingressClassName }}
+  {{- end }}
+  rules:
+    - host: {{ .Values.web.ingress.host }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "velld.fullname" . }}-web
+                port:
+                  number: {{ .Values.web.service.port }}
+  {{- if .Values.web.ingress.tls }}
+  tls:
+    - hosts:
+        - {{ .Values.web.ingress.host }}
+      secretName: {{ .Values.web.ingress.secretName }}
+  {{- end }}
+{{- end }}

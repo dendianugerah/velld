@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "velld.fullname" . }}-api
+  labels:
+    {{- include "velld.labels" . | nindent 4 }}
+    app.kubernetes.io/component: api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "velld.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: api
+  template:
+    metadata:
+      labels:
+        {{- include "velld.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: api
+    spec:
+      containers:
+        - name: api
+          image: "{{ .Values.api.image.repository }}:{{ .Values.api.image.tag }}"
+          imagePullPolicy: {{ .Values.api.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.api.service.port }}
+          envFrom:
+            - secretRef:
+                name: {{ include "velld.secretName" . }}
+          volumeMounts:
+            - name: api-data
+              mountPath: /app/data
+            - name: backup-data
+              mountPath: /app/backups
+          {{- with .Values.api.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      volumes:
+        - name: api-data
+          persistentVolumeClaim:
+            claimName: {{ include "velld.fullname" . }}-api-data
+        - name: backup-data
+          persistentVolumeClaim:
+            claimName: {{ include "velld.fullname" . }}-backup-data
