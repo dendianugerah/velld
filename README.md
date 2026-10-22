@@ -58,6 +58,10 @@ Visit [localhost:3000](http://localhost:3000) and log in with your admin credent
 
 For detailed setup instructions, see the [Installation Guide](https://velld.vercel.app/docs/installation).
 
+## One-Click Deploy
+
+[![Deploy on RepoCloud](https://d16t0pc4846x52.cloudfront.net/deploylobe.svg)](https://repocloud.io/details/Velld/)
+
 ## Screenshots
 
 <table>
