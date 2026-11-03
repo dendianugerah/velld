@@ -65,13 +65,20 @@ func (s *BackupService) RestoreBackup(backupID string, connectionID string) erro
 	}
 
 	var cmd *exec.Cmd
+	var cleanups []func()
+	defer func() {
+		for _, cleanup := range cleanups {
+			cleanup()
+		}
+	}()
+
 	switch conn.Type {
 	case "postgresql":
 		cmd = s.createPsqlRestoreCmd(conn, filePath)
 	case "mysql", "mariadb":
-		cmd = s.createMySQLRestoreCmd(conn, filePath)
+		cmd, cleanups = s.createMySQLRestoreCmd(conn, filePath)
 	case "mongodb":
-		cmd = s.createMongoRestoreCmd(conn, filePath)
+		cmd, cleanups = s.createMongoRestoreCmd(conn, filePath)
 	default:
 		return fmt.Errorf("unsupported database type for restore: %s", conn.Type)
 	}
@@ -206,11 +213,11 @@ func (s *BackupService) createPsqlRestoreCmd(conn *connection.StoredConnection, 
 	return cmd
 }
 
-func (s *BackupService) createMySQLRestoreCmd(conn *connection.StoredConnection, backupPath string) *exec.Cmd {
+func (s *BackupService) createMySQLRestoreCmd(conn *connection.StoredConnection, backupPath string) (*exec.Cmd, []func()) {
 	binaryPath := s.findDatabaseRestorePath(conn.Type)
 	if binaryPath == "" {
 		fmt.Printf("ERROR: mysql binary not found. Please install MySQL/MariaDB client tools.\n")
-		return nil
+		return nil, nil
 	}
 
 	binPath := filepath.Join(binaryPath, common.GetPlatformExecutableName(restoreTools[conn.Type]))
@@ -219,7 +226,6 @@ func (s *BackupService) createMySQLRestoreCmd(conn *connection.StoredConnection,
 		"-h", conn.Host,
 		"-P", fmt.Sprintf("%d", conn.Port),
 		"-u", conn.Username,
-		fmt.Sprintf("-p%s", conn.Password),
 	}
 
 	if !conn.SSL {
@@ -232,21 +238,35 @@ func (s *BackupService) createMySQLRestoreCmd(conn *connection.StoredConnection,
 
 	cmd := exec.Command(binPath, args...)
 
+	var cleanups []func()
+	if conn.Password != "" {
+		optionFile, cleanup, err := writeMySQLOptionFile(conn.Password)
+		if err != nil {
+			fmt.Printf("ERROR: %v\n", err)
+			return nil, nil
+		}
+		cmd.Args = append([]string{binPath, "--defaults-extra-file=" + optionFile}, cmd.Args[1:]...)
+		cleanups = append(cleanups, cleanup)
+	}
+
 	file, err := os.Open(backupPath)
 	if err != nil {
+		for _, cleanup := range cleanups {
+			cleanup()
+		}
 		fmt.Printf("ERROR: failed to open backup file: %v\n", err)
-		return nil
+		return nil, nil
 	}
 
 	cmd.Stdin = file
-	return cmd
+	return cmd, cleanups
 }
 
-func (s *BackupService) createMongoRestoreCmd(conn *connection.StoredConnection, backupPath string) *exec.Cmd {
+func (s *BackupService) createMongoRestoreCmd(conn *connection.StoredConnection, backupPath string) (*exec.Cmd, []func()) {
 	binaryPath := s.findDatabaseRestorePath("mongodb")
 	if binaryPath == "" {
 		fmt.Printf("ERROR: mongorestore binary not found. Please install MongoDB Database Tools.\n")
-		return nil
+		return nil, nil
 	}
 
 	binPath := filepath.Join(binaryPath, common.GetPlatformExecutableName(restoreTools["mongodb"]))
@@ -264,9 +284,18 @@ func (s *BackupService) createMongoRestoreCmd(conn *connection.StoredConnection,
 		args = append(args, "--username", conn.Username)
 	}
 
+	cmd := exec.Command(binPath, args...)
+
+	var cleanups []func()
 	if conn.Password != "" {
-		args = append(args, "--password", conn.Password)
+		configFile, cleanup, err := writeMongoConfigFile(conn.Username, conn.Password)
+		if err != nil {
+			fmt.Printf("ERROR: %v\n", err)
+			return nil, nil
+		}
+		cmd.Args = append(cmd.Args, "--config", configFile)
+		cleanups = append(cleanups, cleanup)
 	}
 
-	return exec.Command(binPath, args...)
+	return cmd, cleanups
 }

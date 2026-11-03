@@ -3,6 +3,7 @@ package backup
 import (
 	"context"
 	"errors"
+	"os"
 	"os/exec"
 	"runtime"
 	"testing"
@@ -37,10 +38,64 @@ func TestDumpCommandBuildsEverySupportedType(t *testing.T) {
 			if err != nil {
 				t.Skipf("client tool for %s not installed: %v", dbType, err)
 			}
-			if cmd == nil {
+			defer cmd.Close()
+			if cmd.cmd == nil {
 				t.Fatal("expected a command")
 			}
 		})
+	}
+}
+
+func TestDumpCommandsKeepPasswordOffArgv(t *testing.T) {
+	s := &BackupService{}
+	conn := &connection.StoredConnection{
+		Host:         "localhost",
+		Port:         5432,
+		Username:     "user",
+		Password:     "supersecret",
+		DatabaseName: "app",
+	}
+
+	cases := map[string]func() (*preparedCommand, error){
+		"postgresql": func() (*preparedCommand, error) { return s.createPgDumpCmd(conn, "out.sql") },
+		"mysql":      func() (*preparedCommand, error) { return s.createMySQLDumpCmd(conn, "out.sql") },
+		"redis":      func() (*preparedCommand, error) { return s.createRedisDumpCmd(conn, "out.sql") },
+	}
+
+	for name, build := range cases {
+		t.Run(name, func(t *testing.T) {
+			cmd, err := build()
+			if err != nil {
+				t.Skipf("client tool for %s not installed: %v", name, err)
+			}
+			defer cmd.Close()
+
+			for _, arg := range cmd.cmd.Args {
+				if arg == "supersecret" {
+					t.Fatalf("%s passed the password on argv: %v", name, cmd.cmd.Args)
+				}
+			}
+		})
+	}
+}
+
+func TestMySQLOptionFileIsModeRestrictedAndCleanedUp(t *testing.T) {
+	path, cleanup, err := writeMySQLOptionFile("p@ss")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatalf("credential file not created: %v", err)
+	}
+	if runtime.GOOS != "windows" && info.Mode().Perm() != 0o600 {
+		t.Fatalf("expected mode 0600, got %o", info.Mode().Perm())
+	}
+
+	cleanup()
+	if _, err := os.Stat(path); !os.IsNotExist(err) {
+		t.Fatalf("credential file was not removed: %v", err)
 	}
 }
 

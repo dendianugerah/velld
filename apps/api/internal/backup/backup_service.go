@@ -145,7 +145,7 @@ func (s *BackupService) createMultiDatabaseBackup(ctx context.Context, conn *con
 			continue
 		}
 
-		output, err := runDumpCmd(ctx, cmd)
+		output, err := cmd.Run(ctx)
 		if err != nil {
 			fmt.Printf("Warning: Failed to backup database '%s': %s\n", dbName, output)
 			failedDatabases = append(failedDatabases, dbName)
@@ -247,7 +247,7 @@ func (s *BackupService) createSingleDatabaseBackup(ctx context.Context, conn *co
 		return nil, err
 	}
 
-	output, err := runDumpCmd(ctx, cmd)
+	output, err := cmd.Run(ctx)
 	if err != nil {
 		errorMsg := string(output)
 		if errorMsg == "" {
