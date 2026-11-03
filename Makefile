@@ -1,18 +1,22 @@
 API_DIR := apps/api
 
-.PHONY: help test test-api lint lint-api fmt vet build run
+.PHONY: help test test-api test-integration lint lint-api fmt vet build run
 
 help:
-	@echo "make test     run API tests"
-	@echo "make lint     vet and check formatting"
-	@echo "make fmt      format Go sources"
-	@echo "make build    build the API and web app"
-	@echo "make run      run the API locally"
+	@echo "make test              run API unit tests"
+	@echo "make test-integration  run API integration tests (needs docker + psql)"
+	@echo "make lint              vet and check formatting"
+	@echo "make fmt               format Go sources"
+	@echo "make build             build the API and web app"
+	@echo "make run               run the API locally"
 
 test: test-api
 
 test-api:
 	cd $(API_DIR) && go test -race -cover ./...
+
+test-integration:
+	cd $(API_DIR) && go test -tags integration -race ./...
 
 lint: lint-api
 

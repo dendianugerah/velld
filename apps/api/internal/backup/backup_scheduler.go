@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/robfig/cron/v3"
 )
 
 func (s *BackupService) ScheduleBackup(req *ScheduleBackupRequest) error {
@@ -18,10 +17,9 @@ func (s *BackupService) ScheduleBackup(req *ScheduleBackupRequest) error {
 		return fmt.Errorf("failed to check existing schedule: %v", err)
 	}
 
-	parser := cron.NewParser(cron.Second | cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow)
-	schedule, err := parser.Parse(req.CronSchedule)
+	schedule, err := parseCronSchedule(req.CronSchedule)
 	if err != nil {
-		return fmt.Errorf("invalid cron schedule: %v", err)
+		return err
 	}
 
 	nextRun := schedule.Next(time.Now())
@@ -105,9 +103,7 @@ func (s *BackupService) executeCronBackup(schedule *BackupSchedule) {
 	}
 
 	// Update schedule's next run time and last backup time
-	parser := cron.NewParser(cron.Second | cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow)
-	cronSchedule, _ := parser.Parse(schedule.CronSchedule)
-	nextRun := cronSchedule.Next(time.Now())
+	nextRun, _ := nextRunTime(schedule.CronSchedule, time.Now())
 	schedule.NextRunTime = &nextRun
 	now := time.Now()
 	schedule.LastBackupTime = &now
@@ -254,10 +250,8 @@ func (s *BackupService) UpdateBackupSchedule(connectionID string, req *UpdateSch
 		return err
 	}
 
-	parser := cron.NewParser(cron.Second | cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow)
-	_, err = parser.Parse(req.CronSchedule)
-	if err != nil {
-		return fmt.Errorf("invalid cron schedule: %v", err)
+	if _, err := parseCronSchedule(req.CronSchedule); err != nil {
+		return err
 	}
 
 	schedule.CronSchedule = req.CronSchedule
