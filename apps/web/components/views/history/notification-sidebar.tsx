@@ -1,4 +1,4 @@
-import { Bell, Check } from "lucide-react";
+import { Bell, Check, ShieldAlert, AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { formatDistanceToNow, parseISO } from "date-fns";
@@ -69,10 +69,7 @@ export function NotificationSidebar({ notifications, isLoading, onMarkAsRead, on
                       ? "bg-primary/10" 
                       : "bg-muted"
                   )}>
-                    {notification.status === 'unread' 
-                      ? <Bell className="h-4 w-4 text-primary" />
-                      : <Check className="h-4 w-4 text-muted-foreground" />
-                    }
+                    <NotificationIcon type={notification.type} unread={notification.status === 'unread'} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <h5 className={cn(
@@ -101,4 +98,16 @@ export function NotificationSidebar({ notifications, isLoading, onMarkAsRead, on
       </ScrollArea>
     </div>
   );
+}
+
+function NotificationIcon({ type, unread }: { type: Notification["type"]; unread: boolean }) {
+  if (type === 'verification_failed') {
+    return <ShieldAlert className="h-4 w-4 text-destructive" />;
+  }
+  if (type === 'wal_gap_detected') {
+    return <AlertTriangle className="h-4 w-4 text-amber-600" />;
+  }
+  return unread
+    ? <Bell className="h-4 w-4 text-primary" />
+    : <Check className="h-4 w-4 text-muted-foreground" />;
 }

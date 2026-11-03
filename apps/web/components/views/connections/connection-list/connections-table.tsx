@@ -27,7 +27,8 @@ import {
   Settings2,
   ArrowUpDown,
   Database,
-  MoreHorizontal
+  MoreHorizontal,
+  History,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Connection } from '@/types/connection';
@@ -41,6 +42,7 @@ interface ConnectionsTableProps {
   onDelete: (connection: Connection) => void;
   onSchedule: (connectionId: string) => void;
   onDiscover?: (connection: Connection) => void;
+  onPointInTime?: (connection: Connection) => void;
 }
 
 type SortField = 'name' | 'type' | 'status' | 'size' | 'lastBackup';
@@ -52,6 +54,7 @@ export function ConnectionsTable({
   onDelete,
   onSchedule,
   onDiscover,
+  onPointInTime,
 }: ConnectionsTableProps) {
   const { createBackup, isCreating } = useBackup();
   const [sortField, setSortField] = useState<SortField>('name');
@@ -269,6 +272,17 @@ export function ConnectionsTable({
                                 <Settings2 className="mr-2 h-4 w-4" />
                                 Schedule
                               </DropdownMenuItem>
+                              {onPointInTime && connection.type === 'postgresql' && (
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    setOpenDropdownId(null);
+                                    onPointInTime(connection);
+                                  }}
+                                >
+                                  <History className="mr-2 h-4 w-4" />
+                                  Point-in-time
+                                </DropdownMenuItem>
+                              )}
                               <DropdownMenuItem 
                                 onClick={() => {
                                   setOpenDropdownId(null);
