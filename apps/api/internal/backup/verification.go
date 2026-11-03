@@ -16,12 +16,15 @@ type VerificationResult struct {
 	Verification *BackupVerification `json:"verification"`
 }
 
-// VerifyBackup runs a verification for a backup and records the result. It
-// currently performs an integrity check: the stored backup is re-hashed and
-// compared with the checksum recorded at creation time. This catches
-// truncation and corruption, which is the most common way a backup turns out
-// to be worthless.
+// VerifyBackup runs a verification for a backup synchronously and records the
+// result. The HTTP handler uses EnqueueVerification instead so a slow restore
+// does not hold the request open.
 func (s *BackupService) VerifyBackup(ctx context.Context, backupID string) (*BackupVerification, error) {
+	verification, err := s.createPendingVerification(backupID)
+	if err != nil {
+		return nil, err
+	}
+
 	backup, err := s.backupRepo.GetBackup(backupID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get backup: %w", err)
@@ -32,6 +35,12 @@ func (s *BackupService) VerifyBackup(ctx context.Context, backupID string) (*Bac
 		return nil, fmt.Errorf("failed to get connection: %w", err)
 	}
 
+	return s.executeVerification(ctx, verification, backup, conn)
+}
+
+// createPendingVerification records a verification in the running state and
+// returns it, so callers can report progress before the work finishes.
+func (s *BackupService) createPendingVerification(backupID string) (*BackupVerification, error) {
 	started := time.Now()
 	verification := &BackupVerification{
 		ID:        uuid.New().String(),
@@ -44,7 +53,10 @@ func (s *BackupService) VerifyBackup(ctx context.Context, backupID string) (*Bac
 	if err := s.backupRepo.CreateVerification(verification); err != nil {
 		return nil, fmt.Errorf("failed to record verification start: %w", err)
 	}
+	return verification, nil
+}
 
+func (s *BackupService) executeVerification(ctx context.Context, verification *BackupVerification, backup *Backup, conn *connection.StoredConnection) (*BackupVerification, error) {
 	passed, method, details, verifyErr := s.runVerification(ctx, backup, conn)
 
 	completed := time.Now()
