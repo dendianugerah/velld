@@ -61,6 +61,19 @@ func NewBackupService(
 	return service
 }
 
+// Stop halts the scheduler and waits for running backups to finish or for ctx
+// to be cancelled. It is called during graceful shutdown so an in-flight dump
+// is not killed mid-write.
+func (s *BackupService) Stop(ctx context.Context) error {
+	done := s.cronManager.Stop()
+	select {
+	case <-done.Done():
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+}
+
 func (s *BackupService) recoverSchedules() error {
 	schedules, err := s.backupRepo.GetAllActiveSchedules()
 	if err != nil {
