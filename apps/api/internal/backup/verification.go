@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/dendianugerah/velld/internal/connection"
 	"github.com/google/uuid"
 )
 
@@ -44,13 +45,14 @@ func (s *BackupService) VerifyBackup(ctx context.Context, backupID string) (*Bac
 		return nil, fmt.Errorf("failed to record verification start: %w", err)
 	}
 
-	matches, details, verifyErr := s.verifyChecksum(ctx, backup, conn.UserID)
-	completed := time.Now()
+	passed, method, details, verifyErr := s.runVerification(ctx, backup, conn)
 
-	verification.ChecksumMatches = matches
+	completed := time.Now()
+	verification.Method = method
+	verification.ChecksumMatches = passed
 	verification.Details = details
 	verification.CompletedAt = &completed
-	if verifyErr != nil || !matches {
+	if verifyErr != nil || !passed {
 		verification.Status = VerificationFailed
 	} else {
 		verification.Status = VerificationPassed
@@ -65,6 +67,39 @@ func (s *BackupService) VerifyBackup(ctx context.Context, backupID string) (*Bac
 	}
 
 	return verification, nil
+}
+
+// runVerification performs the strongest check available for the connection.
+// Checksum verification always runs first because it is cheap and catches
+// corruption; a restore-based check then runs when supported and the checksum
+// passed, upgrading the method to MethodRestore.
+func (s *BackupService) runVerification(ctx context.Context, backup *Backup, conn *connection.StoredConnection) (bool, string, string, error) {
+	matches, details, err := s.verifyChecksum(ctx, backup, conn.UserID)
+	if err != nil || !matches {
+		return matches, MethodChecksum, details, err
+	}
+
+	if !restoreVerifiable(conn.Type) {
+		return true, MethodChecksum, details, nil
+	}
+
+	path, isTemp, err := s.ensureBackupFileAvailable(backup, conn.UserID)
+	if err != nil {
+		return true, MethodChecksum, details + " (restore verification skipped: backup unavailable)", nil
+	}
+	if isTemp {
+		defer os.Remove(path)
+	}
+
+	restoreMatches, restoreDetails, restoreErr := s.verifyRestore(ctx, backup, conn, path)
+	if restoreErr != nil {
+		return false, MethodRestore, restoreDetails, restoreErr
+	}
+	if !restoreMatches {
+		return false, MethodRestore, restoreDetails, nil
+	}
+
+	return true, MethodRestore, details + "; " + restoreDetails, nil
 }
 
 // verifyChecksum re-hashes the backup and compares it with its manifest. It
