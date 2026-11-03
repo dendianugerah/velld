@@ -102,7 +102,27 @@ func (s *BackupService) CreateBackup(ctx context.Context, connectionID string) (
 		return s.createMultiDatabaseBackup(ctx, conn)
 	}
 
+	if s.shouldStream(conn) {
+		backup, err := s.createStreamingBackup(ctx, conn, conn.DatabaseName)
+		if err == nil {
+			return backup, nil
+		}
+		fmt.Printf("Warning: streaming backup failed, falling back to local file: %v\n", err)
+	}
+
 	return s.createSingleDatabaseBackup(ctx, conn, conn.DatabaseName)
+}
+
+// shouldStream is true when S3 is configured and the database can dump to
+// stdout, so the backup can skip local disk entirely.
+func (s *BackupService) shouldStream(conn *connection.StoredConnection) bool {
+	if !streamingSupported(conn.Type) {
+		return false
+	}
+	if _, err := s.s3StorageForUser(conn.UserID); err != nil {
+		return false
+	}
+	return true
 }
 
 func (s *BackupService) createMultiDatabaseBackup(ctx context.Context, conn *connection.StoredConnection) (*Backup, error) {

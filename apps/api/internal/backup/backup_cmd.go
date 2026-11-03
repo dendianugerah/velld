@@ -3,6 +3,7 @@ package backup
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -38,6 +39,43 @@ func (p *preparedCommand) Close() {
 func (p *preparedCommand) Run(ctx context.Context) ([]byte, error) {
 	defer p.Close()
 	return runDumpCmd(ctx, p.cmd)
+}
+
+// RunToWriter streams the command's stdout into w and captures stderr for
+// error reporting. It is the streaming counterpart of Run.
+func (p *preparedCommand) RunToWriter(ctx context.Context, w io.Writer) error {
+	defer p.Close()
+
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	bound := exec.CommandContext(ctx, p.cmd.Path, p.cmd.Args[1:]...)
+	bound.Env = p.cmd.Env
+	bound.Dir = p.cmd.Dir
+	bound.Stdout = w
+
+	stderr, err := bound.StderrPipe()
+	if err != nil {
+		return fmt.Errorf("open stderr pipe: %w", err)
+	}
+
+	if err := bound.Start(); err != nil {
+		return fmt.Errorf("start %s: %w", p.cmd.Path, err)
+	}
+
+	stderrBytes, _ := io.ReadAll(stderr)
+	if err := bound.Wait(); err != nil {
+		if ctxErr := ctx.Err(); ctxErr != nil {
+			return fmt.Errorf("dump cancelled: %w", ctxErr)
+		}
+		if msg := trimStderr(stderrBytes); msg != "" {
+			return fmt.Errorf("%w: %s", err, msg)
+		}
+		return err
+	}
+
+	return nil
 }
 
 func (s *BackupService) verifyBackupTools(dbType string) error {
@@ -263,4 +301,18 @@ func (s *BackupService) createRedisDumpCmd(conn *connection.StoredConnection, ds
 	}
 
 	return &preparedCommand{cmd: cmd}, nil
+}
+
+// trimStderr trims trailing newlines and caps the length so a tool's error
+// output stays readable in a log or API response.
+func trimStderr(b []byte) string {
+	s := string(b)
+	for len(s) > 0 && (s[len(s)-1] == '\n' || s[len(s)-1] == '\r') {
+		s = s[:len(s)-1]
+	}
+	const limit = 4096
+	if len(s) > limit {
+		s = s[:limit]
+	}
+	return s
 }
