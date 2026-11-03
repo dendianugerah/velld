@@ -35,6 +35,11 @@ type BackupService struct {
 	// takes longer than its interval.
 	mu      sync.Mutex
 	running map[string]struct{}
+
+	// elector, when set, gates the scheduler so only one replica runs it.
+	elector     *LeaderElector
+	cancelRenew context.CancelFunc
+	schedulerOn bool
 }
 
 // DefaultMaxConcurrentBackups caps simultaneous dump jobs.
@@ -72,6 +77,7 @@ func NewBackupService(
 	}
 
 	cronManager.Start()
+	service.schedulerOn = true
 	return service
 }
 
@@ -79,13 +85,96 @@ func NewBackupService(
 // to be cancelled. It is called during graceful shutdown so an in-flight dump
 // is not killed mid-write.
 func (s *BackupService) Stop(ctx context.Context) error {
+	if s.cancelRenew != nil {
+		s.cancelRenew()
+	}
+
 	done := s.cronManager.Stop()
 	select {
 	case <-done.Done():
-		return nil
 	case <-ctx.Done():
 		return ctx.Err()
 	}
+
+	if s.elector != nil {
+		if err := s.elector.Release(context.Background()); err != nil {
+			fmt.Printf("Warning: failed to release scheduler lease: %v\n", err)
+		}
+	}
+
+	return nil
+}
+
+// EnableLeaderElection gates the scheduler behind a database lease so multiple
+// replicas do not all run scheduled backups. It must be called before the
+// scheduler starts, and replaces the default always-on behavior.
+func (s *BackupService) EnableLeaderElection(elector *LeaderElector) {
+	s.elector = elector
+}
+
+// StartScheduler reconciles the scheduler with leader election. Without an
+// elector it is already running. With one, it acquires the lease, stops cron if
+// another replica holds it, and renews in the background.
+func (s *BackupService) StartScheduler(ctx context.Context) {
+	if s.elector == nil {
+		s.startCron()
+		return
+	}
+
+	ok, err := s.elector.TryAcquire(ctx)
+	if err != nil {
+		fmt.Printf("Warning: leader election failed; stopping scheduler: %v\n", err)
+		s.stopCron()
+	} else if !ok {
+		fmt.Println("Not the scheduler leader; scheduled backups are handled by another replica")
+		s.stopCron()
+	} else {
+		s.startCron()
+	}
+
+	renewCtx, cancel := context.WithCancel(ctx)
+	s.cancelRenew = cancel
+	go s.renewLease(renewCtx)
+}
+
+func (s *BackupService) renewLease(ctx context.Context) {
+	ticker := time.NewTicker(20 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			ok, err := s.elector.TryAcquire(ctx)
+			if err != nil {
+				fmt.Printf("Warning: failed to renew scheduler lease: %v\n", err)
+				continue
+			}
+			if ok {
+				s.startCron()
+			} else {
+				s.stopCron()
+				fmt.Println("Lost scheduler leadership; stopped scheduled backups")
+			}
+		}
+	}
+}
+
+func (s *BackupService) startCron() {
+	if s.schedulerOn {
+		return
+	}
+	s.cronManager.Start()
+	s.schedulerOn = true
+}
+
+func (s *BackupService) stopCron() {
+	if !s.schedulerOn {
+		return
+	}
+	s.cronManager.Stop()
+	s.schedulerOn = false
 }
 
 func (s *BackupService) recoverSchedules() error {

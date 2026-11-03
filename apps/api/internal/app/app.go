@@ -92,6 +92,9 @@ func (a *App) buildRouter(secrets *common.Secrets) (*mux.Router, *backup.BackupS
 		notificationRepo,
 		cryptoService,
 	)
+	// Gate the scheduler behind a lease so multiple replicas do not all run
+	// scheduled backups. Safe on a single instance too.
+	backupService.EnableLeaderElection(backup.NewLeaderElector(a.db, "backup_scheduler", 60*time.Second))
 
 	verifier := backup.NewVerificationWorker(backupService, backup.DefaultVerificationWorkers)
 
@@ -166,6 +169,8 @@ func Run(ctx context.Context, addr string) error {
 		return err
 	}
 	defer app.Close(context.Background())
+
+	app.backups.StartScheduler(ctx)
 
 	server := &http.Server{
 		Addr:              addr,
