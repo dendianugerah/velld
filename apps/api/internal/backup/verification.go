@@ -95,6 +95,10 @@ func (s *BackupService) runVerification(ctx context.Context, backup *Backup, con
 		return true, MethodChecksum, details, nil
 	}
 
+	if err := s.restoreToolingAvailable(conn.Type); err != nil {
+		return true, MethodChecksum, details + " (restore verification skipped: " + err.Error() + ")", nil
+	}
+
 	path, isTemp, err := s.ensureBackupFileAvailable(backup, conn.UserID)
 	if err != nil {
 		return true, MethodChecksum, details + " (restore verification skipped: backup unavailable)", nil

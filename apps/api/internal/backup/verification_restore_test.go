@@ -50,15 +50,37 @@ func TestScratchDatabaseName(t *testing.T) {
 	}
 }
 
-func TestQuoteIdent(t *testing.T) {
+func TestQuotePgIdent(t *testing.T) {
 	tests := map[string]string{
 		"users":        `"users"`,
 		`weird"name`:   `"weird""name"`,
 		"velld_verify": `"velld_verify"`,
 	}
 	for input, want := range tests {
-		if got := quoteIdent(input); got != want {
-			t.Fatalf("quoteIdent(%q) = %q, want %q", input, got, want)
+		if got := quotePgIdent(input); got != want {
+			t.Fatalf("quotePgIdent(%q) = %q, want %q", input, got, want)
 		}
+	}
+}
+
+func TestEscapeMySQLIdent(t *testing.T) {
+	tests := map[string]string{
+		"users":        "users",
+		"weird`name":   "weird``name",
+		"velld_verify": "velld_verify",
+	}
+	for input, want := range tests {
+		if got := escapeMySQLIdent(input); got != want {
+			t.Fatalf("escapeMySQLIdent(%q) = %q, want %q", input, got, want)
+		}
+	}
+}
+
+func TestQuoteMySQLString(t *testing.T) {
+	if got := quoteMySQLString("app"); got != "'app'" {
+		t.Fatalf("got %q, want 'app'", got)
+	}
+	if got := quoteMySQLString("o'brien"); got != `'o\'brien'` {
+		t.Fatalf("got %q, want escaped quote", got)
 	}
 }
