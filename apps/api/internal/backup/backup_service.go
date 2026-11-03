@@ -276,6 +276,10 @@ func (s *BackupService) createSingleDatabaseBackup(ctx context.Context, conn *co
 		return nil, fmt.Errorf("failed to save backup: %v", err)
 	}
 
+	if err := s.recordManifest(backup, backupPath); err != nil {
+		fmt.Printf("Warning: failed to record backup manifest: %v\n", err)
+	}
+
 	return backup, nil
 }
 
