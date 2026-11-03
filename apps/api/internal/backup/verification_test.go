@@ -44,17 +44,13 @@ func seedBackup(t *testing.T, repo *BackupRepository, id, path string) {
 	t.Helper()
 
 	encUser, encPass := encryptForTest(t, "user"), encryptForTest(t, "pass")
+	// Deliberately leave nullable columns unset so this doubles as a regression
+	// test for NULL-tolerant scanning.
 	if _, err := repo.db.Exec(`
-		INSERT INTO connections (
-			id, name, type, host, port, username, password, database_name, user_id,
-			database_size, status, ssh_enabled, ssh_host, ssh_port, ssh_username
-		)
-		VALUES (
-			'conn-1', 'primary', 'postgresql', 'localhost', 5432, $1, $2, 'app', '99999999-9999-9999-9999-999999999999',
-			0, 'connected', 0, '', 22, ''
-		);
-		INSERT INTO backups (id, connection_id, status, path, size, started_time, created_at, updated_at)
-		VALUES ($3, 'conn-1', 'completed', $4, 0, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z');
+		INSERT INTO connections (id, name, type, host, port, username, password, database_name, user_id)
+		VALUES ('conn-1', 'primary', 'postgresql', 'localhost', 5432, $1, $2, 'app', '99999999-9999-9999-9999-999999999999');
+		INSERT INTO backups (id, connection_id, status, path)
+		VALUES ($3, 'conn-1', 'completed', $4);
 	`, encUser, encPass, id, path); err != nil {
 		t.Fatalf("seed backup: %v", err)
 	}

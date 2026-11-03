@@ -109,8 +109,10 @@ func (r *ConnectionRepository) GetConnection(id string) (*StoredConnection, erro
 
 	query := `SELECT 
 		id, name, type, host, port, username, password, database_name, ssl, 
-		database_size, created_at, updated_at, last_connected_at, user_id, status,
-		ssh_enabled, ssh_host, ssh_port, ssh_username, ssh_password, ssh_private_key,
+		COALESCE(database_size, 0), COALESCE(created_at, ''), COALESCE(updated_at, ''),
+		last_connected_at, user_id, COALESCE(status, 'unknown'),
+		COALESCE(ssh_enabled, 0), COALESCE(ssh_host, ''), COALESCE(ssh_port, 0), COALESCE(ssh_username, ''),
+		ssh_password, ssh_private_key,
 		COALESCE(selected_databases, '') as selected_databases,
 		COALESCE(s3_cleanup_on_retention, 1) as s3_cleanup_on_retention
 	FROM connections WHERE id = $1`
