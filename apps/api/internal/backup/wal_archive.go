@@ -2,11 +2,15 @@ package backup
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
+	"time"
 
 	"github.com/dendianugerah/velld/internal/common"
 	"github.com/dendianugerah/velld/internal/connection"
+	"github.com/dendianugerah/velld/internal/notification"
+	"github.com/google/uuid"
 )
 
 // WALCommandConfig describes the archive/restore commands a PostgreSQL server
@@ -111,4 +115,67 @@ func lastPathSegment(key string) string {
 		}
 	}
 	return key
+}
+
+// CheckWALGaps inspects a connection's archived WAL and creates a dashboard
+// notification when segments are missing. A gap means recovery past that point
+// is impossible, so it is an RPO violation worth surfacing.
+func (s *BackupService) CheckWALGaps(ctx context.Context, connectionID string, segmentSizeBytes int64) ([]string, error) {
+	conn, err := s.connStorage.GetConnection(connectionID)
+	if err != nil {
+		return nil, fmt.Errorf("load connection: %w", err)
+	}
+
+	_, gaps, err := s.ArchivedWALSegments(ctx, connectionID, segmentSizeBytes)
+	if err != nil {
+		return nil, err
+	}
+	if len(gaps) == 0 {
+		return nil, nil
+	}
+
+	if err := s.createWALGapNotification(conn, gaps); err != nil {
+		s.logf("failed to create WAL gap notification: %v", err)
+	}
+
+	return gaps, nil
+}
+
+func (s *BackupService) createWALGapNotification(conn *connection.StoredConnection, gaps []string) error {
+	userSettings, err := s.settingsService.GetUserSettingsInternal(conn.UserID)
+	if err != nil {
+		return fmt.Errorf("load user settings: %w", err)
+	}
+	if !userSettings.NotifyDashboard {
+		return nil
+	}
+
+	metadataJSON, _ := json.Marshal(map[string]interface{}{
+		"connection_id": conn.ID,
+		"database_name": conn.DatabaseName,
+		"gap_count":     len(gaps),
+		"first_gaps":    firstN(gaps, 5),
+		"timestamp":     time.Now().Format(time.RFC3339),
+	})
+
+	note := &notification.Notification{
+		ID:        uuid.New(),
+		UserID:    conn.UserID,
+		Title:     "WAL gap detected",
+		Message:   fmt.Sprintf("Missing WAL segments for '%s' break point-in-time recovery past the gap (%d missing)", conn.DatabaseName, len(gaps)),
+		Type:      notification.WALGapDetected,
+		Status:    notification.StatusUnread,
+		Metadata:  metadataJSON,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+
+	return s.notificationRepo.CreateNotification(note)
+}
+
+func firstN(values []string, n int) []string {
+	if len(values) <= n {
+		return values
+	}
+	return values[:n]
 }

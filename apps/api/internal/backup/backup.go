@@ -12,6 +12,7 @@ import (
 
 	"github.com/dendianugerah/velld/internal/common"
 	"github.com/dendianugerah/velld/internal/common/response"
+	"github.com/dendianugerah/velld/internal/connection"
 	"github.com/gorilla/mux"
 )
 
@@ -363,6 +364,24 @@ func (h *BackupHandler) GetVerification(w http.ResponseWriter, r *http.Request) 
 	response.SendSuccess(w, "Verification retrieved successfully", verification)
 }
 
+// authorizedConnection ensures the connection belongs to the requesting user.
+func (h *BackupHandler) authorizedConnection(r *http.Request, connectionID string) (*connection.StoredConnection, error) {
+	userID, err := common.GetUserIDFromContext(r.Context())
+	if err != nil {
+		return nil, err
+	}
+
+	conn, err := h.backupService.connStorage.GetConnection(connectionID)
+	if err != nil {
+		return nil, err
+	}
+	if conn.UserID != userID {
+		return nil, fmt.Errorf("not authorized to access this connection")
+	}
+
+	return conn, nil
+}
+
 // authorizedBackup ensures the backup belongs to the requesting user. It
 // returns the backup so callers do not fetch it twice.
 func (h *BackupHandler) authorizedBackup(r *http.Request, backupID string) (*Backup, error) {
@@ -415,10 +434,23 @@ func (h *BackupHandler) PushWALSegment(w http.ResponseWriter, r *http.Request) {
 func (h *BackupHandler) GetWALStatus(w http.ResponseWriter, r *http.Request) {
 	connectionID := mux.Vars(r)["id"]
 
+	if _, err := h.authorizedConnection(r, connectionID); err != nil {
+		response.SendError(w, http.StatusForbidden, err.Error())
+		return
+	}
+
 	segments, gaps, err := h.backupService.ArchivedWALSegments(r.Context(), connectionID, 16*1024*1024)
 	if err != nil {
 		response.SendError(w, http.StatusInternalServerError, err.Error())
 		return
+	}
+
+	if len(gaps) > 0 {
+		if _, err := h.backupService.CheckWALGaps(r.Context(), connectionID, 16*1024*1024); err != nil {
+			// Observing the status already returned the gaps; a failed
+			// notification must not fail the request.
+			fmt.Printf("Warning: WAL gap alert failed: %v\n", err)
+		}
 	}
 
 	response.SendSuccess(w, "WAL status retrieved", map[string]interface{}{
@@ -430,9 +462,9 @@ func (h *BackupHandler) GetWALStatus(w http.ResponseWriter, r *http.Request) {
 
 func (h *BackupHandler) GetWALCommandConfig(w http.ResponseWriter, r *http.Request) {
 	connectionID := mux.Vars(r)["id"]
-	conn, err := h.backupService.connStorage.GetConnection(connectionID)
+	conn, err := h.authorizedConnection(r, connectionID)
 	if err != nil {
-		response.SendError(w, http.StatusNotFound, "Connection not found")
+		response.SendError(w, http.StatusForbidden, err.Error())
 		return
 	}
 
