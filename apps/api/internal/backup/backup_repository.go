@@ -357,7 +357,13 @@ func (r *BackupRepository) GetAllBackupsWithPagination(opts BackupListOptions) (
 				WHERE v.backup_id = b.id
 				ORDER BY v.created_at DESC, v.rowid DESC
 				LIMIT 1
-			), '') AS verification_status
+			), '') AS verification_status,
+			COALESCE((
+				SELECT v.completed_at FROM backup_verifications v
+				WHERE v.backup_id = b.id
+				ORDER BY v.created_at DESC, v.rowid DESC
+				LIMIT 1
+			), '') AS last_verified_at
 		FROM backups b
 		INNER JOIN connections c ON b.connection_id = c.id
 		%s
@@ -388,6 +394,7 @@ func (r *BackupRepository) GetAllBackupsWithPagination(opts BackupListOptions) (
 			&createdAtStr, &updatedAtStr,
 			&backup.DatabaseName,
 			&backup.VerificationStatus,
+			&backup.LastVerifiedAt,
 		)
 		if err != nil {
 			return nil, 0, err

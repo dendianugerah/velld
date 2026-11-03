@@ -28,13 +28,15 @@ func TestListBackupsIncludesVerificationStatus(t *testing.T) {
 		t.Fatalf("expected no verification status, got %q", list[0].VerificationStatus)
 	}
 
+	completed := now
 	if err := repo.CreateVerification(&BackupVerification{
-		ID:        "ver-1",
-		BackupID:  backupID,
-		Status:    VerificationPassed,
-		Method:    MethodChecksum,
-		StartedAt: now,
-		CreatedAt: now,
+		ID:          "ver-1",
+		BackupID:    backupID,
+		Status:      VerificationPassed,
+		Method:      MethodChecksum,
+		StartedAt:   now,
+		CompletedAt: &completed,
+		CreatedAt:   now,
 	}); err != nil {
 		t.Fatalf("create verification: %v", err)
 	}
@@ -45,5 +47,8 @@ func TestListBackupsIncludesVerificationStatus(t *testing.T) {
 	}
 	if list[0].VerificationStatus != VerificationPassed {
 		t.Fatalf("verification status = %q, want %q", list[0].VerificationStatus, VerificationPassed)
+	}
+	if list[0].LastVerifiedAt == "" {
+		t.Fatal("expected last_verified_at to be populated")
 	}
 }

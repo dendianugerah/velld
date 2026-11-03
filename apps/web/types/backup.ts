@@ -16,6 +16,7 @@ export interface Backup {
   created_at: string;
   updated_at: string;
   verification_status?: string;
+  last_verified_at?: string;
 }
 
 export type VerificationStatus = "running" | "passed" | "failed" | "";
