@@ -69,20 +69,20 @@ func (s *BackupService) resolveToolPath(dbType string) (string, error) {
 // dispatch so callers do not repeat the same switch for every backup path, and
 // resolves the tool up front so a missing binary is reported before any work
 // starts.
-func (s *BackupService) dumpCommand(conn *connection.StoredConnection, outputPath string) (*preparedCommand, error) {
+func (s *BackupService) dumpCommand(conn *connection.StoredConnection, dst dumpDestination) (*preparedCommand, error) {
 	if err := s.verifyBackupTools(conn.Type); err != nil {
 		return nil, err
 	}
 
 	switch conn.Type {
 	case "postgresql":
-		return s.createPgDumpCmd(conn, outputPath)
+		return s.createPgDumpCmd(conn, dst)
 	case "mysql", "mariadb":
-		return s.createMySQLDumpCmd(conn, outputPath)
+		return s.createMySQLDumpCmd(conn, dst)
 	case "mongodb":
-		return s.createMongoDumpCmd(conn, outputPath)
+		return s.createMongoDumpCmd(conn, dst)
 	case "redis":
-		return s.createRedisDumpCmd(conn, outputPath)
+		return s.createRedisDumpCmd(conn, dst)
 	}
 
 	return nil, fmt.Errorf("unsupported database type: %s", conn.Type)
@@ -127,19 +127,34 @@ func (s *BackupService) setupSSHTunnelIfNeeded(conn *connection.StoredConnection
 	return tunnel, "127.0.0.1", tunnel.GetLocalPort(), nil
 }
 
-func (s *BackupService) createPgDumpCmd(conn *connection.StoredConnection, outputPath string) (*preparedCommand, error) {
+// dumpDestination says where a dump tool should write its output.
+type dumpDestination struct {
+	path   string
+	stdout bool
+}
+
+func toFile(path string) dumpDestination   { return dumpDestination{path: path} }
+func toStdout() dumpDestination            { return dumpDestination{stdout: true} }
+func (d dumpDestination) isStdout() bool   { return d.stdout }
+func (d dumpDestination) filePath() string { return d.path }
+
+func (s *BackupService) createPgDumpCmd(conn *connection.StoredConnection, dst dumpDestination) (*preparedCommand, error) {
 	binPath, err := s.resolveToolPath("postgresql")
 	if err != nil {
 		return nil, err
 	}
 
-	cmd := exec.Command(binPath,
+	args := []string{
 		"-h", conn.Host,
 		"-p", fmt.Sprintf("%d", conn.Port),
 		"-U", conn.Username,
 		"-d", conn.DatabaseName,
-		"-f", outputPath,
-	)
+	}
+	if !dst.isStdout() {
+		args = append(args, "-f", dst.filePath())
+	}
+
+	cmd := exec.Command(binPath, args...)
 
 	// PGPASSWORD is passed through the environment rather than argv so the
 	// password does not show up in the process list.
@@ -147,7 +162,7 @@ func (s *BackupService) createPgDumpCmd(conn *connection.StoredConnection, outpu
 	return &preparedCommand{cmd: cmd}, nil
 }
 
-func (s *BackupService) createMySQLDumpCmd(conn *connection.StoredConnection, outputPath string) (*preparedCommand, error) {
+func (s *BackupService) createMySQLDumpCmd(conn *connection.StoredConnection, dst dumpDestination) (*preparedCommand, error) {
 	binPath, err := s.resolveToolPath(conn.Type)
 	if err != nil {
 		return nil, err
@@ -165,7 +180,10 @@ func (s *BackupService) createMySQLDumpCmd(conn *connection.StoredConnection, ou
 		args = append(args, "--skip-ssl")
 	}
 
-	args = append(args, conn.DatabaseName, "-r", outputPath)
+	args = append(args, conn.DatabaseName)
+	if !dst.isStdout() {
+		args = append(args, "-r", dst.filePath())
+	}
 
 	cmd := exec.Command(binPath, args...)
 
@@ -183,7 +201,7 @@ func (s *BackupService) createMySQLDumpCmd(conn *connection.StoredConnection, ou
 	return &preparedCommand{cmd: cmd}, nil
 }
 
-func (s *BackupService) createMongoDumpCmd(conn *connection.StoredConnection, outputPath string) (*preparedCommand, error) {
+func (s *BackupService) createMongoDumpCmd(conn *connection.StoredConnection, dst dumpDestination) (*preparedCommand, error) {
 	binPath, err := s.resolveToolPath("mongodb")
 	if err != nil {
 		return nil, err
@@ -193,7 +211,12 @@ func (s *BackupService) createMongoDumpCmd(conn *connection.StoredConnection, ou
 		"--host", conn.Host,
 		"--port", fmt.Sprintf("%d", conn.Port),
 		"--db", conn.DatabaseName,
-		"--out", filepath.Dir(outputPath),
+	}
+
+	if dst.isStdout() {
+		args = append(args, "--archive")
+	} else {
+		args = append(args, "--out", filepath.Dir(dst.filePath()))
 	}
 
 	if conn.Username != "" {
@@ -214,10 +237,14 @@ func (s *BackupService) createMongoDumpCmd(conn *connection.StoredConnection, ou
 	return tool, nil
 }
 
-func (s *BackupService) createRedisDumpCmd(conn *connection.StoredConnection, outputPath string) (*preparedCommand, error) {
+func (s *BackupService) createRedisDumpCmd(conn *connection.StoredConnection, dst dumpDestination) (*preparedCommand, error) {
 	binPath, err := s.resolveToolPath("redis")
 	if err != nil {
 		return nil, err
+	}
+
+	if dst.isStdout() {
+		return nil, fmt.Errorf("redis dumps must be written to a file")
 	}
 
 	args := []string{
@@ -227,7 +254,7 @@ func (s *BackupService) createRedisDumpCmd(conn *connection.StoredConnection, ou
 	if conn.DatabaseName != "" {
 		args = append(args, "-n", conn.DatabaseName)
 	}
-	args = append(args, "--rdb", outputPath)
+	args = append(args, "--rdb", dst.filePath())
 
 	cmd := exec.Command(binPath, args...)
 	if conn.Password != "" {

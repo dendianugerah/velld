@@ -31,7 +31,7 @@ func TestPgDumpProducesRestorableSQL(t *testing.T) {
 	}
 
 	svc := &BackupService{}
-	prepared, err := svc.createPgDumpCmd(conn, dumpPath)
+	prepared, err := svc.createPgDumpCmd(conn, toFile(dumpPath))
 	if err != nil {
 		t.Fatalf("build dump command: %v", err)
 	}
@@ -78,7 +78,7 @@ func TestPgDumpRespectsCancellation(t *testing.T) {
 	}
 
 	svc := &BackupService{}
-	prepared, err := svc.createPgDumpCmd(conn, filepath.Join(dir, "dump.sql"))
+	prepared, err := svc.createPgDumpCmd(conn, toFile(filepath.Join(dir, "dump.sql")))
 	if err != nil {
 		t.Fatalf("build dump command: %v", err)
 	}

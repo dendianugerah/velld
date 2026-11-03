@@ -139,7 +139,7 @@ func (s *BackupService) createMultiDatabaseBackup(ctx context.Context, conn *con
 		tempConn := *conn
 		tempConn.DatabaseName = dbName
 
-		cmd, err := s.dumpCommand(&tempConn, backupPath)
+		cmd, err := s.dumpCommand(&tempConn, toFile(backupPath))
 		if err != nil {
 			fmt.Printf("Warning: %v\n", err)
 			failedDatabases = append(failedDatabases, dbName)
@@ -243,7 +243,7 @@ func (s *BackupService) createSingleDatabaseBackup(ctx context.Context, conn *co
 		UpdatedAt:    time.Now(),
 	}
 
-	cmd, err := s.dumpCommand(conn, backupPath)
+	cmd, err := s.dumpCommand(conn, toFile(backupPath))
 	if err != nil {
 		return nil, err
 	}

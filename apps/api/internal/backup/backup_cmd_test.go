@@ -15,7 +15,7 @@ func TestDumpCommandRejectsUnsupportedType(t *testing.T) {
 	s := &BackupService{}
 	conn := &connection.StoredConnection{Type: "cassandra"}
 
-	if _, err := s.dumpCommand(conn, "out.sql"); err == nil {
+	if _, err := s.dumpCommand(conn, toFile("out.sql")); err == nil {
 		t.Fatal("expected error for unsupported database type")
 	}
 }
@@ -34,7 +34,7 @@ func TestDumpCommandBuildsEverySupportedType(t *testing.T) {
 				DatabaseName: "app",
 			}
 
-			cmd, err := s.dumpCommand(conn, "out.sql")
+			cmd, err := s.dumpCommand(conn, toFile("out.sql"))
 			if err != nil {
 				t.Skipf("client tool for %s not installed: %v", dbType, err)
 			}
@@ -57,9 +57,9 @@ func TestDumpCommandsKeepPasswordOffArgv(t *testing.T) {
 	}
 
 	cases := map[string]func() (*preparedCommand, error){
-		"postgresql": func() (*preparedCommand, error) { return s.createPgDumpCmd(conn, "out.sql") },
-		"mysql":      func() (*preparedCommand, error) { return s.createMySQLDumpCmd(conn, "out.sql") },
-		"redis":      func() (*preparedCommand, error) { return s.createRedisDumpCmd(conn, "out.sql") },
+		"postgresql": func() (*preparedCommand, error) { return s.createPgDumpCmd(conn, toFile("out.sql")) },
+		"mysql":      func() (*preparedCommand, error) { return s.createMySQLDumpCmd(conn, toFile("out.sql")) },
+		"redis":      func() (*preparedCommand, error) { return s.createRedisDumpCmd(conn, toFile("out.sql")) },
 	}
 
 	for name, build := range cases {
@@ -128,5 +128,44 @@ func TestRunDumpCmdCancellation(t *testing.T) {
 
 	if !errors.Is(err, context.Canceled) {
 		t.Fatalf("expected context.Canceled, got %v", err)
+	}
+}
+
+func TestStdoutDumpsOmitFileFlags(t *testing.T) {
+	if _, err := exec.LookPath("pg_dump"); err != nil {
+		t.Skip("pg_dump not installed")
+	}
+
+	s := &BackupService{}
+	conn := &connection.StoredConnection{
+		Type:         "postgresql",
+		Host:         "localhost",
+		Port:         5432,
+		Username:     "user",
+		DatabaseName: "app",
+	}
+
+	cmd, err := s.createPgDumpCmd(conn, toStdout())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	for _, arg := range cmd.cmd.Args {
+		if arg == "-f" {
+			t.Fatalf("stdout dump must not pass -f: %v", cmd.cmd.Args)
+		}
+	}
+}
+
+func TestRedisRejectsStdout(t *testing.T) {
+	if _, err := exec.LookPath("redis-cli"); err != nil {
+		t.Skip("redis-cli not installed")
+	}
+
+	s := &BackupService{}
+	conn := &connection.StoredConnection{Type: "redis", Host: "localhost", Port: 6379}
+
+	if _, err := s.createRedisDumpCmd(conn, toStdout()); err == nil {
+		t.Fatal("expected redis stdout dump to be rejected")
 	}
 }
