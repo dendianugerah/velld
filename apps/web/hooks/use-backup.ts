@@ -165,17 +165,22 @@ export function useBackup() {
   const { mutate: verifyBackupById, isPending: isVerifying } = useMutation({
     mutationFn: async (backupId: string) => verifyBackup(backupId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['backups'] });
       toast({
-        title: "Verified",
-        description: "Backup integrity verified successfully",
+        title: "Verification started",
+        description: "Checking the backup in the background; the badge will update when it finishes",
+      });
+      // The verification runs asynchronously, so poll a few times for the result.
+      [1500, 4000, 8000].forEach((delay) => {
+        window.setTimeout(() => {
+          queryClient.invalidateQueries({ queryKey: ['backups'] });
+        }, delay);
       });
     },
     onError: (error) => {
       queryClient.invalidateQueries({ queryKey: ['backups'] });
       toast({
-        title: "Verification failed",
-        description: error.message || "The backup could not be verified",
+        title: "Could not start verification",
+        description: error.message || "The verification request failed",
         variant: "destructive",
       });
     },
