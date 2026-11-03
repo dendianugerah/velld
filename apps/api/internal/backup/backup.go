@@ -478,9 +478,10 @@ func (h *BackupHandler) GetWALCommandConfig(w http.ResponseWriter, r *http.Reque
 // deliberate, operator-run step so Velld never spawns a Postgres on the host.
 func (h *BackupHandler) PreparePITR(w http.ResponseWriter, r *http.Request) {
 	var req struct {
-		TargetTime string `json:"target_time"`
-		DataDir    string `json:"data_dir"`
-		RestoreCmd string `json:"restore_command"`
+		ConnectionID string `json:"connection_id"`
+		TargetTime   string `json:"target_time"`
+		DataDir      string `json:"data_dir"`
+		RestoreCmd   string `json:"restore_command"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.SendError(w, http.StatusBadRequest, err.Error())
@@ -500,6 +501,20 @@ func (h *BackupHandler) PreparePITR(w http.ResponseWriter, r *http.Request) {
 	if req.RestoreCmd == "" {
 		response.SendError(w, http.StatusBadRequest, "restore_command is required")
 		return
+	}
+
+	if req.ConnectionID != "" {
+		if _, err := h.authorizedConnection(r, req.ConnectionID); err != nil {
+			response.SendError(w, http.StatusForbidden, err.Error())
+			return
+		}
+		segments, _, err := h.backupService.ArchivedWALSegments(r.Context(), req.ConnectionID, 16*1024*1024)
+		if err == nil {
+			if err := checkTimelineConsistency(segments); err != nil {
+				response.SendError(w, http.StatusConflict, err.Error())
+				return
+			}
+		}
 	}
 
 	result, err := h.backupService.PrepareRecoveryDir(req.DataDir, target, req.RestoreCmd)

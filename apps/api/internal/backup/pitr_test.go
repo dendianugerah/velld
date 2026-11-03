@@ -1,6 +1,7 @@
 package backup
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -88,4 +89,34 @@ func TestPrepareRecoveryDir(t *testing.T) {
 	if !strings.Contains(string(content), "recovery_target_time") {
 		t.Fatalf("auto.conf missing recovery_target_time: %s", content)
 	}
+}
+
+func TestCheckTimelineConsistency(t *testing.T) {
+	t.Run("single timeline is fine", func(t *testing.T) {
+		segments := []WALSegment{{1, 0, 1}, {1, 0, 2}, {1, 1, 0}}
+		if err := checkTimelineConsistency(segments); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+	})
+
+	t.Run("multiple timelines conflict", func(t *testing.T) {
+		segments := []WALSegment{{1, 0, 1}, {2, 0, 1}}
+		err := checkTimelineConsistency(segments)
+		if err == nil {
+			t.Fatal("expected a timeline conflict")
+		}
+		var conflict *TimelineConflict
+		if !errors.As(err, &conflict) {
+			t.Fatalf("expected TimelineConflict, got %T", err)
+		}
+		if len(conflict.Timelines) != 2 || conflict.Timelines[0] != 1 || conflict.Timelines[1] != 2 {
+			t.Fatalf("timelines = %v", conflict.Timelines)
+		}
+	})
+
+	t.Run("empty is fine", func(t *testing.T) {
+		if err := checkTimelineConsistency(nil); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+	})
 }
