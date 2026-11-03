@@ -97,6 +97,8 @@ func buildWALCommandConfig(conn *connection.StoredConnection, apiBaseURL, archiv
 
 	return WALCommandConfig{
 		WALPrefix: prefix,
+		// VELD_TOKEN is read from the environment on the database host so the
+		// secret never lands in postgresql.conf.
 		ArchiveCommand: fmt.Sprintf(
 			`velld wal-push --connection %s --api %s %%p`,
 			conn.ID, apiBaseURL,

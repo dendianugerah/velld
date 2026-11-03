@@ -425,6 +425,12 @@ func (h *BackupHandler) CreateBaseBackup(w http.ResponseWriter, r *http.Request)
 
 func (h *BackupHandler) PushWALSegment(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
+
+	if _, err := h.authorizedConnection(r, vars["connection_id"]); err != nil {
+		response.SendError(w, http.StatusForbidden, err.Error())
+		return
+	}
+
 	if _, err := h.backupService.PushWALSegment(r.Context(), vars["connection_id"], vars["segment"], r.Body); err != nil {
 		response.SendError(w, http.StatusBadRequest, err.Error())
 		return
