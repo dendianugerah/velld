@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"time"
 
 	"github.com/dendianugerah/velld/internal/common"
 	"github.com/dendianugerah/velld/internal/common/response"
@@ -470,4 +471,42 @@ func (h *BackupHandler) GetWALCommandConfig(w http.ResponseWriter, r *http.Reque
 
 	cfg := buildWALCommandConfig(conn, r.URL.Query().Get("api_base_url"), r.URL.Query().Get("archive_path"))
 	response.SendSuccess(w, "WAL command configuration", cfg)
+}
+
+// PreparePITR validates a recovery target and writes the recovery configuration
+// into the supplied data directory. It does not start a server; that is a
+// deliberate, operator-run step so Velld never spawns a Postgres on the host.
+func (h *BackupHandler) PreparePITR(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		TargetTime string `json:"target_time"`
+		DataDir    string `json:"data_dir"`
+		RestoreCmd string `json:"restore_command"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.SendError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	target, err := validatePITRTarget(req.TargetTime, time.Now())
+	if err != nil {
+		response.SendError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	if req.DataDir == "" {
+		response.SendError(w, http.StatusBadRequest, "data_dir is required")
+		return
+	}
+	if req.RestoreCmd == "" {
+		response.SendError(w, http.StatusBadRequest, "restore_command is required")
+		return
+	}
+
+	result, err := h.backupService.PrepareRecoveryDir(req.DataDir, target, req.RestoreCmd)
+	if err != nil {
+		response.SendError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	response.SendSuccess(w, "Recovery configuration prepared", result)
 }
