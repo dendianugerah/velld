@@ -3,6 +3,7 @@
 package backup
 
 import (
+	"bytes"
 	"context"
 	"os"
 	"path/filepath"
@@ -31,7 +32,7 @@ func TestPgDumpProducesRestorableSQL(t *testing.T) {
 	}
 
 	svc := &BackupService{}
-	prepared, err := svc.createPgDumpCmd(conn, dumpPath)
+	prepared, err := svc.createPgDumpCmd(conn, toFile(dumpPath))
 	if err != nil {
 		t.Fatalf("build dump command: %v", err)
 	}
@@ -78,7 +79,7 @@ func TestPgDumpRespectsCancellation(t *testing.T) {
 	}
 
 	svc := &BackupService{}
-	prepared, err := svc.createPgDumpCmd(conn, filepath.Join(dir, "dump.sql"))
+	prepared, err := svc.createPgDumpCmd(conn, toFile(filepath.Join(dir, "dump.sql")))
 	if err != nil {
 		t.Fatalf("build dump command: %v", err)
 	}
@@ -88,5 +89,46 @@ func TestPgDumpRespectsCancellation(t *testing.T) {
 
 	if _, err := prepared.Run(ctx); err == nil {
 		t.Fatal("expected cancellation error, got nil")
+	}
+}
+
+func TestPgDumpStreamsToWriter(t *testing.T) {
+	pg := startTestPostgres(t)
+
+	pg.exec(t, "CREATE TABLE streamed (id serial primary key, note text)")
+	pg.exec(t, "INSERT INTO streamed (note) VALUES ('hello'), ('world')")
+
+	conn := &connection.StoredConnection{
+		Type:         "postgresql",
+		Host:         pg.host,
+		Port:         pg.port,
+		Username:     pg.user,
+		Password:     pg.password,
+		DatabaseName: pg.database,
+	}
+
+	svc := &BackupService{}
+	prepared, err := svc.createPgDumpCmd(conn, toStdout())
+	if err != nil {
+		t.Fatalf("build dump command: %v", err)
+	}
+
+	var sink bytes.Buffer
+	cw := NewChecksumWriter(&sink)
+	if err := prepared.RunToWriter(context.Background(), cw); err != nil {
+		t.Fatalf("stream dump: %v", err)
+	}
+
+	if cw.Size() == 0 {
+		t.Fatal("streamed zero bytes")
+	}
+	if !strings.Contains(sink.String(), "CREATE TABLE public.streamed") {
+		t.Fatal("streamed output is missing the schema")
+	}
+	if !strings.Contains(sink.String(), "hello") {
+		t.Fatal("streamed output is missing the rows")
+	}
+	if len(cw.Checksum()) != 64 {
+		t.Fatalf("expected 64-char sha256 hex, got %q", cw.Checksum())
 	}
 }

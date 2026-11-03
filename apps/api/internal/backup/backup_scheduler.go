@@ -3,6 +3,7 @@ package backup
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -137,51 +138,12 @@ func (s *BackupService) cleanupOldBackups(connectionID string, retentionDays int
 		return
 	}
 
-	// Get user settings to check if S3 is enabled
-	userSettings, err := s.settingsService.GetUserSettingsInternal(conn.UserID)
-	if err != nil {
-		fmt.Printf("Warning: Failed to get user settings for cleanup: %v\n", err)
-		// Continue with local cleanup even if we can't get S3 settings
-	}
-
 	// Initialize S3 client if S3 is enabled and configured
 	var s3Storage *S3Storage
-	if userSettings != nil && userSettings.S3Enabled &&
-		userSettings.S3Endpoint != nil && *userSettings.S3Endpoint != "" &&
-		userSettings.S3Bucket != nil && *userSettings.S3Bucket != "" &&
-		userSettings.S3AccessKey != nil && *userSettings.S3AccessKey != "" &&
-		userSettings.S3SecretKey != nil && *userSettings.S3SecretKey != "" {
-
-		secretKey, err := s.cryptoService.Decrypt(*userSettings.S3SecretKey)
-		if err != nil {
-			fmt.Printf("Warning: Failed to decrypt S3 secret key for cleanup: %v\n", err)
-		} else {
-			region := "us-east-1"
-			if userSettings.S3Region != nil && *userSettings.S3Region != "" {
-				region = *userSettings.S3Region
-			}
-
-			pathPrefix := ""
-			if userSettings.S3PathPrefix != nil {
-				pathPrefix = *userSettings.S3PathPrefix
-			}
-
-			s3Config := S3Config{
-				Endpoint:   *userSettings.S3Endpoint,
-				Region:     region,
-				Bucket:     *userSettings.S3Bucket,
-				AccessKey:  *userSettings.S3AccessKey,
-				SecretKey:  secretKey,
-				UseSSL:     userSettings.S3UseSSL,
-				PathPrefix: pathPrefix,
-			}
-
-			s3Storage, err = NewS3Storage(s3Config)
-			if err != nil {
-				fmt.Printf("Warning: Failed to create S3 storage client for cleanup: %v\n", err)
-				s3Storage = nil
-			}
-		}
+	if storage, err := s.s3StorageForUser(conn.UserID); err == nil {
+		s3Storage = storage
+	} else if !errors.Is(err, ErrS3NotConfigured) {
+		fmt.Printf("Warning: Failed to set up S3 client for cleanup: %v\n", err)
 	}
 
 	// Clean up old backups

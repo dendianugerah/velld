@@ -538,3 +538,51 @@ func (r *BackupRepository) UpdateBackupS3ObjectKey(backupID string, s3ObjectKey 
 		s3ObjectKey, backupID)
 	return err
 }
+
+func (r *BackupRepository) CreateBackupManifest(manifest *BackupManifest) error {
+	now := manifest.CreatedAt
+	if now.IsZero() {
+		now = time.Now()
+	}
+
+	_, err := r.db.Exec(`
+		INSERT INTO backup_manifests (
+			backup_id, checksum_algorithm, checksum, compression,
+			uncompressed_size, compressed_size, server_version, tool_version,
+			duration_ms, created_at
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+		manifest.BackupID, manifest.ChecksumAlgorithm, manifest.Checksum,
+		manifest.Compression, manifest.UncompressedSize, manifest.CompressedSize,
+		manifest.ServerVersion, manifest.ToolVersion, manifest.DurationMs,
+		now.Format(time.RFC3339))
+	return err
+}
+
+func (r *BackupRepository) GetBackupManifest(backupID string) (*BackupManifest, error) {
+	var manifest BackupManifest
+	var compression, serverVersion, toolVersion sql.NullString
+	var createdAt string
+
+	err := r.db.QueryRow(`
+		SELECT backup_id, checksum_algorithm, checksum, compression,
+		       uncompressed_size, compressed_size, server_version, tool_version,
+		       duration_ms, created_at
+		FROM backup_manifests
+		WHERE backup_id = $1`, backupID).Scan(
+		&manifest.BackupID, &manifest.ChecksumAlgorithm, &manifest.Checksum,
+		&compression, &manifest.UncompressedSize, &manifest.CompressedSize,
+		&serverVersion, &toolVersion, &manifest.DurationMs, &createdAt)
+	if err != nil {
+		return nil, err
+	}
+
+	manifest.Compression = compression.String
+	manifest.ServerVersion = serverVersion.String
+	manifest.ToolVersion = toolVersion.String
+	manifest.CreatedAt, err = common.ParseTime(createdAt)
+	if err != nil {
+		return nil, err
+	}
+
+	return &manifest, nil
+}
