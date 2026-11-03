@@ -49,6 +49,9 @@ type BackupList struct {
 	CompletedTime string    `json:"completed_time"`
 	CreatedAt     string    `json:"created_at"`
 	UpdatedAt     string    `json:"updated_at"`
+	// VerificationStatus is the status of the most recent verification run, or
+	// empty when the backup has never been verified.
+	VerificationStatus string `json:"verification_status,omitempty"`
 }
 
 // BackupRequest represents a request to create a backup
