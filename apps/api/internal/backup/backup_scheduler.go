@@ -8,6 +8,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/dendianugerah/velld/internal/storage"
 	"github.com/google/uuid"
 )
 
@@ -169,7 +170,7 @@ func (s *BackupService) cleanupOldBackups(connectionID string, retentionDays int
 	}
 
 	// Initialize S3 client if S3 is enabled and configured
-	var s3Storage *S3Storage
+	var s3Storage *storage.S3Storage
 	if storage, err := s.s3StorageForUser(conn.UserID); err == nil {
 		s3Storage = storage
 	} else if !errors.Is(err, ErrS3NotConfigured) {
