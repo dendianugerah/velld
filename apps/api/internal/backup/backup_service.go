@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/dendianugerah/velld/internal/common"
@@ -26,7 +27,18 @@ type BackupService struct {
 	settingsService  *settings.SettingsService
 	notificationRepo *notification.NotificationRepository
 	cryptoService    *common.EncryptionService
+
+	// sem bounds how many backups run at once across all connections so a
+	// burst of schedules firing together cannot exhaust the host.
+	sem chan struct{}
+	// running guards against overlapping runs of the same schedule when one
+	// takes longer than its interval.
+	mu      sync.Mutex
+	running map[string]struct{}
 }
+
+// DefaultMaxConcurrentBackups caps simultaneous dump jobs.
+const DefaultMaxConcurrentBackups = 4
 
 func NewBackupService(
 	connStorage *connection.ConnectionRepository,
@@ -50,6 +62,8 @@ func NewBackupService(
 		cryptoService:    cryptoService,
 		cronManager:      cronManager,
 		cronEntries:      make(map[string]cron.EntryID),
+		sem:              make(chan struct{}, DefaultMaxConcurrentBackups),
+		running:          make(map[string]struct{}),
 	}
 
 	// Recover existing schedules before starting the cron manager

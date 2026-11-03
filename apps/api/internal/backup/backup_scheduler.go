@@ -82,7 +82,37 @@ func (s *BackupService) ScheduleBackup(req *ScheduleBackupRequest) error {
 	return nil
 }
 
+// acquireRun reserves a slot for a scheduled run. It returns false when the
+// same schedule is already running, and blocks until a global slot is free so
+// concurrent schedules cannot exceed the concurrency limit.
+func (s *BackupService) acquireRun(scheduleID string) bool {
+	s.mu.Lock()
+	if _, exists := s.running[scheduleID]; exists {
+		s.mu.Unlock()
+		return false
+	}
+	s.running[scheduleID] = struct{}{}
+	s.mu.Unlock()
+
+	s.sem <- struct{}{}
+	return true
+}
+
+func (s *BackupService) releaseRun(scheduleID string) {
+	<-s.sem
+	s.mu.Lock()
+	delete(s.running, scheduleID)
+	s.mu.Unlock()
+}
+
 func (s *BackupService) executeCronBackup(schedule *BackupSchedule) {
+	scheduleID := schedule.ID.String()
+	if !s.acquireRun(scheduleID) {
+		fmt.Printf("Skipping backup for schedule %s: a run is already in progress\n", scheduleID)
+		return
+	}
+	defer s.releaseRun(scheduleID)
+
 	// if schedule.CronSchedule == "0 */1 * * * *" {
 	// 	err := fmt.Errorf("test failure: this is a simulated backup failure for SMTP testing")
 	// 	if notifyErr := s.createFailureNotification(schedule.ConnectionID, err); notifyErr != nil {
