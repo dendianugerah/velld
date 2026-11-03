@@ -341,7 +341,13 @@ func (r *BackupRepository) GetAllBackupsWithPagination(opts BackupListOptions) (
 		SELECT 
 			b.id, b.connection_id, c.type, b.schedule_id, b.status, b.path, b.s3_object_key, b.size,
 			b.started_time, b.completed_time, b.created_at, b.updated_at,
-			c.database_name
+			c.database_name,
+			COALESCE((
+				SELECT v.status FROM backup_verifications v
+				WHERE v.backup_id = b.id
+				ORDER BY v.created_at DESC, v.rowid DESC
+				LIMIT 1
+			), '') AS verification_status
 		FROM backups b
 		INNER JOIN connections c ON b.connection_id = c.id
 		%s
@@ -371,6 +377,7 @@ func (r *BackupRepository) GetAllBackupsWithPagination(opts BackupListOptions) (
 			&startedTimeStr, &completedTimeStr,
 			&createdAtStr, &updatedAtStr,
 			&backup.DatabaseName,
+			&backup.VerificationStatus,
 		)
 		if err != nil {
 			return nil, 0, err
@@ -585,4 +592,74 @@ func (r *BackupRepository) GetBackupManifest(backupID string) (*BackupManifest, 
 	}
 
 	return &manifest, nil
+}
+
+func (r *BackupRepository) CreateVerification(v *BackupVerification) error {
+	var completedStr *string
+	if v.CompletedAt != nil {
+		s := v.CompletedAt.Format(time.RFC3339)
+		completedStr = &s
+	}
+
+	_, err := r.db.Exec(`
+		INSERT INTO backup_verifications (
+			id, backup_id, status, method, checksum_matches, details,
+			started_at, completed_at, created_at
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+		v.ID, v.BackupID, v.Status, v.Method, v.ChecksumMatches, v.Details,
+		v.StartedAt.Format(time.RFC3339), completedStr, v.CreatedAt.Format(time.RFC3339))
+	return err
+}
+
+func (r *BackupRepository) UpdateVerification(v *BackupVerification) error {
+	var completedStr *string
+	if v.CompletedAt != nil {
+		s := v.CompletedAt.Format(time.RFC3339)
+		completedStr = &s
+	}
+
+	_, err := r.db.Exec(`
+		UPDATE backup_verifications
+		SET status = $1, checksum_matches = $2, details = $3, completed_at = $4
+		WHERE id = $5`,
+		v.Status, v.ChecksumMatches, v.Details, completedStr, v.ID)
+	return err
+}
+
+func (r *BackupRepository) GetLatestVerification(backupID string) (*BackupVerification, error) {
+	v := &BackupVerification{}
+	var details, completedStr sql.NullString
+	var startedAt, createdAt string
+
+	err := r.db.QueryRow(`
+		SELECT id, backup_id, status, method, checksum_matches, details,
+		       started_at, completed_at, created_at
+		FROM backup_verifications
+		WHERE backup_id = $1
+		ORDER BY created_at DESC, rowid DESC
+		LIMIT 1`, backupID).Scan(
+		&v.ID, &v.BackupID, &v.Status, &v.Method, &v.ChecksumMatches, &details,
+		&startedAt, &completedStr, &createdAt)
+	if err != nil {
+		return nil, err
+	}
+
+	v.Details = details.String
+	v.StartedAt, err = common.ParseTime(startedAt)
+	if err != nil {
+		return nil, err
+	}
+	v.CreatedAt, err = common.ParseTime(createdAt)
+	if err != nil {
+		return nil, err
+	}
+	if completedStr.Valid {
+		t, err := common.ParseTime(completedStr.String)
+		if err != nil {
+			return nil, err
+		}
+		v.CompletedAt = &t
+	}
+
+	return v, nil
 }
