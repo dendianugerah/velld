@@ -296,3 +296,65 @@ func (h *BackupHandler) RestoreBackup(w http.ResponseWriter, r *http.Request) {
 
 	response.SendSuccess(w, "Backup restored successfully", nil)
 }
+
+func (h *BackupHandler) VerifyBackup(w http.ResponseWriter, r *http.Request) {
+	backupID := mux.Vars(r)["id"]
+
+	if _, err := h.authorizedBackup(r, backupID); err != nil {
+		response.SendError(w, http.StatusForbidden, err.Error())
+		return
+	}
+
+	verification, err := h.backupService.VerifyBackup(r.Context(), backupID)
+	if err != nil {
+		if verification != nil {
+			response.SendSuccessWithStatus(w, http.StatusUnprocessableEntity, "Backup verification failed", verification)
+			return
+		}
+		response.SendError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	response.SendSuccess(w, "Backup verification passed", verification)
+}
+
+func (h *BackupHandler) GetVerification(w http.ResponseWriter, r *http.Request) {
+	backupID := mux.Vars(r)["id"]
+
+	if _, err := h.authorizedBackup(r, backupID); err != nil {
+		response.SendError(w, http.StatusForbidden, err.Error())
+		return
+	}
+
+	verification, err := h.backupService.GetLatestVerification(backupID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			response.SendError(w, http.StatusNotFound, "No verification found for this backup")
+			return
+		}
+		response.SendError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	response.SendSuccess(w, "Verification retrieved successfully", verification)
+}
+
+// authorizedBackup ensures the backup belongs to the requesting user. It
+// returns the backup so callers do not fetch it twice.
+func (h *BackupHandler) authorizedBackup(r *http.Request, backupID string) (*Backup, error) {
+	userID, err := common.GetUserIDFromContext(r.Context())
+	if err != nil {
+		return nil, err
+	}
+
+	backup, err := h.backupService.GetBackup(backupID)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := h.backupService.AuthorizeBackupOwner(backup, userID); err != nil {
+		return nil, err
+	}
+
+	return backup, nil
+}
