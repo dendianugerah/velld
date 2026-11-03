@@ -17,12 +17,21 @@ import (
 
 type BackupHandler struct {
 	backupService *BackupService
+	verifier      *VerificationWorker
 }
 
 func NewBackupHandler(bs *BackupService) *BackupHandler {
 	return &BackupHandler{
 		backupService: bs,
 	}
+}
+
+// WithVerificationWorker attaches an async verification worker. When set, the
+// verify endpoint enqueues the job and returns 202 instead of blocking on a
+// potentially slow restore.
+func (h *BackupHandler) WithVerificationWorker(w *VerificationWorker) *BackupHandler {
+	h.verifier = w
+	return h
 }
 
 func (h *BackupHandler) CreateBackup(w http.ResponseWriter, r *http.Request) {
@@ -300,8 +309,23 @@ func (h *BackupHandler) RestoreBackup(w http.ResponseWriter, r *http.Request) {
 func (h *BackupHandler) VerifyBackup(w http.ResponseWriter, r *http.Request) {
 	backupID := mux.Vars(r)["id"]
 
-	if _, err := h.authorizedBackup(r, backupID); err != nil {
+	backup, err := h.authorizedBackup(r, backupID)
+	if err != nil {
 		response.SendError(w, http.StatusForbidden, err.Error())
+		return
+	}
+
+	if h.verifier != nil {
+		pending, err := h.backupService.createPendingVerification(backup.ID.String())
+		if err != nil {
+			response.SendError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+		if !h.verifier.Enqueue(backup.ID.String()) {
+			response.SendError(w, http.StatusServiceUnavailable, "verification queue is full, try again shortly")
+			return
+		}
+		response.SendSuccessWithStatus(w, http.StatusAccepted, "Verification queued", pending)
 		return
 	}
 

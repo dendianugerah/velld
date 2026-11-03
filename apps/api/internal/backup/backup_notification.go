@@ -153,3 +153,53 @@ func (s *BackupService) sendEmailNotification(email string, userSettings *settin
 
 	return nil
 }
+
+// createVerificationFailureNotification records a dashboard notification when a
+// backup fails verification, so a bad backup is visible without opening the
+// history page.
+func (s *BackupService) createVerificationFailureNotification(backupID string, verifyErr error) error {
+	backup, err := s.backupRepo.GetBackup(backupID)
+	if err != nil {
+		return fmt.Errorf("load backup: %w", err)
+	}
+
+	conn, err := s.connStorage.GetConnection(backup.ConnectionID)
+	if err != nil {
+		return fmt.Errorf("load connection: %w", err)
+	}
+
+	userSettings, err := s.settingsService.GetUserSettingsInternal(conn.UserID)
+	if err != nil {
+		return fmt.Errorf("load user settings: %w", err)
+	}
+	if !userSettings.NotifyDashboard {
+		return nil
+	}
+
+	metadataJSON, _ := json.Marshal(map[string]interface{}{
+		"backup_id":     backupID,
+		"connection_id": conn.ID,
+		"database_name": conn.DatabaseName,
+		"database_type": conn.Type,
+		"error":         verifyErr.Error(),
+		"timestamp":     time.Now().Format(time.RFC3339),
+	})
+
+	notification := &notification.Notification{
+		ID:        uuid.New(),
+		UserID:    conn.UserID,
+		Title:     "Backup verification failed",
+		Message:   fmt.Sprintf("Backup for '%s' failed verification: %v", conn.DatabaseName, verifyErr),
+		Type:      notification.VerificationFailed,
+		Status:    notification.StatusUnread,
+		Metadata:  metadataJSON,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+
+	return s.notificationRepo.CreateNotification(notification)
+}
+
+func (s *BackupService) logf(format string, args ...interface{}) {
+	log.Printf(format, args...)
+}

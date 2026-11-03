@@ -11,6 +11,8 @@ import (
 
 	"github.com/dendianugerah/velld/internal/common"
 	"github.com/dendianugerah/velld/internal/connection"
+	"github.com/dendianugerah/velld/internal/notification"
+	"github.com/dendianugerah/velld/internal/settings"
 	"github.com/google/uuid"
 )
 
@@ -32,8 +34,10 @@ func newVerificationService(t *testing.T) (*BackupService, *BackupRepository) {
 	}
 
 	svc := &BackupService{
-		backupRepo:  repo,
-		connStorage: connection.NewConnectionRepository(db, crypto),
+		backupRepo:       repo,
+		connStorage:      connection.NewConnectionRepository(db, crypto),
+		settingsService:  settings.NewSettingsService(settings.NewSettingsRepository(db), crypto),
+		notificationRepo: notification.NewNotificationRepository(db),
 	}
 	return svc, repo
 }

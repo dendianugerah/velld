@@ -12,6 +12,8 @@ type NotificationType string
 const (
 	BackupFailed    NotificationType = "backup_failed"
 	BackupCompleted NotificationType = "backup_completed"
+	// VerificationFailed means a backup could not be verified as restorable.
+	VerificationFailed NotificationType = "verification_failed"
 )
 
 type NotificationStatus string

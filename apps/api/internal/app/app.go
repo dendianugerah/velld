@@ -28,6 +28,7 @@ type App struct {
 	Handler   *mux.Router
 	db        *sql.DB
 	backups   *backup.BackupService
+	verifier  *backup.VerificationWorker
 	closeOnce bool
 }
 
@@ -47,7 +48,7 @@ func Build() (*App, error) {
 	}
 
 	app := &App{db: db}
-	app.Handler, app.backups, err = app.buildRouter(secrets)
+	app.Handler, app.backups, app.verifier, err = app.buildRouter(secrets)
 	if err != nil {
 		db.Close()
 		return nil, err
@@ -56,10 +57,10 @@ func Build() (*App, error) {
 	return app, nil
 }
 
-func (a *App) buildRouter(secrets *common.Secrets) (*mux.Router, *backup.BackupService, error) {
+func (a *App) buildRouter(secrets *common.Secrets) (*mux.Router, *backup.BackupService, *backup.VerificationWorker, error) {
 	cryptoService, err := common.NewEncryptionService(secrets.EncryptionKey)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	connManager := connection.NewConnectionManager()
@@ -72,7 +73,7 @@ func (a *App) buildRouter(secrets *common.Secrets) (*mux.Router, *backup.BackupS
 	authMiddleware := middleware.NewAuthMiddleware(secrets.JWTSecret)
 
 	if err := seedAdminUser(secrets, authService); err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	r := newRouter()
@@ -92,19 +93,21 @@ func (a *App) buildRouter(secrets *common.Secrets) (*mux.Router, *backup.BackupS
 		cryptoService,
 	)
 
+	verifier := backup.NewVerificationWorker(backupService, backup.DefaultVerificationWorkers)
+
 	registerRoutes(r, routeDeps{
 		db:              a.db,
 		authHandler:     authHandler,
 		authMiddleware:  authMiddleware,
 		connHandler:     connection.NewConnectionHandler(connService, backupService),
-		backupHandler:   backup.NewBackupHandler(backupService),
+		backupHandler:   backup.NewBackupHandler(backupService).WithVerificationWorker(verifier),
 		settingsHandler: settings.NewSettingsHandler(settingsService),
 		notificationHandler: notification.NewNotificationHandler(
 			notification.NewNotificationService(notificationRepo),
 		),
 	})
 
-	return r, backupService, nil
+	return r, backupService, verifier, nil
 }
 
 // seedAdminUser creates the bootstrap admin when registration is disabled.
@@ -131,6 +134,12 @@ func (a *App) Close(ctx context.Context) error {
 		return nil
 	}
 	a.closeOnce = true
+
+	if a.verifier != nil {
+		if err := a.verifier.Stop(ctx); err != nil {
+			log.Printf("verification worker did not stop cleanly: %v", err)
+		}
+	}
 
 	if a.backups != nil {
 		if err := a.backups.Stop(ctx); err != nil {
