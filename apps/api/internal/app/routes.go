@@ -82,6 +82,7 @@ func registerBackupRoutes(r *mux.Router, h *backup.BackupHandler) {
 	r.HandleFunc("/wal/{connection_id}/segment/{segment}", h.PushWALSegment).Methods("PUT", "POST", "OPTIONS")
 	r.HandleFunc("/wal/{id}/status", h.GetWALStatus).Methods("GET", "OPTIONS")
 	r.HandleFunc("/wal/{id}/config", h.GetWALCommandConfig).Methods("GET", "OPTIONS")
+	r.HandleFunc("/pitr/prepare", h.PreparePITR).Methods("POST", "OPTIONS")
 }
 
 func registerSettingsRoutes(r *mux.Router, h *settings.SettingsHandler) {
