@@ -1,6 +1,7 @@
 package backup
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -31,6 +32,48 @@ func (s *BackupService) findDatabaseBinaryPath(dbType string) string {
 	}
 
 	return ""
+}
+
+// dumpCommand builds the dump command for a database type. It centralizes the
+// dispatch so callers do not repeat the same switch for every backup path, and
+// resolves the tool up front so a missing binary is reported before any work
+// starts.
+func (s *BackupService) dumpCommand(conn *connection.StoredConnection, outputPath string) (*exec.Cmd, error) {
+	if err := s.verifyBackupTools(conn.Type); err != nil {
+		return nil, err
+	}
+
+	var cmd *exec.Cmd
+	switch conn.Type {
+	case "postgresql":
+		cmd = s.createPgDumpCmd(conn, outputPath)
+	case "mysql", "mariadb":
+		cmd = s.createMySQLDumpCmd(conn, outputPath)
+	case "mongodb":
+		cmd = s.createMongoDumpCmd(conn, outputPath)
+	case "redis":
+		cmd = s.createRedisDumpCmd(conn, outputPath)
+	}
+
+	if cmd == nil {
+		return nil, fmt.Errorf("backup tool not found for %s. Please ensure %s is installed and available in PATH", conn.Type, requiredTools[conn.Type])
+	}
+
+	return cmd, nil
+}
+
+// runDumpCmd executes a dump command bound to ctx and returns its combined
+// output. Rebinding the command to ctx lets an interrupted request or a
+// shutdown cancel a long-running dump instead of leaking the child process.
+func runDumpCmd(ctx context.Context, cmd *exec.Cmd) ([]byte, error) {
+	if ctx != nil {
+		bound := exec.CommandContext(ctx, cmd.Path, cmd.Args[1:]...)
+		bound.Env = cmd.Env
+		bound.Dir = cmd.Dir
+		cmd = bound
+	}
+
+	return cmd.CombinedOutput()
 }
 
 func (s *BackupService) setupSSHTunnelIfNeeded(conn *connection.StoredConnection) (*connection.SSHTunnel, string, int, error) {

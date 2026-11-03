@@ -32,7 +32,7 @@ func (h *BackupHandler) CreateBackup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	backup, err := h.backupService.CreateBackup(req.ConnectionID)
+	backup, err := h.backupService.CreateBackup(r.Context(), req.ConnectionID)
 	if err != nil {
 		response.SendError(w, http.StatusInternalServerError, err.Error())
 		return

@@ -92,7 +92,7 @@ func (s *BackupService) executeCronBackup(schedule *BackupSchedule) {
 	// 	return
 	// }
 
-	backup, err := s.CreateBackup(schedule.ConnectionID)
+	backup, err := s.CreateBackup(context.Background(), schedule.ConnectionID)
 	if err != nil {
 		if notifyErr := s.createFailureNotification(schedule.ConnectionID, err); notifyErr != nil {
 			fmt.Printf("Error creating failure notification: %v\n", notifyErr)

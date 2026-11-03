@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
@@ -92,23 +91,20 @@ func (s *BackupService) recoverSchedules() error {
 	return nil
 }
 
-func (s *BackupService) CreateBackup(connectionID string) (*Backup, error) {
+func (s *BackupService) CreateBackup(ctx context.Context, connectionID string) (*Backup, error) {
 	conn, err := s.connStorage.GetConnection(connectionID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get connection: %v", err)
 	}
 
-	// Check if multi-database backup is needed
 	if len(conn.SelectedDatabases) > 0 {
-		// Create backups for all selected databases
-		return s.createMultiDatabaseBackup(conn)
+		return s.createMultiDatabaseBackup(ctx, conn)
 	}
 
-	// Single database backup
-	return s.createSingleDatabaseBackup(conn, conn.DatabaseName)
+	return s.createSingleDatabaseBackup(ctx, conn, conn.DatabaseName)
 }
 
-func (s *BackupService) createMultiDatabaseBackup(conn *connection.StoredConnection) (*Backup, error) {
+func (s *BackupService) createMultiDatabaseBackup(ctx context.Context, conn *connection.StoredConnection) (*Backup, error) {
 	if err := s.verifyBackupTools(conn.Type); err != nil {
 		return nil, err
 	}
@@ -142,29 +138,16 @@ func (s *BackupService) createMultiDatabaseBackup(conn *connection.StoredConnect
 		tempConn := *conn
 		tempConn.DatabaseName = dbName
 
-		var cmd *exec.Cmd
-		switch conn.Type {
-		case "postgresql":
-			cmd = s.createPgDumpCmd(&tempConn, backupPath)
-		case "mysql", "mariadb":
-			cmd = s.createMySQLDumpCmd(&tempConn, backupPath)
-		case "mongodb":
-			cmd = s.createMongoDumpCmd(&tempConn, backupPath)
-		case "redis":
-			cmd = s.createRedisDumpCmd(&tempConn, backupPath)
-		default:
-			return nil, fmt.Errorf("unsupported database type for backup: %s", conn.Type)
-		}
-
-		if cmd == nil {
-			fmt.Printf("Warning: backup tool not found for database '%s'\n", dbName)
+		cmd, err := s.dumpCommand(&tempConn, backupPath)
+		if err != nil {
+			fmt.Printf("Warning: %v\n", err)
 			failedDatabases = append(failedDatabases, dbName)
 			continue
 		}
 
-		output, err := cmd.CombinedOutput()
+		output, err := runDumpCmd(ctx, cmd)
 		if err != nil {
-			fmt.Printf("Warning: Failed to backup database '%s': %s\n", dbName, string(output))
+			fmt.Printf("Warning: Failed to backup database '%s': %s\n", dbName, output)
 			failedDatabases = append(failedDatabases, dbName)
 			continue
 		}
@@ -221,7 +204,7 @@ func (s *BackupService) createMultiDatabaseBackup(conn *connection.StoredConnect
 	return successfulBackups[0], nil
 }
 
-func (s *BackupService) createSingleDatabaseBackup(conn *connection.StoredConnection, dbName string) (*Backup, error) {
+func (s *BackupService) createSingleDatabaseBackup(ctx context.Context, conn *connection.StoredConnection, dbName string) (*Backup, error) {
 	if err := s.verifyBackupTools(conn.Type); err != nil {
 		return nil, err
 	}
@@ -259,25 +242,12 @@ func (s *BackupService) createSingleDatabaseBackup(conn *connection.StoredConnec
 		UpdatedAt:    time.Now(),
 	}
 
-	var cmd *exec.Cmd
-	switch conn.Type {
-	case "postgresql":
-		cmd = s.createPgDumpCmd(conn, backupPath)
-	case "mysql", "mariadb":
-		cmd = s.createMySQLDumpCmd(conn, backupPath)
-	case "mongodb":
-		cmd = s.createMongoDumpCmd(conn, backupPath)
-	case "redis":
-		cmd = s.createRedisDumpCmd(conn, backupPath)
-	default:
-		return nil, fmt.Errorf("unsupported database type for backup: %s", conn.Type)
+	cmd, err := s.dumpCommand(conn, backupPath)
+	if err != nil {
+		return nil, err
 	}
 
-	if cmd == nil {
-		return nil, fmt.Errorf("backup tool not found for %s. Please ensure %s is installed and available in PATH", conn.Type, requiredTools[conn.Type])
-	}
-
-	output, err := cmd.CombinedOutput()
+	output, err := runDumpCmd(ctx, cmd)
 	if err != nil {
 		errorMsg := string(output)
 		if errorMsg == "" {
