@@ -1,6 +1,10 @@
 import { Base } from "./base";
 
-export type NotificationType = 'backup_failed' | 'backup_completed';
+export type NotificationType =
+    | 'backup_failed'
+    | 'backup_completed'
+    | 'verification_failed'
+    | 'wal_gap_detected';
 export type NotificationStatus = 'read' | 'unread';
 
 export interface Notification {

@@ -11,6 +11,7 @@ import { EditConnectionDialog } from './connection-list/edit-connection-dialog';
 import { DeleteConnectionDialog } from './connection-list/delete-connection-dialog';
 import { DiscoverDatabasesModal } from './discover-databases-modal';
 import { AddConnectionDialog } from './add-connection-dialog';
+import { PITRDialog } from './connection-list/pitr-dialog';
 import { Database } from 'lucide-react';
 import type { Connection } from '@/types/connection';
 
@@ -21,6 +22,7 @@ export function ConnectionsList() {
   const [editDialogConnection, setEditDialogConnection] = useState<string | null>(null);
   const [deleteDialogConnection, setDeleteDialogConnection] = useState<Connection | null>(null);
   const [discoverConnectionId, setDiscoverConnectionId] = useState<string | null>(null);
+  const [pitrConnection, setPitrConnection] = useState<Connection | null>(null);
 
   const filteredConnections = connections?.filter(connection => 
     connection.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -47,6 +49,7 @@ export function ConnectionsList() {
           onDelete={setDeleteDialogConnection}
           onSchedule={setScheduleDialogConnection}
           onDiscover={(connection) => setDiscoverConnectionId(connection.id)}
+          onPointInTime={setPitrConnection}
         />
       ) : (
         <EmptyState
@@ -80,6 +83,11 @@ export function ConnectionsList() {
           onOpenChange={(open) => !open && setDiscoverConnectionId(null)}
         />
       )}
+      <PITRDialog
+        connection={pitrConnection}
+        open={pitrConnection !== null}
+        onOpenChange={(open) => { if (!open) setPitrConnection(null); }}
+      />
     </div>
   );
 }
