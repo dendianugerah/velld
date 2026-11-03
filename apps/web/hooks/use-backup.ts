@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { getBackups, saveBackup, scheduleBackup, disableBackupSchedule, updateSchedule, getBackupStats, downloadBackup, restoreBackup, deleteBackup } from "@/lib/api/backups";
+import { getBackups, saveBackup, scheduleBackup, disableBackupSchedule, updateSchedule, getBackupStats, downloadBackup, restoreBackup, deleteBackup, verifyBackup } from "@/lib/api/backups";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from 'react';
 
@@ -162,6 +162,25 @@ export function useBackup() {
     },
   });
 
+  const { mutate: verifyBackupById, isPending: isVerifying } = useMutation({
+    mutationFn: async (backupId: string) => verifyBackup(backupId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['backups'] });
+      toast({
+        title: "Verified",
+        description: "Backup integrity verified successfully",
+      });
+    },
+    onError: (error) => {
+      queryClient.invalidateQueries({ queryKey: ['backups'] });
+      toast({
+        title: "Verification failed",
+        description: error.message || "The backup could not be verified",
+        variant: "destructive",
+      });
+    },
+  });
+
   const { mutate: deleteBackupById, isPending: isDeleting } = useMutation({
     mutationFn: async (backupId: string) => {
       await deleteBackup(backupId);
@@ -198,6 +217,8 @@ export function useBackup() {
     isRestoring,
     deleteBackupById,
     isDeleting,
+    verifyBackupById,
+    isVerifying,
     backups: data?.data,
     pagination: data?.pagination,
     isLoading,

@@ -15,6 +15,25 @@ export interface Backup {
   completed_time: string;
   created_at: string;
   updated_at: string;
+  verification_status?: string;
+}
+
+export type VerificationStatus = "running" | "passed" | "failed" | "";
+
+export interface BackupVerification {
+  id: string;
+  backup_id: string;
+  status: VerificationStatus;
+  method: string;
+  checksum_matches: boolean;
+  details?: string;
+  started_at: string;
+  completed_at?: string;
+  created_at: string;
+}
+
+export interface BackupVerificationResponse extends Base<BackupVerification> {
+  data: BackupVerification;
 }
 
 export interface BackupStats {
