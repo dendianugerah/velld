@@ -171,8 +171,7 @@ func TestVerifyRestoreComparesRowCounts(t *testing.T) {
 		t.Fatalf("expected restore to match, details: %s", details)
 	}
 
-	psql := mustPsql(t)
-	out, err := svc.psqlQuery(context.Background(), psql, conn, "postgres",
+	out, err := svc.psqlQuery(context.Background(), conn, "postgres",
 		"SELECT datname FROM pg_database WHERE datname LIKE 'velld_verify_%'")
 	if err != nil {
 		t.Fatalf("list databases: %v", err)
@@ -180,14 +179,4 @@ func TestVerifyRestoreComparesRowCounts(t *testing.T) {
 	if strings.TrimSpace(string(out)) != "" {
 		t.Fatalf("scratch database was not dropped, found: %q", string(out))
 	}
-}
-
-func mustPsql(t *testing.T) string {
-	t.Helper()
-	svc := &BackupService{}
-	psql, err := svc.resolvePsql()
-	if err != nil {
-		t.Skipf("psql not available: %v", err)
-	}
-	return psql
 }
