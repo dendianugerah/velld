@@ -174,10 +174,15 @@ func (s *S3Storage) DeleteFile(ctx context.Context, objectKey string) error {
 }
 
 func (s *S3Storage) ListFiles(ctx context.Context) ([]string, error) {
+	return s.ListFilesWithPrefix(ctx, s.prefix)
+}
+
+// ListFilesWithPrefix lists object keys under a specific prefix.
+func (s *S3Storage) ListFilesWithPrefix(ctx context.Context, prefix string) ([]string, error) {
 	var files []string
 
 	opts := minio.ListObjectsOptions{
-		Prefix:    s.prefix,
+		Prefix:    prefix,
 		Recursive: true,
 	}
 

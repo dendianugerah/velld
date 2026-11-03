@@ -382,3 +382,60 @@ func (h *BackupHandler) authorizedBackup(r *http.Request, backupID string) (*Bac
 
 	return backup, nil
 }
+
+func (h *BackupHandler) CreateBaseBackup(w http.ResponseWriter, r *http.Request) {
+	var req BaseBackupRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.SendError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	if req.ConnectionID == "" {
+		response.SendError(w, http.StatusBadRequest, "connection_id is required")
+		return
+	}
+
+	key, err := h.backupService.CreateBaseBackup(r.Context(), req.ConnectionID)
+	if err != nil {
+		response.SendError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	response.SendSuccess(w, "Base backup created", map[string]string{"object_key": key})
+}
+
+func (h *BackupHandler) PushWALSegment(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	if _, err := h.backupService.PushWALSegment(r.Context(), vars["connection_id"], vars["segment"], r.Body); err != nil {
+		response.SendError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	response.SendSuccess(w, "WAL segment archived", nil)
+}
+
+func (h *BackupHandler) GetWALStatus(w http.ResponseWriter, r *http.Request) {
+	connectionID := mux.Vars(r)["id"]
+
+	segments, gaps, err := h.backupService.ArchivedWALSegments(r.Context(), connectionID, 16*1024*1024)
+	if err != nil {
+		response.SendError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	response.SendSuccess(w, "WAL status retrieved", map[string]interface{}{
+		"segment_count": len(segments),
+		"gaps":          gaps,
+		"has_gaps":      len(gaps) > 0,
+	})
+}
+
+func (h *BackupHandler) GetWALCommandConfig(w http.ResponseWriter, r *http.Request) {
+	connectionID := mux.Vars(r)["id"]
+	conn, err := h.backupService.connStorage.GetConnection(connectionID)
+	if err != nil {
+		response.SendError(w, http.StatusNotFound, "Connection not found")
+		return
+	}
+
+	cfg := buildWALCommandConfig(conn, r.URL.Query().Get("api_base_url"), r.URL.Query().Get("archive_path"))
+	response.SendSuccess(w, "WAL command configuration", cfg)
+}
