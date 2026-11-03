@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/dendianugerah/velld/internal/connection"
+	"github.com/google/uuid"
 )
 
 func TestPgDumpProducesRestorableSQL(t *testing.T) {
@@ -131,4 +132,62 @@ func TestPgDumpStreamsToWriter(t *testing.T) {
 	if len(cw.Checksum()) != 64 {
 		t.Fatalf("expected 64-char sha256 hex, got %q", cw.Checksum())
 	}
+}
+
+func TestVerifyRestoreComparesRowCounts(t *testing.T) {
+	pg := startTestPostgres(t)
+
+	pg.exec(t, "CREATE TABLE accounts (id serial primary key, name text)")
+	pg.exec(t, "INSERT INTO accounts (name) VALUES ('a'), ('b'), ('c')")
+
+	conn := &connection.StoredConnection{
+		Type:         "postgresql",
+		Host:         pg.host,
+		Port:         pg.port,
+		Username:     pg.user,
+		Password:     pg.password,
+		DatabaseName: pg.database,
+	}
+
+	dir := t.TempDir()
+	dumpPath := filepath.Join(dir, "dump.sql")
+
+	svc := &BackupService{}
+	prepared, err := svc.createPgDumpCmd(conn, toFile(dumpPath))
+	if err != nil {
+		t.Fatalf("build dump command: %v", err)
+	}
+	if out, err := prepared.Run(context.Background()); err != nil {
+		t.Fatalf("dump: %v\n%s", err, out)
+	}
+
+	backup := &Backup{ID: uuid.MustParse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")}
+
+	matches, details, err := svc.verifyRestore(context.Background(), backup, conn, dumpPath)
+	if err != nil {
+		t.Fatalf("verify restore: %v", err)
+	}
+	if !matches {
+		t.Fatalf("expected restore to match, details: %s", details)
+	}
+
+	psql := mustPsql(t)
+	out, err := svc.psqlQuery(context.Background(), psql, conn, "postgres",
+		"SELECT datname FROM pg_database WHERE datname LIKE 'velld_verify_%'")
+	if err != nil {
+		t.Fatalf("list databases: %v", err)
+	}
+	if strings.TrimSpace(string(out)) != "" {
+		t.Fatalf("scratch database was not dropped, found: %q", string(out))
+	}
+}
+
+func mustPsql(t *testing.T) string {
+	t.Helper()
+	svc := &BackupService{}
+	psql, err := svc.resolvePsql()
+	if err != nil {
+		t.Skipf("psql not available: %v", err)
+	}
+	return psql
 }

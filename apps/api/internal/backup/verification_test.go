@@ -42,16 +42,21 @@ func newVerificationService(t *testing.T) (*BackupService, *BackupRepository) {
 // backup pointing at path.
 func seedBackup(t *testing.T, repo *BackupRepository, id, path string) {
 	t.Helper()
+	seedBackupWithType(t, repo, id, path, "postgresql")
+}
+
+func seedBackupWithType(t *testing.T, repo *BackupRepository, id, path, dbType string) {
+	t.Helper()
 
 	encUser, encPass := encryptForTest(t, "user"), encryptForTest(t, "pass")
 	// Deliberately leave nullable columns unset so this doubles as a regression
 	// test for NULL-tolerant scanning.
 	if _, err := repo.db.Exec(`
 		INSERT INTO connections (id, name, type, host, port, username, password, database_name, user_id)
-		VALUES ('conn-1', 'primary', 'postgresql', 'localhost', 5432, $1, $2, 'app', '99999999-9999-9999-9999-999999999999');
+		VALUES ('conn-1', 'primary', ?, 'localhost', 5432, ?, ?, 'app', '99999999-9999-9999-9999-999999999999');
 		INSERT INTO backups (id, connection_id, status, path)
-		VALUES ($3, 'conn-1', 'completed', $4);
-	`, encUser, encPass, id, path); err != nil {
+		VALUES (?, 'conn-1', 'completed', ?);
+	`, dbType, encUser, encPass, id, path); err != nil {
 		t.Fatalf("seed backup: %v", err)
 	}
 }
@@ -143,7 +148,7 @@ func TestVerifyBackupRecordsResult(t *testing.T) {
 
 	content := []byte("payload")
 	path := writeBackupFile(t, content)
-	seedBackup(t, repo, "33333333-3333-3333-3333-333333333333", path)
+	seedBackupWithType(t, repo, "33333333-3333-3333-3333-333333333333", path, "mysql")
 	if err := repo.CreateBackupManifest(&BackupManifest{
 		BackupID:          "33333333-3333-3333-3333-333333333333",
 		ChecksumAlgorithm: defaultChecksumAlgorithm,
@@ -173,7 +178,7 @@ func TestVerifyBackupMissingManifestFails(t *testing.T) {
 	svc, repo := newVerificationService(t)
 
 	path := writeBackupFile(t, []byte("payload"))
-	seedBackup(t, repo, "44444444-4444-4444-4444-444444444444", path)
+	seedBackupWithType(t, repo, "44444444-4444-4444-4444-444444444444", path, "mysql")
 
 	verification, err := svc.VerifyBackup(context.Background(), "44444444-4444-4444-4444-444444444444")
 	if err == nil {
