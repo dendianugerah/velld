@@ -227,7 +227,7 @@ func (r *BackupRepository) UpdateBackupStatus(id string, status string) error {
 	return err
 }
 
-func (r *BackupRepository) GetBackupsOlderThan(connectionID string, cutoffTime time.Time) ([]*Backup, error) {
+func (r *BackupRepository) BackupsOlderThan(connectionID string, cutoffTime time.Time) ([]*Backup, error) {
 	rows, err := r.db.Query(`
 		SELECT id, path, s3_object_key, created_at 
 		FROM backups 

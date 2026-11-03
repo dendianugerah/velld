@@ -196,7 +196,7 @@ func (s *S3Storage) ListFilesWithPrefix(ctx context.Context, prefix string) ([]s
 	return files, nil
 }
 
-func (s *S3Storage) GetFileSize(ctx context.Context, objectKey string) (int64, error) {
+func (s *S3Storage) FileSize(ctx context.Context, objectKey string) (int64, error) {
 	info, err := s.client.StatObject(ctx, s.bucket, objectKey, minio.StatObjectOptions{})
 	if err != nil {
 		return 0, fmt.Errorf("failed to stat object: %w", err)
