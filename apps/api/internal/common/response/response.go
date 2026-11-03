@@ -19,8 +19,14 @@ type Response struct {
 }
 
 func SendSuccess(w http.ResponseWriter, message string, data interface{}) {
+	SendSuccessWithStatus(w, http.StatusOK, message, data)
+}
+
+// SendSuccessWithStatus lets handlers return a non-200 success code, such as
+// 202 Accepted for an async operation or 422 for a completed-but-failed check.
+func SendSuccessWithStatus(w http.ResponseWriter, status int, message string, data interface{}) {
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(status)
 	json.NewEncoder(w).Encode(Response{
 		Message: message,
 		Data:    data,
