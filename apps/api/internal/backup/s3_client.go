@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/dendianugerah/velld/internal/settings"
+	"github.com/dendianugerah/velld/internal/storage"
 	"github.com/google/uuid"
 )
 
@@ -16,7 +17,7 @@ var ErrS3NotConfigured = errors.New("s3 storage is not configured")
 // s3StorageForUser validates the user's S3 settings and returns a ready client.
 // It replaces the validation and client construction that was previously copied
 // into every S3 operation.
-func (s *BackupService) s3StorageForUser(userID uuid.UUID) (*S3Storage, error) {
+func (s *BackupService) s3StorageForUser(userID uuid.UUID) (*storage.S3Storage, error) {
 	userSettings, err := s.settingsService.GetUserSettingsInternal(userID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user settings: %w", err)
@@ -35,7 +36,7 @@ func (s *BackupService) s3StorageForUser(userID uuid.UUID) (*S3Storage, error) {
 		return nil, fmt.Errorf("failed to decrypt S3 secret key: %w", err)
 	}
 
-	return NewS3Storage(S3Config{
+	return storage.NewS3Storage(storage.S3Config{
 		Endpoint:   *userSettings.S3Endpoint,
 		Region:     s3RegionOrDefault(userSettings.S3Region),
 		Bucket:     *userSettings.S3Bucket,

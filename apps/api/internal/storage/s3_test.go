@@ -1,4 +1,4 @@
-package backup
+package storage
 
 import (
 	"testing"
