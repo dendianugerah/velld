@@ -76,6 +76,12 @@ func registerBackupRoutes(r *mux.Router, h *backup.BackupHandler) {
 	r.HandleFunc("/backups/compare/{sourceId}/{targetId}", h.CompareBackups).Methods("GET", "OPTIONS")
 	r.HandleFunc("/backups/{connection_id}/schedule/disable", h.DisableBackupSchedule).Methods("POST", "OPTIONS")
 	r.HandleFunc("/backups/{connection_id}/schedule", h.UpdateBackupSchedule).Methods("PUT", "OPTIONS")
+
+	// Point-in-time recovery (PostgreSQL)
+	r.HandleFunc("/backups/base", h.CreateBaseBackup).Methods("POST", "OPTIONS")
+	r.HandleFunc("/wal/{connection_id}/segment/{segment}", h.PushWALSegment).Methods("PUT", "POST", "OPTIONS")
+	r.HandleFunc("/wal/{id}/status", h.GetWALStatus).Methods("GET", "OPTIONS")
+	r.HandleFunc("/wal/{id}/config", h.GetWALCommandConfig).Methods("GET", "OPTIONS")
 }
 
 func registerSettingsRoutes(r *mux.Router, h *settings.SettingsHandler) {
