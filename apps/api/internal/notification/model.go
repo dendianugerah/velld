@@ -14,6 +14,9 @@ const (
 	BackupCompleted NotificationType = "backup_completed"
 	// VerificationFailed means a backup could not be verified as restorable.
 	VerificationFailed NotificationType = "verification_failed"
+	// WALGapDetected means archived WAL segments have a hole, so point-in-time
+	// recovery past the gap is not possible.
+	WALGapDetected NotificationType = "wal_gap_detected"
 )
 
 type NotificationStatus string
