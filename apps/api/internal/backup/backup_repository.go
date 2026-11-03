@@ -272,8 +272,10 @@ func (r *BackupRepository) GetBackup(id string) (*Backup, error) {
 	)
 	backup := &Backup{}
 	err := r.db.QueryRow(`
-		SELECT id, connection_id, schedule_id, status, path, s3_object_key, size,
-			   started_time, completed_time, created_at, updated_at 
+		SELECT id, connection_id, schedule_id, status, path, s3_object_key,
+			   COALESCE(size, 0),
+			   COALESCE(started_time, ''), completed_time,
+			   COALESCE(created_at, ''), COALESCE(updated_at, '')
 		FROM backups WHERE id = $1`, id).
 		Scan(&backup.ID, &backup.ConnectionID, &backup.ScheduleID,
 			&backup.Status, &backup.Path, &backup.S3ObjectKey, &backup.Size,
@@ -283,12 +285,14 @@ func (r *BackupRepository) GetBackup(id string) (*Backup, error) {
 		return nil, err
 	}
 
-	// Parse started_time
-	startedTime, err := common.ParseTime(startedTimeStr)
-	if err != nil {
-		return nil, fmt.Errorf("error parsing started_time: %v", err)
+	// Parse started_time if present. Older rows may predate the column.
+	if startedTimeStr != "" {
+		startedTime, err := common.ParseTime(startedTimeStr)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing started_time: %v", err)
+		}
+		backup.StartedTime = startedTime
 	}
-	backup.StartedTime = startedTime
 
 	// Parse completed_time if not null
 	if completedTimeStr.Valid {
@@ -300,17 +304,21 @@ func (r *BackupRepository) GetBackup(id string) (*Backup, error) {
 	}
 
 	// Parse created_at and updated_at
-	createdAt, err := common.ParseTime(createdAtStr)
-	if err != nil {
-		return nil, fmt.Errorf("error parsing created_at: %v", err)
+	if createdAtStr != "" {
+		createdAt, err := common.ParseTime(createdAtStr)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing created_at: %v", err)
+		}
+		backup.CreatedAt = createdAt
 	}
-	backup.CreatedAt = createdAt
 
-	updatedAt, err := common.ParseTime(updatedAtStr)
-	if err != nil {
-		return nil, fmt.Errorf("error parsing updated_at: %v", err)
+	if updatedAtStr != "" {
+		updatedAt, err := common.ParseTime(updatedAtStr)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing updated_at: %v", err)
+		}
+		backup.UpdatedAt = updatedAt
 	}
-	backup.UpdatedAt = updatedAt
 
 	return backup, nil
 }
@@ -339,8 +347,10 @@ func (r *BackupRepository) GetAllBackupsWithPagination(opts BackupListOptions) (
 
 	query := fmt.Sprintf(`
 		SELECT 
-			b.id, b.connection_id, c.type, b.schedule_id, b.status, b.path, b.s3_object_key, b.size,
-			b.started_time, b.completed_time, b.created_at, b.updated_at,
+			b.id, b.connection_id, c.type, b.schedule_id, b.status, b.path, b.s3_object_key,
+			COALESCE(b.size, 0),
+			COALESCE(b.started_time, ''), COALESCE(b.completed_time, ''),
+			COALESCE(b.created_at, ''), COALESCE(b.updated_at, ''),
 			c.database_name,
 			COALESCE((
 				SELECT v.status FROM backup_verifications v
