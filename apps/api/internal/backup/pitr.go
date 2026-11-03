@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 )
@@ -110,4 +111,38 @@ func (s *BackupService) PrepareRecoveryDir(dataDir string, targetTime time.Time,
 		TargetTime:   targetTime.UTC().Format(time.RFC3339),
 		RecoveryFile: autoConfPath,
 	}, nil
+}
+
+// TimelineConflict describes archived WAL that spans more than one timeline,
+// which makes a naive replay ambiguous. Recovery must pick a single timeline.
+type TimelineConflict struct {
+	Timelines []uint32
+}
+
+func (c *TimelineConflict) Error() string {
+	return fmt.Sprintf("archived WAL spans multiple timelines (%v); recovery would be ambiguous", c.Timelines)
+}
+
+// checkTimelineConsistency returns an error when archived segments span more
+// than one timeline. A base backup belongs to one timeline and replay must
+// follow it.
+func checkTimelineConsistency(segments []WALSegment) error {
+	seen := map[uint32]struct{}{}
+	for _, s := range segments {
+		seen[s.Timeline] = struct{}{}
+	}
+	if len(seen) <= 1 {
+		return nil
+	}
+
+	timelines := make([]uint32, 0, len(seen))
+	for t := range seen {
+		timelines = append(timelines, t)
+	}
+	sortUint32(timelines)
+	return &TimelineConflict{Timelines: timelines}
+}
+
+func sortUint32(values []uint32) {
+	sort.Slice(values, func(i, j int) bool { return values[i] < values[j] })
 }
