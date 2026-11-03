@@ -150,12 +150,12 @@ func (s *BackupService) cleanupOldBackups(connectionID string, retentionDays int
 
 	// Initialize S3 client if S3 is enabled and configured
 	var s3Storage *S3Storage
-	if userSettings != nil && userSettings.S3Enabled && 
-	   userSettings.S3Endpoint != nil && *userSettings.S3Endpoint != "" &&
-	   userSettings.S3Bucket != nil && *userSettings.S3Bucket != "" &&
-	   userSettings.S3AccessKey != nil && *userSettings.S3AccessKey != "" &&
-	   userSettings.S3SecretKey != nil && *userSettings.S3SecretKey != "" {
-		
+	if userSettings != nil && userSettings.S3Enabled &&
+		userSettings.S3Endpoint != nil && *userSettings.S3Endpoint != "" &&
+		userSettings.S3Bucket != nil && *userSettings.S3Bucket != "" &&
+		userSettings.S3AccessKey != nil && *userSettings.S3AccessKey != "" &&
+		userSettings.S3SecretKey != nil && *userSettings.S3SecretKey != "" {
+
 		secretKey, err := s.cryptoService.Decrypt(*userSettings.S3SecretKey)
 		if err != nil {
 			fmt.Printf("Warning: Failed to decrypt S3 secret key for cleanup: %v\n", err)
@@ -192,14 +192,14 @@ func (s *BackupService) cleanupOldBackups(connectionID string, retentionDays int
 	ctx := context.Background()
 	for _, backup := range oldBackups {
 		backupID := backup.ID.String()
-		
+
 		// Delete from S3 if object key exists, S3 is configured, and connection has S3 cleanup enabled
 		if backup.S3ObjectKey != nil && *backup.S3ObjectKey != "" && s3Storage != nil && conn.S3CleanupOnRetention {
 			if err := s3Storage.DeleteFile(ctx, *backup.S3ObjectKey); err != nil {
-				fmt.Printf("Warning: Failed to delete S3 object %s for backup %s: %v\n", 
+				fmt.Printf("Warning: Failed to delete S3 object %s for backup %s: %v\n",
 					*backup.S3ObjectKey, backupID, err)
 			} else {
-				fmt.Printf("Deleted S3 object %s for backup %s (retention cleanup)\n", 
+				fmt.Printf("Deleted S3 object %s for backup %s (retention cleanup)\n",
 					*backup.S3ObjectKey, backupID)
 			}
 		}
@@ -207,10 +207,10 @@ func (s *BackupService) cleanupOldBackups(connectionID string, retentionDays int
 		// Delete local file if it exists
 		if _, err := os.Stat(backup.Path); err == nil {
 			if err := os.Remove(backup.Path); err != nil {
-				fmt.Printf("Warning: Failed to delete local file %s for backup %s: %v\n", 
+				fmt.Printf("Warning: Failed to delete local file %s for backup %s: %v\n",
 					backup.Path, backupID, err)
 			} else {
-				fmt.Printf("Deleted local file %s for backup %s (retention cleanup)\n", 
+				fmt.Printf("Deleted local file %s for backup %s (retention cleanup)\n",
 					backup.Path, backupID)
 			}
 		}
@@ -223,7 +223,7 @@ func (s *BackupService) cleanupOldBackups(connectionID string, retentionDays int
 		}
 	}
 
-	fmt.Printf("Retention cleanup completed: processed %d old backups for connection %s\n", 
+	fmt.Printf("Retention cleanup completed: processed %d old backups for connection %s\n",
 		len(oldBackups), connectionID)
 }
 

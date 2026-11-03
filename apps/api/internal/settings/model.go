@@ -19,17 +19,17 @@ type UserSettings struct {
 	SMTPUsername    *string   `json:"smtp_username,omitempty"`
 	SMTPPassword    *string   `json:"smtp_password,omitempty"`
 	// S3-compatible storage settings
-	S3Enabled    bool      `json:"s3_enabled"`
-	S3Endpoint   *string   `json:"s3_endpoint,omitempty"`
-	S3Region     *string   `json:"s3_region,omitempty"`
-	S3Bucket     *string   `json:"s3_bucket,omitempty"`
-	S3AccessKey  *string   `json:"s3_access_key,omitempty"`
-	S3SecretKey  *string   `json:"s3_secret_key,omitempty"`
-	S3UseSSL     bool      `json:"s3_use_ssl"`
-	S3PathPrefix *string   `json:"s3_path_prefix,omitempty"`
-	S3PurgeLocal bool      `json:"s3_purge_local"`
-	CreatedAt    time.Time `json:"created_at"`
-	UpdatedAt    time.Time `json:"updated_at"`
+	S3Enabled     bool            `json:"s3_enabled"`
+	S3Endpoint    *string         `json:"s3_endpoint,omitempty"`
+	S3Region      *string         `json:"s3_region,omitempty"`
+	S3Bucket      *string         `json:"s3_bucket,omitempty"`
+	S3AccessKey   *string         `json:"s3_access_key,omitempty"`
+	S3SecretKey   *string         `json:"s3_secret_key,omitempty"`
+	S3UseSSL      bool            `json:"s3_use_ssl"`
+	S3PathPrefix  *string         `json:"s3_path_prefix,omitempty"`
+	S3PurgeLocal  bool            `json:"s3_purge_local"`
+	CreatedAt     time.Time       `json:"created_at"`
+	UpdatedAt     time.Time       `json:"updated_at"`
 	EnvConfigured map[string]bool `json:"env_configured,omitempty"`
 }
 

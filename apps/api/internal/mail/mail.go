@@ -6,6 +6,7 @@ import (
 	"log"
 	"net"
 	"net/smtp"
+	"strconv"
 )
 
 type SMTPConfig struct {
@@ -23,7 +24,7 @@ type Message struct {
 }
 
 func SendEmail(config *SMTPConfig, msg *Message) error {
-	addr := fmt.Sprintf("%s:%d", config.Host, config.Port)
+	addr := net.JoinHostPort(config.Host, strconv.Itoa(config.Port))
 	auth := smtp.PlainAuth("", config.Username, config.Password, config.Host)
 
 	emailMsg := fmt.Sprintf("From: %s\r\n"+

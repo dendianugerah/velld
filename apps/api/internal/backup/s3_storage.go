@@ -181,7 +181,7 @@ func (s *S3Storage) getObjectKey(fileName string) string {
 	if s.prefix == "" {
 		return fileName
 	}
-	
+
 	// Ensure prefix doesn't end with / and fileName doesn't start with /
 	prefix := strings.TrimSuffix(s.prefix, "/")
 	fileName = strings.TrimPrefix(fileName, "/")
@@ -191,17 +191,17 @@ func (s *S3Storage) getObjectKey(fileName string) string {
 func (s *S3Storage) getObjectKeyWithPath(fileName string, subfolder string) string {
 	// Build path: prefix/subfolder/fileName
 	var parts []string
-	
+
 	if s.prefix != "" {
 		parts = append(parts, strings.TrimSuffix(s.prefix, "/"))
 	}
-	
+
 	if subfolder != "" {
 		parts = append(parts, strings.Trim(subfolder, "/"))
 	}
-	
+
 	parts = append(parts, strings.TrimPrefix(fileName, "/"))
-	
+
 	return strings.Join(parts, "/")
 }
 
@@ -216,7 +216,7 @@ func (s *S3Storage) MoveFile(ctx context.Context, oldKey, newKey string) error {
 		Bucket: s.bucket,
 		Object: newKey,
 	}
-	
+
 	_, err := s.client.CopyObject(ctx, dst, src)
 	if err != nil {
 		return fmt.Errorf("failed to copy object: %w", err)

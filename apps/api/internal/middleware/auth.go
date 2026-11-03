@@ -9,7 +9,7 @@ import (
 )
 
 const (
-    user = "user"
+	user = "user"
 )
 
 type AuthMiddleware struct {

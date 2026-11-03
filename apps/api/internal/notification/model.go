@@ -44,9 +44,9 @@ type NotificationList struct {
 }
 
 type NotificationListOptions struct {
-	UserID  uuid.UUID
-	Status  *NotificationStatus
-	Type    *NotificationType
-	Limit   int
-	Offset  int
+	UserID uuid.UUID
+	Status *NotificationStatus
+	Type   *NotificationType
+	Limit  int
+	Offset int
 }

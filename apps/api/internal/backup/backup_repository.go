@@ -530,7 +530,6 @@ func (r *BackupRepository) GetBackupsByConnectionID(connectionID string) ([]*Bac
 	return backups, rows.Err()
 }
 
-
 func (r *BackupRepository) UpdateBackupS3ObjectKey(backupID string, s3ObjectKey string) error {
 	_, err := r.db.Exec(`
 		UPDATE backups 
