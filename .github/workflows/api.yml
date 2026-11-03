@@ -6,12 +6,14 @@ on:
       - main
     paths:
       - 'apps/api/**'
+      - 'Makefile'
       - '.github/workflows/api.yml'
   pull_request:
     branches:
       - main
     paths:
       - 'apps/api/**'
+      - 'Makefile'
       - '.github/workflows/api.yml'
   workflow_dispatch:
 
@@ -21,9 +23,6 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: apps/api
 
     steps:
       - name: Checkout repository
@@ -36,19 +35,11 @@ jobs:
           cache-dependency-path: apps/api/go.sum
 
       - name: Download dependencies
+        working-directory: apps/api
         run: go mod download
 
-      - name: Verify formatting
-        run: |
-          unformatted=$(gofmt -l .)
-          if [ -n "$unformatted" ]; then
-            echo "The following files are not gofmt'd:"
-            echo "$unformatted"
-            exit 1
-          fi
-
-      - name: Vet
-        run: go vet ./...
+      - name: Lint
+        run: make lint
 
       - name: Test
-        run: go test -race -coverprofile=coverage.out ./...
+        run: make test
