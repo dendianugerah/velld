@@ -111,6 +111,39 @@ func (s *S3Storage) UploadFileWithPath(ctx context.Context, localPath string, su
 	return objectKey, nil
 }
 
+// UploadStream streams an object of unknown length straight to S3. The caller
+// writes to the returned pipe and must close it; minio switches to a multipart
+// upload on its own because the size is -1. This is what lets a dump be
+// uploaded as it is produced, without ever landing on local disk.
+func (s *S3Storage) UploadStream(ctx context.Context, objectKey string, produce func(io.Writer) error) error {
+	reader, writer := io.Pipe()
+
+	produceErr := make(chan error, 1)
+	go func() {
+		err := produce(writer)
+		writer.CloseWithError(err)
+		produceErr <- err
+	}()
+
+	_, uploadErr := s.client.PutObject(ctx, s.bucket, objectKey, reader, -1, minio.PutObjectOptions{
+		ContentType: "application/octet-stream",
+		PartSize:    16 * 1024 * 1024,
+		NumThreads:  4,
+	})
+
+	// Unblock the producer if the upload failed first.
+	reader.CloseWithError(uploadErr)
+
+	if err := <-produceErr; err != nil {
+		return fmt.Errorf("produce stream: %w", err)
+	}
+	if uploadErr != nil {
+		return fmt.Errorf("upload stream to S3: %w", uploadErr)
+	}
+
+	return nil
+}
+
 func (s *S3Storage) DownloadFile(ctx context.Context, objectKey, localPath string) error {
 	object, err := s.client.GetObject(ctx, s.bucket, objectKey, minio.GetObjectOptions{})
 	if err != nil {
@@ -203,6 +236,11 @@ func (s *S3Storage) getObjectKeyWithPath(fileName string, subfolder string) stri
 	parts = append(parts, strings.TrimPrefix(fileName, "/"))
 
 	return strings.Join(parts, "/")
+}
+
+// ObjectKeyFor returns the full object key for a file placed under subfolder.
+func (s *S3Storage) ObjectKeyFor(subfolder, fileName string) string {
+	return s.getObjectKeyWithPath(fileName, subfolder)
 }
 
 // MoveFile moves/renames an object in S3 (copy then delete)
