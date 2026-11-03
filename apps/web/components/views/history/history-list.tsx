@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Database, Download, History, GitCompare, RefreshCw, RotateCcw, Cloud, Trash2 } from "lucide-react";
+import { Database, Download, History, GitCompare, RefreshCw, RotateCcw, Cloud, Trash2, ShieldCheck } from "lucide-react";
 import { formatDistanceToNow, parseISO, subDays, isAfter } from "date-fns";
 import { useBackup } from "@/hooks/use-backup";
 import { BackupList } from "@/types/backup";
@@ -16,6 +16,7 @@ import { CustomPagination } from "@/components/ui/custom-pagination";
 import { useNotifications } from '@/hooks/use-notifications';
 import { NotificationSidebar } from "./notification-sidebar";
 import { BackupCompareDialog } from "./backup-compare-dialog";
+import { VerificationBadge } from "./verification-badge";
 import { RestoreDialog } from "./restore-dialog";
 import { BackupDetailsSheet } from "./backup-details-sheet";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
@@ -31,7 +32,7 @@ import { useState, useMemo } from "react";
 import { useIsFetching } from "@tanstack/react-query";
 
 export function HistoryList() {
-  const { backups, isLoading, pagination, page, setPage, downloadBackupFile, isDownloading, search, setSearch, deleteBackupById, isDeleting } = useBackup();
+  const { backups, isLoading, pagination, page, setPage, downloadBackupFile, isDownloading, search, setSearch, deleteBackupById, isDeleting, verifyBackupById, isVerifying } = useBackup();
   const { notifications, isLoading: isLoadingNotifications, markNotificationsAsRead } = useNotifications();
   const [compareDialogOpen, setCompareDialogOpen] = useState(false);
   const [selectedBackupForCompare, setSelectedBackupForCompare] = useState<BackupList | undefined>();
@@ -184,6 +185,7 @@ export function HistoryList() {
                                   S3
                                 </Badge>
                               )}
+                              <VerificationBadge status={item.verification_status} />
                             </div>
                             <p className="text-xs text-muted-foreground mt-2">
                               {formatDistanceToNow(parseISO(item.created_at), { addSuffix: true })}
@@ -227,6 +229,16 @@ export function HistoryList() {
                           <Button
                             variant="outline"
                             size="sm"
+                            onClick={() => verifyBackupById(item.id)}
+                            disabled={isVerifying}
+                            className="w-full"
+                          >
+                            <ShieldCheck className="h-4 w-4 mr-1" />
+                            Verify
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
                             onClick={() => handleDelete(item)}
                             className="w-full text-destructive hover:text-destructive"
                           >
@@ -254,6 +266,7 @@ export function HistoryList() {
                                   S3
                                 </Badge>
                               )}
+                              <VerificationBadge status={item.verification_status} className="shrink-0" />
                             </div>
                             <p className="text-sm text-muted-foreground mt-1">
                               {formatDistanceToNow(parseISO(item.created_at), { addSuffix: true })} | {formatSize(item.size)}
@@ -301,6 +314,22 @@ export function HistoryList() {
                                 </TooltipTrigger>
                                 <TooltipContent side="top">
                                   <p className="text-xs">Compare with another backup</p>
+                                </TooltipContent>
+                              </Tooltip>
+
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => verifyBackupById(item.id)}
+                                    disabled={isVerifying}
+                                    >
+                                    <ShieldCheck className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent side="top">
+                                  <p className="text-xs">Verify backup integrity</p>
                                 </TooltipContent>
                               </Tooltip>
 

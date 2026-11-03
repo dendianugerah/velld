@@ -1,4 +1,4 @@
-import { BackupListResponse, BackupStatsResponse, BackupDiffResponse } from '@/types/backup';
+import { BackupListResponse, BackupStatsResponse, BackupDiffResponse, BackupVerificationResponse } from '@/types/backup';
 import { apiRequest } from '../api-client';
 
 export interface GetBackupsParams {
@@ -90,5 +90,16 @@ export async function restoreBackup(params: RestoreBackupParams): Promise<void> 
 export async function deleteBackup(backupId: string): Promise<void> {
   return apiRequest(`/api/backups/${backupId}`, {
     method: 'DELETE',
+  });
+}
+export async function verifyBackup(backupId: string): Promise<BackupVerificationResponse> {
+  return apiRequest<BackupVerificationResponse>(`/api/backups/${backupId}/verify`, {
+    method: 'POST',
+  });
+}
+
+export async function getBackupVerification(backupId: string): Promise<BackupVerificationResponse> {
+  return apiRequest<BackupVerificationResponse>(`/api/backups/${backupId}/verification`, {
+    method: 'GET',
   });
 }
