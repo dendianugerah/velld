@@ -185,7 +185,7 @@ export function HistoryList() {
                                   S3
                                 </Badge>
                               )}
-                              <VerificationBadge status={item.verification_status} />
+                              <VerificationBadge status={item.verification_status} verifiedAt={item.last_verified_at} />
                             </div>
                             <p className="text-xs text-muted-foreground mt-2">
                               {formatDistanceToNow(parseISO(item.created_at), { addSuffix: true })}
@@ -266,7 +266,7 @@ export function HistoryList() {
                                   S3
                                 </Badge>
                               )}
-                              <VerificationBadge status={item.verification_status} className="shrink-0" />
+                              <VerificationBadge status={item.verification_status} verifiedAt={item.last_verified_at} className="shrink-0" />
                             </div>
                             <p className="text-sm text-muted-foreground mt-1">
                               {formatDistanceToNow(parseISO(item.created_at), { addSuffix: true })} | {formatSize(item.size)}
