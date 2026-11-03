@@ -132,8 +132,8 @@ func (tunnel *SSHTunnel) Stop() error {
 	return nil
 }
 
-// GetLocalAddr returns the local address (host:port) to connect to
-func (tunnel *SSHTunnel) GetLocalAddr() string {
+// LocalAddr returns the local address (host:port) to connect to
+func (tunnel *SSHTunnel) LocalAddr() string {
 	return tunnel.Local.String()
 }
 

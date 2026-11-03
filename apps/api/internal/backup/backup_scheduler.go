@@ -152,7 +152,7 @@ func (s *BackupService) executeCronBackup(schedule *BackupSchedule) {
 
 func (s *BackupService) cleanupOldBackups(connectionID string, retentionDays int) {
 	cutoffTime := time.Now().AddDate(0, 0, -retentionDays)
-	oldBackups, err := s.backupRepo.GetBackupsOlderThan(connectionID, cutoffTime)
+	oldBackups, err := s.backupRepo.BackupsOlderThan(connectionID, cutoffTime)
 	if err != nil {
 		fmt.Printf("Error fetching old backups for cleanup: %v\n", err)
 		return
