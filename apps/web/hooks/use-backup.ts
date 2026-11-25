@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { getBackups, saveBackup, scheduleBackup, disableBackupSchedule, updateSchedule, getBackupStats, downloadBackup, restoreBackup, deleteBackup } from "@/lib/api/backups";
+import { getBackups, saveBackup, scheduleBackup, disableBackupSchedule, updateSchedule, downloadBackup, restoreBackup, deleteBackup } from "@/lib/api/backups";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from 'react';
 
@@ -21,13 +21,6 @@ export function useBackup() {
     queryKey: ['backups', { page, limit, search }],
     queryFn: () => getBackups({ page, limit, search }),
     placeholderData: (previousData) => previousData,
-    refetchInterval: 30000,
-    refetchIntervalInBackground: false,
-  });
-
-  const { data: stats, isLoading: isLoadingStats } = useQuery({
-    queryKey: ['backup-stats'],
-    queryFn: () => getBackupStats(),
     refetchInterval: 30000,
     refetchIntervalInBackground: false,
   });
@@ -168,7 +161,6 @@ export function useBackup() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['backups'] });
-      queryClient.invalidateQueries({ queryKey: ['backup-stats'] });
       toast({
         title: "Success",
         description: "Backup deleted successfully",
@@ -206,7 +198,5 @@ export function useBackup() {
     setPage,
     search,
     setSearch,
-    stats,
-    isLoadingStats,
   };
 }

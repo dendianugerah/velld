@@ -13,7 +13,6 @@ import (
 	"github.com/dendianugerah/velld/internal/connection"
 	"github.com/dendianugerah/velld/internal/database"
 	"github.com/dendianugerah/velld/internal/middleware"
-	"github.com/dendianugerah/velld/internal/notification"
 	"github.com/dendianugerah/velld/internal/settings"
 	"github.com/gorilla/mux"
 	_ "github.com/mattn/go-sqlite3"
@@ -43,11 +42,7 @@ func main() {
 	authRepo := auth.NewAuthRepository(db)
 	authService := auth.NewAuthService(authRepo, secrets.JWTSecret)
 
-	if !secrets.IsAllowSignup {
-		// create one admin user if isAllowSignup is false
-		if secrets.AdminUsernameCredential == "" || secrets.AdminPasswordCredential == "" {
-			log.Fatal("Admin username or password credentials are missing in environment variables")
-		}
+	if secrets.AdminUsernameCredential != "" && secrets.AdminPasswordCredential != "" {
 		_, err := authService.CreateNewUserByEnvData(secrets.AdminUsernameCredential, secrets.AdminPasswordCredential)
 		if err != nil {
 			log.Println(err)
@@ -76,7 +71,6 @@ func main() {
 
 	// Public routes
 	api := r.PathPrefix("/api").Subrouter()
-	api.HandleFunc("/auth/register", authHandler.Register).Methods("POST", "OPTIONS")
 	api.HandleFunc("/auth/login", authHandler.Login).Methods("POST", "OPTIONS")
 
 	// Protected routes
@@ -86,7 +80,6 @@ func main() {
 
 	backupRepo := backup.NewBackupRepository(db)
 	settingsRepo := settings.NewSettingsRepository(db)
-	notificationRepo := notification.NewNotificationRepository(db)
 	settingsService := settings.NewSettingsService(settingsRepo, cryptoService)
 
 	backupService := backup.NewBackupService(
@@ -94,7 +87,6 @@ func main() {
 		"./backups",
 		backupRepo,
 		settingsService,
-		notificationRepo,
 		cryptoService,
 	)
 
@@ -113,7 +105,6 @@ func main() {
 
 	backupHandler := backup.NewBackupHandler(backupService)
 
-	protected.HandleFunc("/backups/stats", backupHandler.GetBackupStats).Methods("GET", "OPTIONS")
 	protected.HandleFunc("/backups/schedule", backupHandler.ScheduleBackup).Methods("POST", "OPTIONS")
 	protected.HandleFunc("/backups", backupHandler.CreateBackup).Methods("POST", "OPTIONS")
 	protected.HandleFunc("/backups", backupHandler.ListBackups).Methods("GET", "OPTIONS")
@@ -121,7 +112,6 @@ func main() {
 	protected.HandleFunc("/backups/{id}", backupHandler.DeleteBackup).Methods("DELETE", "OPTIONS")
 	protected.HandleFunc("/backups/{id}/download", backupHandler.DownloadBackup).Methods("GET", "OPTIONS")
 	protected.HandleFunc("/backups/restore", backupHandler.RestoreBackup).Methods("POST", "OPTIONS")
-	protected.HandleFunc("/backups/compare/{sourceId}/{targetId}", backupHandler.CompareBackups).Methods("GET", "OPTIONS")
 	protected.HandleFunc("/backups/{connection_id}/schedule/disable", backupHandler.DisableBackupSchedule).Methods("POST", "OPTIONS")
 	protected.HandleFunc("/backups/{connection_id}/schedule", backupHandler.UpdateBackupSchedule).Methods("PUT", "OPTIONS")
 
@@ -129,12 +119,6 @@ func main() {
 
 	protected.HandleFunc("/settings", settingsHandler.GetSettings).Methods("GET", "OPTIONS")
 	protected.HandleFunc("/settings", settingsHandler.UpdateSettings).Methods("PUT", "OPTIONS")
-
-	notificationService := notification.NewNotificationService(notificationRepo)
-	notificationHandler := notification.NewNotificationHandler(notificationService)
-
-	protected.HandleFunc("/notifications", notificationHandler.GetNotifications).Methods("GET", "OPTIONS")
-	protected.HandleFunc("/notifications/mark-read", notificationHandler.MarkAsRead).Methods("POST", "OPTIONS")
 
 	log.Println("Server starting on :8080")
 	if err := http.ListenAndServe(":8080", r); err != nil {

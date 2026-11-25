@@ -48,10 +48,3 @@ export const getScheduleFrequency = (cronSchedule: string | undefined) => {
       return "custom";
   }
 };
-
-export const checkIsAllowRegister = (): boolean => {
-  const env = process.env.ALLOW_REGISTER;
-  if (typeof env === "undefined") return true;
-
-  return env === "true";
-};

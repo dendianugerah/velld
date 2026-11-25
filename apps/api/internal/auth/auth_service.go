@@ -22,22 +22,6 @@ func NewAuthService(repo *AuthRepository, jwtSecret string) *AuthService {
 	}
 }
 
-func (s *AuthService) Register(username, password string) error {
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	if err != nil {
-		return err
-	}
-
-	payload := User{
-		ID:        uuid.New(),
-		Username:  username,
-		Password:  string(hashedPassword),
-		CreatedAt: time.Now().Format("2006-01-02 15:04:05"),
-	}
-
-	return s.repo.CreateUser(payload)
-}
-
 func (s *AuthService) Login(username, password string) (string, error) {
 	user, err := s.repo.GetUserByUsername(username)
 	if err != nil {

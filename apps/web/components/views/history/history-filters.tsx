@@ -9,10 +9,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, GitCompare } from "lucide-react";
+import { Search } from "lucide-react";
 
 interface HistoryFiltersProps {
-  onCompare?: () => void;
   search: string;
   onSearchChange: (value: string) => void;
   dateRange: string;
@@ -26,7 +25,6 @@ interface HistoryFiltersProps {
 }
 
 export function HistoryFilters({ 
-  onCompare, 
   search,
   onSearchChange,
   dateRange,
@@ -87,21 +85,8 @@ export function HistoryFilters({
             <SelectItem value="mysql">MySQL</SelectItem>
             <SelectItem value="postgresql">PostgreSQL</SelectItem>
             <SelectItem value="mongodb">MongoDB</SelectItem>
-            <SelectItem value="redis">Redis</SelectItem>
           </SelectContent>
         </Select>
-
-        {onCompare && (
-          <Button 
-            variant="ghost" 
-            size="sm"
-            onClick={onCompare}
-            className="gap-2 w-full sm:w-auto"
-          >
-            <GitCompare className="h-4 w-4" />
-            <span className="sm:inline">Compare</span>
-          </Button>
-        )}
 
         <Button variant="ghost" size="sm" onClick={onReset} className="w-full sm:w-auto">
           Reset

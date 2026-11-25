@@ -170,7 +170,7 @@ export function ConnectionsTable({
                       </TableCell>
                       <TableCell className="py-3.5">
                         <Badge variant="secondary" className="text-xs font-medium bg-accent/50 hover:bg-accent/70 border-0 px-2.5 py-0.5">
-                          {typeLabels[connection.type]}
+                          {typeLabels[connection.type] ?? connection.type}
                         </Badge>
                       </TableCell>
                       <TableCell className="py-3.5">
@@ -249,7 +249,7 @@ export function ConnectionsTable({
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-[160px]">
-                              {onDiscover && connection.type !== 'redis' && (
+                              {onDiscover && (
                                 <DropdownMenuItem 
                                   onClick={() => {
                                     setOpenDropdownId(null);

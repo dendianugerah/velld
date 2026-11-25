@@ -35,7 +35,6 @@ docker compose up --build
 - `ENCRYPTION_KEY` must be exactly 64 hex characters (32 bytes). Generate with: `openssl rand -hex 32`
 - `JWT_SECRET` and `ENCRYPTION_KEY` are **required** — app exits on startup if missing
 - Shell command syntax like `$(openssl rand -hex 32)` in `.env` files **does not execute** — the app has explicit checks and error messages for this
-- `ALLOW_REGISTER` defaults to `"true"` if unset
 
 ## Architecture Notes
 

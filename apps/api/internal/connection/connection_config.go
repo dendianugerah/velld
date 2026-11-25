@@ -2,14 +2,12 @@ package connection
 
 import (
 	"context"
-	"crypto/tls"
 	"database/sql"
 	"fmt"
 
 	"github.com/go-sql-driver/mysql"
 	"github.com/lib/pq"
 	"github.com/mattn/go-sqlite3"
-	"github.com/redis/go-redis/v9"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -37,8 +35,6 @@ func (cm *ConnectionManager) Connect(config ConnectionConfig) error {
 		return cm.connectPostgres(config)
 	case "mongodb":
 		return cm.connectMongoDB(config)
-	case "redis":
-		return cm.connectRedis(config)
 	default:
 		return fmt.Errorf("unsupported database type: %s", config.Type)
 	}
@@ -74,8 +70,6 @@ func (cm *ConnectionManager) connectWithSSH(config ConnectionConfig) error {
 		connErr = cm.connectPostgres(tunnelConfig)
 	case "mongodb":
 		connErr = cm.connectMongoDB(tunnelConfig)
-	case "redis":
-		connErr = cm.connectRedis(tunnelConfig)
 	default:
 		tunnel.Stop()
 		return fmt.Errorf("unsupported database type: %s", config.Type)
@@ -177,39 +171,6 @@ func (cm *ConnectionManager) connectMongoDB(config ConnectionConfig) error {
 	return nil
 }
 
-func (cm *ConnectionManager) connectRedis(config ConnectionConfig) error {
-	ctx := context.Background()
-
-	opts := &redis.Options{
-		Addr: fmt.Sprintf("%s:%d", config.Host, config.Port),
-	}
-
-	if config.SSL {
-		opts.TLSConfig = &tls.Config{InsecureSkipVerify: true}
-	}
-
-	if config.Password != "" {
-		opts.Password = config.Password
-	}
-
-	if config.Database != "" {
-		var db int
-		_, err := fmt.Sscanf(config.Database, "%d", &db)
-		if err == nil && db >= 0 && db <= 15 {
-			opts.DB = db
-		}
-	}
-
-	client := redis.NewClient(opts)
-
-	if err := client.Ping(ctx).Err(); err != nil {
-		return fmt.Errorf("failed to connect to Redis: %w", err)
-	}
-
-	cm.connections[config.ID] = client
-	return nil
-}
-
 func (cm *ConnectionManager) Disconnect(id string) error {
 	conn, exists := cm.connections[id]
 	if !exists {
@@ -221,8 +182,6 @@ func (cm *ConnectionManager) Disconnect(id string) error {
 		return c.Close()
 	case *mongo.Client:
 		return c.Disconnect(context.Background())
-	case *redis.Client:
-		return c.Close()
 	default:
 		return fmt.Errorf("unknown connection type for id: %s", id)
 	}
@@ -239,8 +198,6 @@ func (cm *ConnectionManager) GetDatabaseSize(id string) (int64, error) {
 		return cm.getSQLDatabaseSize(c)
 	case *mongo.Client:
 		return cm.getMongoDBSize(c)
-	case *redis.Client:
-		return cm.getRedisSize(c)
 	default:
 		return 0, fmt.Errorf("unknown connection type for id: %s", id)
 	}
@@ -282,32 +239,6 @@ func (cm *ConnectionManager) getMongoDBSize(client *mongo.Client) (int64, error)
 	return int64(stats["dataSize"].(float64)), nil
 }
 
-func (cm *ConnectionManager) getRedisSize(client *redis.Client) (int64, error) {
-	ctx := context.Background()
-
-	info, err := client.Info(ctx, "memory").Result()
-	if err != nil {
-		return 0, fmt.Errorf("failed to get Redis memory info: %w", err)
-	}
-
-	var usedMemory int64
-	lines := []byte(info)
-	start := 0
-	for i := 0; i < len(lines); i++ {
-		if lines[i] == '\n' {
-			line := string(lines[start:i])
-			start = i + 1
-
-			if len(line) > 12 && line[:12] == "used_memory:" {
-				fmt.Sscanf(line[12:], "%d", &usedMemory)
-				return usedMemory, nil
-			}
-		}
-	}
-
-	return 0, nil
-}
-
 func (cm *ConnectionManager) DiscoverDatabases(config ConnectionConfig) ([]string, error) {
 	tempConfig := config
 	tempConfig.ID = "temp_discovery_" + config.ID
@@ -332,10 +263,6 @@ func (cm *ConnectionManager) DiscoverDatabases(config ConnectionConfig) ([]strin
 		databases, err = cm.discoverMySQLDatabases(conn.(*sql.DB))
 	case "mongodb":
 		databases, err = cm.discoverMongoDBDatabases(conn.(*mongo.Client))
-	case "redis":
-		// Redis doesn't have multiple databases in the traditional sense
-		// Return the 16 default database numbers
-		databases = []string{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15"}
 	default:
 		return nil, fmt.Errorf("unsupported database type for discovery: %s", config.Type)
 	}

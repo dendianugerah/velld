@@ -126,7 +126,7 @@ export default function HomePage() {
             <div className="space-y-4">
               <h3 className="text-2xl md:text-3xl font-bold">Smart notifications</h3>
               <p className="text-lg text-gray-600 dark:text-gray-400 leading-relaxed">
-                Get notified via email, webhooks, or dashboard when backups succeed or fail.
+                Get notified by email or webhook when scheduled backups fail.
               </p>
             </div>
 
@@ -198,24 +198,6 @@ export default function HomePage() {
                 <h3 className="text-2xl font-bold">Complete history</h3>
                 <p className="text-lg text-gray-600 dark:text-gray-400">
                   Track all your backups with detailed logs and status information.
-                </p>
-              </div>
-            </div>
-
-            <div className="space-y-6 group md:col-span-2">
-              <div className="rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden transition-all duration-300 group-hover:border-gray-300 dark:group-hover:border-gray-700">
-                <Image
-                  src="/images/comparison.png"
-                  alt="Backup Comparison"
-                  width={1920}
-                  height={1080}
-                  className="w-full h-auto"
-                />
-              </div>
-              <div className="space-y-2 px-2">
-                <h3 className="text-2xl font-bold">Backup comparison</h3>
-                <p className="text-lg text-gray-600 dark:text-gray-400">
-                  Compare any two backups side-by-side with intelligent diff visualization.
                 </p>
               </div>
             </div>

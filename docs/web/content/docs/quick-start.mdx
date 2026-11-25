@@ -22,9 +22,9 @@ Get up and running with your first database backup in just a few minutes.
   <Step>
     ### Access the Dashboard
 
-    Open [http://localhost:3000](http://localhost:3000) and create your account.
+    Open [http://localhost:3000](http://localhost:3000) and sign in with the admin credentials you configured during installation.
 
-    The dashboard gives you an overview of all your backups, success rates, and storage usage.
+    The dashboard gives you a view of recent backup activity.
   </Step>
 
   <Step>
@@ -113,27 +113,18 @@ Get up and running with your first database backup in just a few minutes.
     5. Click **Save Schedule**
 
     <Callout type="success">
-      Your backups will now run automatically! You'll receive notifications for each backup.
+      Your backups will now run automatically! Enable email or webhook notifications to get alerts about scheduled backup failures.
     </Callout>
   </Step>
 
   <Step>
-    ### Download or Compare Backups
+    ### Download Backups
 
     From the **History** page:
 
     **Download a backup:**
     - Click the download icon next to any backup
     - The backup file will download to your computer
-
-    **Compare two backups:**
-    - Click **Compare Backups** or click the compare icon on any backup
-    - Select two backups to compare
-    - View a detailed diff showing what changed between them
-
-    <Callout type="tip">
-      The compare feature is perfect for tracking schema changes or data migrations!
-    </Callout>
   </Step>
 </Steps>
 
@@ -201,7 +192,7 @@ Get alerted when backups fail:
 1. Go to **Settings** → **Notifications**
 2. Enable email notifications
 3. Configure your SMTP settings
-4. Choose notification preferences (failures only, all backups, etc.)
+4. Save your notification settings
 
 ### 4. Monitor Your Storage
 Keep an eye on the **Storage Used** metric on the dashboard. Set up retention policies to automatically clean up old backups.

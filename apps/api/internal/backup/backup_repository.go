@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/dendianugerah/velld/internal/common"
-	"github.com/google/uuid"
 )
 
 type BackupRepository struct {
@@ -396,83 +395,6 @@ func (r *BackupRepository) UpdateBackupStatusAndSchedule(id string, status strin
 	return err
 }
 
-func (r *BackupRepository) GetBackupStats(userID uuid.UUID) (*BackupStats, error) {
-	stats := &BackupStats{
-		TotalBackups:    0,
-		FailedBackups:   0,
-		TotalSize:       0,
-		AverageDuration: 0,
-		SuccessRate:     100, // Default to 100% if no backups
-	}
-
-	err := r.db.QueryRow(`
-		SELECT 
-				COALESCE(COUNT(*), 0) as total_backups,
-				COALESCE(SUM(CASE WHEN b.status != 'completed' THEN 1 ELSE 0 END), 0) as failed_backups,
-				COALESCE(SUM(b.size), 0) as total_size
-		FROM backups b
-		INNER JOIN connections c ON b.connection_id = c.id
-		WHERE c.user_id = $1
-	`, userID).Scan(&stats.TotalBackups, &stats.FailedBackups, &stats.TotalSize)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return stats, nil // Return default values if no data
-		}
-		return nil, fmt.Errorf("failed to get backup counts: %v", err)
-	}
-
-	// Calculate success rate only if there are backups
-	if stats.TotalBackups > 0 {
-		successfulBackups := stats.TotalBackups - stats.FailedBackups
-		stats.SuccessRate = float64(successfulBackups) / float64(stats.TotalBackups) * 100
-	}
-
-	// Calculate average duration for completed backups
-	var totalDuration float64
-	var completedBackups int
-	rows, err := r.db.Query(`
-		SELECT 
-			b.started_time,
-			b.completed_time
-		FROM backups b
-		INNER JOIN connections c ON b.connection_id = c.id
-		WHERE c.user_id = $1 
-		AND b.status = 'completed'
-		AND b.completed_time IS NOT NULL
-	`, userID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get backup durations: %v", err)
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var startStr, endStr string
-		if err := rows.Scan(&startStr, &endStr); err != nil {
-			continue
-		}
-
-		startTime, err := common.ParseTime(startStr)
-		if err != nil {
-			continue
-		}
-
-		endTime, err := common.ParseTime(endStr)
-		if err != nil {
-			continue
-		}
-
-		duration := endTime.Sub(startTime).Minutes()
-		totalDuration += duration
-		completedBackups++
-	}
-
-	if completedBackups > 0 {
-		stats.AverageDuration = totalDuration / float64(completedBackups)
-	}
-
-	return stats, nil
-}
-
 func (r *BackupRepository) GetBackupsByConnectionID(connectionID string) ([]*Backup, error) {
 	rows, err := r.db.Query(`
 		SELECT id, connection_id, schedule_id, status, path, s3_object_key, size,
@@ -529,7 +451,6 @@ func (r *BackupRepository) GetBackupsByConnectionID(connectionID string) ([]*Bac
 
 	return backups, rows.Err()
 }
-
 
 func (r *BackupRepository) UpdateBackupS3ObjectKey(backupID string, s3ObjectKey string) error {
 	_, err := r.db.Exec(`

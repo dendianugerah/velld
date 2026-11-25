@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/dendianugerah/velld/internal/common"
 	"github.com/dendianugerah/velld/internal/common/response"
 )
 
@@ -14,26 +13,6 @@ type AuthHandler struct {
 
 func NewAuthHandler(authService *AuthService) *AuthHandler {
 	return &AuthHandler{authService: authService}
-}
-
-func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
-	if !common.GetSecrets().IsAllowSignup {
-		response.SendError(w, http.StatusForbidden, "Registration is disabled")
-		return
-	}
-
-	var req LoginRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		response.SendError(w, http.StatusBadRequest, "Invalid request body")
-		return
-	}
-
-	if err := h.authService.Register(req.Username, req.Password); err != nil {
-		response.SendError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	response.SendSuccess(w, "Registration successful", ProfileResponse{Username: req.Username})
 }
 
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {

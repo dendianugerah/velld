@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Database, Download, History, GitCompare, RefreshCw, RotateCcw, Cloud, Trash2 } from "lucide-react";
+import { Database, Download, History, RefreshCw, RotateCcw, Cloud, Trash2 } from "lucide-react";
 import { formatDistanceToNow, parseISO, subDays, isAfter } from "date-fns";
 import { useBackup } from "@/hooks/use-backup";
 import { BackupList } from "@/types/backup";
@@ -13,11 +13,7 @@ import { HistoryListSkeleton } from "@/components/ui/skeleton/history-list";
 import { calculateDuration, formatSize } from "@/lib/helper";
 import { HistoryFilters } from "./history-filters";
 import { CustomPagination } from "@/components/ui/custom-pagination";
-import { useNotifications } from '@/hooks/use-notifications';
-import { NotificationSidebar } from "./notification-sidebar";
-import { BackupCompareDialog } from "./backup-compare-dialog";
 import { RestoreDialog } from "./restore-dialog";
-import { BackupDetailsSheet } from "./backup-details-sheet";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import {
   Dialog,
@@ -32,13 +28,8 @@ import { useIsFetching } from "@tanstack/react-query";
 
 export function HistoryList() {
   const { backups, isLoading, pagination, page, setPage, downloadBackupFile, isDownloading, search, setSearch, deleteBackupById, isDeleting } = useBackup();
-  const { notifications, isLoading: isLoadingNotifications, markNotificationsAsRead } = useNotifications();
-  const [compareDialogOpen, setCompareDialogOpen] = useState(false);
-  const [selectedBackupForCompare, setSelectedBackupForCompare] = useState<BackupList | undefined>();
   const [restoreDialogOpen, setRestoreDialogOpen] = useState(false);
   const [selectedBackupForRestore, setSelectedBackupForRestore] = useState<BackupList | null>(null);
-  const [detailsSheetOpen, setDetailsSheetOpen] = useState(false);
-  const [selectedBackupForDetails, setSelectedBackupForDetails] = useState<BackupList | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedBackupForDelete, setSelectedBackupForDelete] = useState<BackupList | null>(null);
   const isFetchingBackups = useIsFetching({ queryKey: ['backups'] });
@@ -48,15 +39,6 @@ export function HistoryList() {
   const [databaseType, setDatabaseType] = useState("all");
 
   const totalPages = pagination?.total_pages || 1;
-
-  const handleCompare = (backup?: BackupList) => {
-    if (backup) {
-      setSelectedBackupForCompare(backup);
-    } else if (filteredBackups && filteredBackups.length > 0) {
-      setSelectedBackupForCompare(filteredBackups[0]);
-    }
-    setCompareDialogOpen(true);
-  };
 
   const handleRestore = (backup: BackupList) => {
     setSelectedBackupForRestore(backup);
@@ -134,7 +116,6 @@ export function HistoryList() {
               )}
             </div>
             <HistoryFilters 
-              onCompare={filteredBackups && filteredBackups.length > 1 ? () => handleCompare() : undefined}
               search={search}
               onSearchChange={setSearch}
               dateRange={dateRange}
@@ -148,7 +129,7 @@ export function HistoryList() {
             />
           </div>
         </div>
-        <div className="flex flex-col lg:flex-row p-4 sm:p-6 gap-4 flex-1">
+        <div className="flex flex-col p-4 sm:p-6 flex-1">
           <div className="flex-1 flex flex-col min-w-0">
             <div className="flex-1 space-y-4">
               {isLoading ? (
@@ -215,15 +196,6 @@ export function HistoryList() {
                               Download
                             </Button>
                           </div>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => handleCompare(item)}
-                            className="w-full"
-                          >
-                            <GitCompare className="h-4 w-4 mr-1" />
-                            Compare with Another
-                          </Button>
                           <Button
                             variant="outline"
                             size="sm"
@@ -294,21 +266,6 @@ export function HistoryList() {
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    onClick={() => handleCompare(item)}
-                                    >
-                                    <GitCompare className="h-4 w-4" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent side="top">
-                                  <p className="text-xs">Compare with another backup</p>
-                                </TooltipContent>
-                              </Tooltip>
-
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
                                     onClick={() => downloadBackupFile({ id: item.id, path: item.path })}
                                     disabled={isDownloading}
                                     >
@@ -362,61 +319,13 @@ export function HistoryList() {
               </div>
             )}
           </div>
-
-          <NotificationSidebar 
-            notifications={notifications}
-            isLoading={isLoadingNotifications}
-            onMarkAsRead={markNotificationsAsRead}
-            onNotificationClick={(notification) => {
-              // For failed backups, create a backup object from notification metadata
-              // since failed backups don't exist in the database
-              if (notification.metadata) {
-                const failedBackup: BackupList = {
-                  id: notification.id,
-                  connection_id: notification.metadata.connection_id || '',
-                  database_name: notification.metadata.database_name || '',
-                  database_type: notification.metadata.database_type || '',
-                  path: '',
-                  size: 0,
-                  status: 'failed',
-                  started_time: notification.created_at,
-                  completed_time: notification.created_at,
-                  created_at: notification.created_at,
-                  scheduled_time: '',
-                  updated_at: notification.created_at,
-                };
-                
-                setSelectedBackupForDetails(failedBackup);
-                setDetailsSheetOpen(true);
-              }
-            }}
-          />
         </div>
       </div>
-
-      <BackupCompareDialog
-        open={compareDialogOpen}
-        onClose={() => {
-          setCompareDialogOpen(false);
-          setSelectedBackupForCompare(undefined);
-        }}
-        backups={filteredBackups || []}
-        selectedBackup={selectedBackupForCompare}
-      />
 
       <RestoreDialog
         backup={selectedBackupForRestore}
         open={restoreDialogOpen}
         onOpenChange={setRestoreDialogOpen}
-      />
-
-      <BackupDetailsSheet
-        backup={selectedBackupForDetails}
-        open={detailsSheetOpen}
-        onClose={() => {
-          setDetailsSheetOpen(false);
-          setSelectedBackupForDetails(null);
-        }}
       />
 
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

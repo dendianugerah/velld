@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Bell, Mail, Info, Webhook } from "lucide-react";
+import { Mail, Info, Webhook } from "lucide-react";
 import { useSettings } from "@/hooks/use-settings";
 import { Skeleton } from "@/components/ui/skeleton";
 import { UpdateSettingsRequest } from "@/types/settings";
@@ -25,7 +25,7 @@ export function NotificationSettings() {
           <Skeleton className="h-4 w-64 mt-2" />
         </CardHeader>
         <CardContent className="space-y-6">
-          {[1, 2, 3].map((i) => (
+          {[1, 2].map((i) => (
             <div key={i} className="flex items-center justify-between p-4 rounded-lg border">
               <div className="flex items-center gap-3">
                 <Skeleton className="h-10 w-10 rounded-md" />
@@ -81,26 +81,6 @@ export function NotificationSettings() {
                 You will only receive notifications when a backup fails. Successful backups run silently in the background.
               </p>
             </div>
-          </div>
-
-          {/* Dashboard Notifications */}
-          <div className="flex items-center justify-between p-4 rounded-lg border bg-background/50">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-md bg-primary/10">
-                <Bell className="w-4 h-4 text-primary" />
-              </div>
-              <div>
-                <p className="text-sm font-medium">Dashboard Notifications</p>
-                <p className="text-xs text-muted-foreground">
-                  Show notifications in the dashboard
-                </p>
-              </div>
-            </div>
-            <Switch
-              checked={settings?.notify_dashboard ?? false}
-              disabled={isUpdating}
-              onCheckedChange={(checked) => handleSwitchChange('notify_dashboard', checked)}
-            />
           </div>
 
           {/* Email Notifications */}

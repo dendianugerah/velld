@@ -89,9 +89,6 @@ func (s *SettingsService) UpdateUserSettings(userID uuid.UUID, req *UpdateSettin
 	envSMTPPass := os.Getenv("SMTP_PASSWORD") != ""
 	envSMTPFrom := os.Getenv("SMTP_FROM") != ""
 
-	if req.NotifyDashboard != nil {
-		settings.NotifyDashboard = *req.NotifyDashboard
-	}
 	if req.NotifyEmail != nil {
 		settings.NotifyEmail = *req.NotifyEmail
 	}
