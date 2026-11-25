@@ -138,13 +138,12 @@ func (h *BackupHandler) ScheduleBackup(w http.ResponseWriter, r *http.Request) {
 		response.SendError(w, http.StatusBadRequest, "cron_schedule is required")
 		return
 	}
-	if req.RetentionDays <= 0 {
-		response.SendError(w, http.StatusBadRequest, "retention_days must be greater than 0")
-		return
-	}
-
 	err := h.backupService.ScheduleBackup(&req)
 	if err != nil {
+		if err == errInvalidRetention {
+			response.SendError(w, http.StatusBadRequest, err.Error())
+			return
+		}
 		response.SendError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -183,13 +182,12 @@ func (h *BackupHandler) UpdateBackupSchedule(w http.ResponseWriter, r *http.Requ
 		response.SendError(w, http.StatusBadRequest, "cron_schedule is required")
 		return
 	}
-	if req.RetentionDays <= 0 {
-		response.SendError(w, http.StatusBadRequest, "retention_days must be greater than 0")
-		return
-	}
-
 	err := h.backupService.UpdateBackupSchedule(connectionID, &req)
 	if err != nil {
+		if err == errInvalidRetention {
+			response.SendError(w, http.StatusBadRequest, err.Error())
+			return
+		}
 		if err == sql.ErrNoRows {
 			response.SendError(w, http.StatusNotFound, "No active schedule found")
 			return

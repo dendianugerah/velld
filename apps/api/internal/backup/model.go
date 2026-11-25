@@ -13,6 +13,7 @@ type BackupSchedule struct {
 	Enabled        bool       `json:"enabled"`
 	CronSchedule   string     `json:"cron_schedule"`
 	RetentionDays  int        `json:"retention_days"`
+	RetentionCount int        `json:"retention_count"`
 	NextRunTime    *time.Time `json:"next_run_time"`
 	LastBackupTime *time.Time `json:"last_backup_time"`
 	CreatedAt      time.Time  `json:"created_at"`
@@ -58,9 +59,10 @@ type BackupRequest struct {
 
 // ScheduleBackupRequest represents a request to create a backup schedule
 type ScheduleBackupRequest struct {
-	ConnectionID  string `json:"connection_id"`
-	CronSchedule  string `json:"cron_schedule"`
-	RetentionDays int    `json:"retention_days"`
+	ConnectionID   string `json:"connection_id"`
+	CronSchedule   string `json:"cron_schedule"`
+	RetentionDays  int    `json:"retention_days"`
+	RetentionCount *int   `json:"retention_count"`
 }
 
 // PaginatedBackupResponse represents a paginated response of backups
@@ -88,6 +90,7 @@ type BackupListOptions struct {
 }
 
 type UpdateScheduleRequest struct {
-	CronSchedule  string `json:"cron_schedule"`
-	RetentionDays int    `json:"retention_days"`
+	CronSchedule   string `json:"cron_schedule"`
+	RetentionDays  int    `json:"retention_days"`
+	RetentionCount *int   `json:"retention_count"`
 }

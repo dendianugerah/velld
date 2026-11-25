@@ -74,5 +74,6 @@ type ConnectionListItem struct {
 	BackupEnabled        bool    `json:"backup_enabled"`
 	CronSchedule         *string `json:"cron_schedule"`
 	RetentionDays        *int    `json:"retention_days"`
+	RetentionCount       *int    `json:"retention_count"`
 	S3CleanupOnRetention bool    `json:"s3_cleanup_on_retention"`
 }

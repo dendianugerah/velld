@@ -281,6 +281,7 @@ func (r *ConnectionRepository) ListByUserID(userID uuid.UUID) ([]ConnectionListI
 			COALESCE(bs.enabled, false) as backup_enabled,
 			bs.cron_schedule,
 			bs.retention_days,
+			bs.retention_count,
 			COALESCE(c.s3_cleanup_on_retention, 1) as s3_cleanup_on_retention
 		FROM connections c
 		LEFT JOIN backup_schedules bs ON c.id = bs.connection_id AND bs.enabled = true
@@ -291,7 +292,7 @@ func (r *ConnectionRepository) ListByUserID(userID uuid.UUID) ([]ConnectionListI
 				WHERE connection_id = c.id
 			)
 		WHERE c.user_id = $1
-		GROUP BY c.id, c.name, c.type, c.host, c.status, c.database_size, b.completed_time, bs.enabled, bs.cron_schedule, bs.retention_days, c.s3_cleanup_on_retention
+		GROUP BY c.id, c.name, c.type, c.host, c.status, c.database_size, b.completed_time, bs.enabled, bs.cron_schedule, bs.retention_days, bs.retention_count, c.s3_cleanup_on_retention
 	`
 
 	rows, err := r.db.Query(query, userID)
@@ -319,6 +320,7 @@ func (r *ConnectionRepository) ListByUserID(userID uuid.UUID) ([]ConnectionListI
 			&conn.BackupEnabled,
 			&cronSchedule,
 			&retentionDays,
+			&conn.RetentionCount,
 			&s3CleanupInt,
 		)
 		if err != nil {

@@ -35,11 +35,11 @@ func (r *BackupRepository) CreateBackupSchedule(schedule *BackupSchedule) error 
 	now := time.Now().Format(time.RFC3339)
 	_, err := r.db.Exec(`
 		INSERT INTO backup_schedules (
-			id, connection_id, enabled, cron_schedule, retention_days,
+			id, connection_id, enabled, cron_schedule, retention_days, retention_count,
 			next_run_time, last_backup_time, created_at, updated_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
 		schedule.ID, schedule.ConnectionID, schedule.Enabled,
-		schedule.CronSchedule, schedule.RetentionDays,
+		schedule.CronSchedule, schedule.RetentionDays, schedule.RetentionCount,
 		nextRunStr, lastBackupStr, now, now)
 	return err
 }
@@ -62,16 +62,18 @@ func (r *BackupRepository) UpdateBackupSchedule(schedule *BackupSchedule) error 
 		SET enabled = $1, 
 		    cron_schedule = $2, 
 		    retention_days = $3, 
-		    next_run_time = $4,
-		    last_backup_time = $5,
-		    updated_at = $6
-		WHERE id = $7
+		    retention_count = $4,
+		    next_run_time = $5,
+		    last_backup_time = $6,
+		    updated_at = $7
+		WHERE id = $8
 	`
 
 	_, err := r.db.Exec(query,
 		schedule.Enabled,
 		schedule.CronSchedule,
 		schedule.RetentionDays,
+		schedule.RetentionCount,
 		nextRunStr,
 		lastBackupStr,
 		time.Now(),
@@ -83,6 +85,13 @@ func (r *BackupRepository) UpdateBackupSchedule(schedule *BackupSchedule) error 
 	return nil
 }
 
+func (r *BackupRepository) recordScheduleRun(id string, nextRun, lastRun time.Time) error {
+	_, err := r.db.Exec(`
+		UPDATE backup_schedules SET next_run_time = $1, last_backup_time = $2, updated_at = $2
+		WHERE id = $3`, nextRun.Format(time.RFC3339), lastRun.Format(time.RFC3339), id)
+	return err
+}
+
 func (r *BackupRepository) GetBackupSchedule(connectionID string) (*BackupSchedule, error) {
 	var (
 		nextRunStr    sql.NullString
@@ -92,14 +101,14 @@ func (r *BackupRepository) GetBackupSchedule(connectionID string) (*BackupSchedu
 	)
 	schedule := &BackupSchedule{}
 	err := r.db.QueryRow(`
-		SELECT id, connection_id, enabled, cron_schedule, retention_days,
+		SELECT id, connection_id, enabled, cron_schedule, COALESCE(retention_days, 0), retention_count,
 		       next_run_time, last_backup_time, created_at, updated_at 
 		FROM backup_schedules 
 		WHERE connection_id = $1
 		ORDER BY created_at DESC LIMIT 1`,
 		connectionID).Scan(
 		&schedule.ID, &schedule.ConnectionID, &schedule.Enabled,
-		&schedule.CronSchedule, &schedule.RetentionDays,
+		&schedule.CronSchedule, &schedule.RetentionDays, &schedule.RetentionCount,
 		&nextRunStr, &lastBackupStr, &createdAtStr, &updatedAtStr)
 	if err != nil {
 		return nil, err
@@ -141,7 +150,7 @@ func (r *BackupRepository) GetBackupSchedule(connectionID string) (*BackupSchedu
 
 func (r *BackupRepository) GetAllActiveSchedules() ([]*BackupSchedule, error) {
 	rows, err := r.db.Query(`
-		SELECT id, connection_id, enabled, cron_schedule, retention_days,
+		SELECT id, connection_id, enabled, cron_schedule, COALESCE(retention_days, 0), retention_count,
 		       next_run_time, last_backup_time, created_at, updated_at 
 		FROM backup_schedules 
 		WHERE enabled = true
@@ -162,7 +171,7 @@ func (r *BackupRepository) GetAllActiveSchedules() ([]*BackupSchedule, error) {
 		schedule := &BackupSchedule{}
 		err := rows.Scan(
 			&schedule.ID, &schedule.ConnectionID, &schedule.Enabled,
-			&schedule.CronSchedule, &schedule.RetentionDays,
+			&schedule.CronSchedule, &schedule.RetentionDays, &schedule.RetentionCount,
 			&nextRunStr, &lastBackupStr, &createdAtStr, &updatedAtStr)
 		if err != nil {
 			return nil, err
@@ -226,14 +235,17 @@ func (r *BackupRepository) UpdateBackupStatus(id string, status string) error {
 	return err
 }
 
-func (r *BackupRepository) GetBackupsOlderThan(connectionID string, cutoffTime time.Time) ([]*Backup, error) {
+func (r *BackupRepository) getBackupsOutsideRetention(connectionID string, cutoffTime *time.Time, count int) ([]*Backup, error) {
 	rows, err := r.db.Query(`
-		SELECT id, path, s3_object_key, created_at 
-		FROM backups 
-		WHERE connection_id = $1 
-		AND created_at < $2 
-		AND status = 'completed'`,
-		connectionID, cutoffTime)
+		WITH ranked AS (
+			SELECT id, path, s3_object_key, julianday(created_at) AS created,
+			       ROW_NUMBER() OVER (ORDER BY julianday(created_at) DESC, created_at DESC, id DESC) AS backup_rank
+			FROM backups
+			WHERE connection_id = $1 AND status = 'completed'
+		)
+		SELECT id, path, s3_object_key FROM ranked
+		WHERE created < julianday($2) OR ($3 > 0 AND backup_rank > $3)`,
+		connectionID, cutoffTime, count)
 	if err != nil {
 		return nil, err
 	}
@@ -242,19 +254,21 @@ func (r *BackupRepository) GetBackupsOlderThan(connectionID string, cutoffTime t
 	var backups []*Backup
 	for rows.Next() {
 		backup := &Backup{}
-		var createdAtStr string
-		err := rows.Scan(&backup.ID, &backup.Path, &backup.S3ObjectKey, &createdAtStr)
+		err := rows.Scan(&backup.ID, &backup.Path, &backup.S3ObjectKey)
 		if err != nil {
 			return nil, err
 		}
-		createdAt, err := common.ParseTime(createdAtStr)
-		if err != nil {
-			return nil, fmt.Errorf("error parsing created_at: %v", err)
-		}
-		backup.CreatedAt = createdAt
 		backups = append(backups, backup)
 	}
 	return backups, rows.Err()
+}
+
+func (r *BackupRepository) backupArtifactsAreShared(backup *Backup) (local, remote bool, err error) {
+	err = r.db.QueryRow(`
+		SELECT EXISTS(SELECT 1 FROM backups WHERE id <> $1 AND path = $2),
+		       EXISTS(SELECT 1 FROM backups WHERE id <> $1 AND s3_object_key = $3)`,
+		backup.ID, backup.Path, backup.S3ObjectKey).Scan(&local, &remote)
+	return
 }
 
 func (r *BackupRepository) DeleteBackup(id string) error {

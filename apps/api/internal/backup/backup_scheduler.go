@@ -3,6 +3,7 @@ package backup
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -11,11 +12,32 @@ import (
 	"github.com/robfig/cron/v3"
 )
 
+var errInvalidRetention = errors.New("retention_days and retention_count must be nonnegative, and at least one must be greater than 0")
+
+func resolveRetentionCount(days int, requested *int, current int) (int, error) {
+	if requested != nil {
+		current = *requested
+	}
+	if days < 0 || current < 0 || (days == 0 && current == 0) {
+		return 0, errInvalidRetention
+	}
+	return current, nil
+}
+
 func (s *BackupService) ScheduleBackup(req *ScheduleBackupRequest) error {
 	// Check if a schedule already exists for this connection
 	existingSchedule, err := s.backupRepo.GetBackupSchedule(req.ConnectionID)
 	if err != nil && err != sql.ErrNoRows {
 		return fmt.Errorf("failed to check existing schedule: %v", err)
+	}
+
+	var currentCount int
+	if existingSchedule != nil {
+		currentCount = existingSchedule.RetentionCount
+	}
+	retentionCount, err := resolveRetentionCount(req.RetentionDays, req.RetentionCount, currentCount)
+	if err != nil {
+		return err
 	}
 
 	parser := cron.NewParser(cron.Second | cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow)
@@ -31,6 +53,7 @@ func (s *BackupService) ScheduleBackup(req *ScheduleBackupRequest) error {
 		existingSchedule.Enabled = true
 		existingSchedule.CronSchedule = req.CronSchedule
 		existingSchedule.RetentionDays = req.RetentionDays
+		existingSchedule.RetentionCount = retentionCount
 		existingSchedule.NextRunTime = &nextRun
 		existingSchedule.UpdatedAt = time.Now()
 
@@ -57,14 +80,15 @@ func (s *BackupService) ScheduleBackup(req *ScheduleBackupRequest) error {
 
 	// Create new schedule if none exists
 	backupSchedule := &BackupSchedule{
-		ID:            uuid.New(),
-		ConnectionID:  req.ConnectionID,
-		Enabled:       true,
-		CronSchedule:  req.CronSchedule,
-		RetentionDays: req.RetentionDays,
-		NextRunTime:   &nextRun,
-		CreatedAt:     time.Now(),
-		UpdatedAt:     time.Now(),
+		ID:             uuid.New(),
+		ConnectionID:   req.ConnectionID,
+		Enabled:        true,
+		CronSchedule:   req.CronSchedule,
+		RetentionDays:  req.RetentionDays,
+		RetentionCount: retentionCount,
+		NextRunTime:    &nextRun,
+		CreatedAt:      time.Now(),
+		UpdatedAt:      time.Now(),
 	}
 
 	if err := s.backupRepo.CreateBackupSchedule(backupSchedule); err != nil {
@@ -104,27 +128,37 @@ func (s *BackupService) executeCronBackup(schedule *BackupSchedule) {
 		}
 	}
 
-	// Update schedule's next run time and last backup time
+	current, err := s.backupRepo.GetBackupSchedule(schedule.ConnectionID)
+	if err != nil {
+		fmt.Printf("Error reading backup schedule after run: %v\n", err)
+		return
+	}
+	if !current.Enabled || current.ID != schedule.ID {
+		return
+	}
 	parser := cron.NewParser(cron.Second | cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow)
-	cronSchedule, _ := parser.Parse(schedule.CronSchedule)
-	nextRun := cronSchedule.Next(time.Now())
-	schedule.NextRunTime = &nextRun
+	cronSchedule, err := parser.Parse(current.CronSchedule)
+	if err != nil {
+		fmt.Printf("Error parsing backup schedule after run: %v\n", err)
+		return
+	}
 	now := time.Now()
-	schedule.LastBackupTime = &now
-	schedule.UpdatedAt = now
-
-	if err := s.backupRepo.UpdateBackupSchedule(schedule); err != nil {
+	if err := s.backupRepo.recordScheduleRun(current.ID.String(), cronSchedule.Next(now), now); err != nil {
 		fmt.Printf("Error updating backup schedule: %v\n", err)
 	}
 
-	if schedule.RetentionDays > 0 {
-		s.cleanupOldBackups(schedule.ConnectionID, schedule.RetentionDays)
+	if current.RetentionDays > 0 || current.RetentionCount > 0 {
+		s.cleanupOldBackups(current.ConnectionID, current.RetentionDays, current.RetentionCount)
 	}
 }
 
-func (s *BackupService) cleanupOldBackups(connectionID string, retentionDays int) {
-	cutoffTime := time.Now().AddDate(0, 0, -retentionDays)
-	oldBackups, err := s.backupRepo.GetBackupsOlderThan(connectionID, cutoffTime)
+func (s *BackupService) cleanupOldBackups(connectionID string, retentionDays, retentionCount int) {
+	var cutoffTime *time.Time
+	if retentionDays > 0 {
+		cutoff := time.Now().AddDate(0, 0, -retentionDays)
+		cutoffTime = &cutoff
+	}
+	oldBackups, err := s.backupRepo.getBackupsOutsideRetention(connectionID, cutoffTime, retentionCount)
 	if err != nil {
 		fmt.Printf("Error fetching old backups for cleanup: %v\n", err)
 		return
@@ -150,12 +184,12 @@ func (s *BackupService) cleanupOldBackups(connectionID string, retentionDays int
 
 	// Initialize S3 client if S3 is enabled and configured
 	var s3Storage *S3Storage
-	if userSettings != nil && userSettings.S3Enabled && 
-	   userSettings.S3Endpoint != nil && *userSettings.S3Endpoint != "" &&
-	   userSettings.S3Bucket != nil && *userSettings.S3Bucket != "" &&
-	   userSettings.S3AccessKey != nil && *userSettings.S3AccessKey != "" &&
-	   userSettings.S3SecretKey != nil && *userSettings.S3SecretKey != "" {
-		
+	if userSettings != nil && userSettings.S3Enabled &&
+		userSettings.S3Endpoint != nil && *userSettings.S3Endpoint != "" &&
+		userSettings.S3Bucket != nil && *userSettings.S3Bucket != "" &&
+		userSettings.S3AccessKey != nil && *userSettings.S3AccessKey != "" &&
+		userSettings.S3SecretKey != nil && *userSettings.S3SecretKey != "" {
+
 		secretKey, err := s.cryptoService.Decrypt(*userSettings.S3SecretKey)
 		if err != nil {
 			fmt.Printf("Warning: Failed to decrypt S3 secret key for cleanup: %v\n", err)
@@ -192,25 +226,33 @@ func (s *BackupService) cleanupOldBackups(connectionID string, retentionDays int
 	ctx := context.Background()
 	for _, backup := range oldBackups {
 		backupID := backup.ID.String()
-		
+		localShared, remoteShared, err := s.backupRepo.backupArtifactsAreShared(backup)
+		if err != nil {
+			fmt.Printf("Error checking for shared files for backup %s: %v\n", backupID, err)
+			continue
+		}
+
 		// Delete from S3 if object key exists, S3 is configured, and connection has S3 cleanup enabled
-		if backup.S3ObjectKey != nil && *backup.S3ObjectKey != "" && s3Storage != nil && conn.S3CleanupOnRetention {
+		if !remoteShared && backup.S3ObjectKey != nil && *backup.S3ObjectKey != "" && s3Storage != nil && conn.S3CleanupOnRetention {
 			if err := s3Storage.DeleteFile(ctx, *backup.S3ObjectKey); err != nil {
-				fmt.Printf("Warning: Failed to delete S3 object %s for backup %s: %v\n", 
+				fmt.Printf("Warning: Failed to delete S3 object %s for backup %s: %v\n",
 					*backup.S3ObjectKey, backupID, err)
 			} else {
-				fmt.Printf("Deleted S3 object %s for backup %s (retention cleanup)\n", 
+				fmt.Printf("Deleted S3 object %s for backup %s (retention cleanup)\n",
 					*backup.S3ObjectKey, backupID)
 			}
 		}
 
 		// Delete local file if it exists
-		if _, err := os.Stat(backup.Path); err == nil {
+		if !localShared && backup.Path != "" {
 			if err := os.Remove(backup.Path); err != nil {
-				fmt.Printf("Warning: Failed to delete local file %s for backup %s: %v\n", 
-					backup.Path, backupID, err)
+				if !os.IsNotExist(err) {
+					fmt.Printf("Warning: Failed to delete local file %s for backup %s: %v\n",
+						backup.Path, backupID, err)
+					continue
+				}
 			} else {
-				fmt.Printf("Deleted local file %s for backup %s (retention cleanup)\n", 
+				fmt.Printf("Deleted local file %s for backup %s (retention cleanup)\n",
 					backup.Path, backupID)
 			}
 		}
@@ -223,7 +265,7 @@ func (s *BackupService) cleanupOldBackups(connectionID string, retentionDays int
 		}
 	}
 
-	fmt.Printf("Retention cleanup completed: processed %d old backups for connection %s\n", 
+	fmt.Printf("Retention cleanup completed: processed %d old backups for connection %s\n",
 		len(oldBackups), connectionID)
 }
 
@@ -253,6 +295,10 @@ func (s *BackupService) UpdateBackupSchedule(connectionID string, req *UpdateSch
 	if err != nil {
 		return err
 	}
+	retentionCount, err := resolveRetentionCount(req.RetentionDays, req.RetentionCount, schedule.RetentionCount)
+	if err != nil {
+		return err
+	}
 
 	parser := cron.NewParser(cron.Second | cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow)
 	_, err = parser.Parse(req.CronSchedule)
@@ -262,6 +308,7 @@ func (s *BackupService) UpdateBackupSchedule(connectionID string, req *UpdateSch
 
 	schedule.CronSchedule = req.CronSchedule
 	schedule.RetentionDays = req.RetentionDays
+	schedule.RetentionCount = retentionCount
 	err = s.backupRepo.UpdateBackupSchedule(schedule)
 	if err != nil {
 		return err
