@@ -1,12 +1,13 @@
 .home {
   color-scheme: light;
-  --page: #f8f9f6;
+  --page: #faf9f6;
   --surface: #fff;
-  --ink: #292c29;
-  --muted: #777c76;
-  --line: #e5e8e1;
-  --green: #41855b;
+  --ink: #252922;
+  --muted: #6d726a;
+  --line: #e4e4dc;
+  --green: #36764d;
   --soft-green: #edf4e9;
+  --ease: cubic-bezier(0.22, 0.68, 0, 1);
   background: var(--page);
   color: var(--ink);
   font-size: 14px;
@@ -28,12 +29,12 @@
 }
 .home a:focus-visible,
 .home button:focus-visible {
-  outline: 3px solid #6d9cda;
-  outline-offset: 5px;
+  outline: 2px solid #357eb6;
+  outline-offset: 4px;
 }
 .home section[id],
 .home main {
-  scroll-margin-top: 30px;
+  scroll-margin-top: 116px;
 }
 .srOnly,
 .skipLink:not(:focus) {
@@ -57,7 +58,8 @@
   border-radius: 8px;
 }
 .header {
-  position: relative;
+  position: sticky;
+  top: -9px;
   z-index: 10;
   padding: 23px 24px 0;
 }
@@ -69,16 +71,19 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
   border: 1px solid var(--line);
   border-radius: 17px;
-  background: var(--surface);
+  background: #ffffffed;
+  backdrop-filter: blur(16px);
   box-shadow:
-    0 3px 3px #292c2903,
-    0 7px 22px #292c2904;
+    0 1px 2px #292c2905,
+    0 7px 22px #292c2908;
 }
 .brand {
   display: inline-flex;
   align-items: center;
+  flex-shrink: 0;
   gap: 8px;
   font-size: 25px;
   letter-spacing: -1.5px;
@@ -89,15 +94,28 @@
   border-radius: 8px;
 }
 .brandDot {
-  color: #609473;
+  color: var(--green);
 }
 .navLinks {
   display: flex;
   align-items: center;
-  gap: 30px;
+  gap: 8px;
   font-size: 12px;
-  color: #6a7069;
+  color: #555e51;
   font-weight: 500;
+}
+.navLinks > a:not(.navGithub) {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 9px 12px;
+  border-radius: 9px;
+  transition:
+    background 160ms var(--ease),
+    color 160ms var(--ease);
+}
+.navLinks > a:not(.navGithub):hover {
+  background: #eff1e9;
 }
 .navLinks > a:not(.navGithub):hover,
 .footer a:hover {
@@ -116,8 +134,8 @@
     inset 0 1px 0 #ffffff30,
     0 2px 3px #29312715;
   transition:
-    transform 180ms ease,
-    box-shadow 180ms ease;
+    transform 180ms var(--ease),
+    box-shadow 180ms var(--ease);
 }
 .navGithub > span {
   color: #b9c2b5;
@@ -128,7 +146,7 @@
   position: relative;
   margin: auto;
   text-align: center;
-  padding: 92px 24px 66px;
+  padding: 86px 24px 58px;
 }
 .openSource {
   display: inline-flex;
@@ -139,9 +157,9 @@
   box-shadow: 0 2px 3px #28312804;
   padding: 8px 12px;
   border-radius: 30px;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 500;
-  color: #70786c;
+  color: #56644f;
 }
 .statusDot {
   display: inline-block;
@@ -154,8 +172,8 @@
 }
 .title {
   margin: 30px auto 23px;
-  font-size: clamp(40px, 5.6vw, 73px);
-  line-height: 1.45;
+  font-size: clamp(40px, 5.8vw, 76px);
+  line-height: 1.43;
   font-weight: 650;
   letter-spacing: -4px;
 }
@@ -166,29 +184,29 @@
   display: inline-flex;
   align-items: center;
   gap: 12px;
-  border: 1px solid #dfe5e9;
+  border: 1px solid #cedde7;
   border-radius: 15px;
-  background: linear-gradient(175deg, #fff 55%, #f7faff);
+  background: linear-gradient(175deg, #f9fdff, #edf5fc);
   padding: 0 17px 1px 10px;
   line-height: 1.18;
   box-shadow:
-    0 4px 0 #dfe4e541,
+    0 4px 0 #cddce760,
     0 9px 17px #263b4810;
   vertical-align: 2px;
   font-weight: 620;
   transition:
-    transform 250ms ease,
-    box-shadow 250ms ease;
+    transform 250ms var(--ease),
+    box-shadow 250ms var(--ease);
 }
 .databaseChip {
-  color: #4488bd;
+  color: #2875ad;
   transform: rotate(-2deg);
 }
 .buildingChip {
-  color: #4c8a60;
+  color: #34774b;
   transform: rotate(1.5deg);
-  background: linear-gradient(175deg, #fff 55%, #f5faf4);
-  border-color: #e0e7db;
+  background: linear-gradient(175deg, #fbfff8, #edf5e7);
+  border-color: #d3dfcb;
 }
 .chipIcon {
   display: inline-flex;
@@ -232,7 +250,7 @@
   box-shadow: 0 5px 12px #2d352919;
 }
 .compatibility {
-  margin-top: 37px;
+  margin-top: 32px;
   display: flex;
   flex-direction: column;
   gap: 13px;
@@ -240,7 +258,7 @@
 }
 .compatibility > span {
   font-size: 10px;
-  color: #92968d;
+  color: #6a7460;
 }
 .compatibility ul {
   display: flex;
@@ -255,21 +273,30 @@
   display: flex;
   gap: 5px;
   align-items: center;
-  color: #777e72;
-  font-size: 11px;
+  color: #5e6856;
+  font-size: 12px;
   font-weight: 500;
 }
-.compatibility li > span {
-  display: flex;
+.databaseMark {
+  display: inline-block;
+  width: 17px;
+  height: 17px;
+  background: currentColor;
+  mask: var(--mark) center / contain no-repeat;
 }
+/* Database marks: Simple Icons 15.0.0, CC0 (github.com/simple-icons/simple-icons). */
 .postgres {
-  color: #6992b0;
+  --mark: url('/images/postgresql.svg');
+  color: #416b8b;
 }
 .mysql {
-  color: #d29c5a;
+  --mark: url('/images/mysql.svg');
+  color: #996e35;
+  width: 23px;
 }
 .mongo {
-  color: #69a574;
+  --mark: url('/images/mongodb.svg');
+  color: #4c8242;
 }
 .preview {
   max-width: 1060px;
@@ -281,8 +308,8 @@
   justify-content: space-between;
   align-items: center;
   padding: 0 7px 14px;
-  color: #737d6d;
-  font-size: 10px;
+  color: #64715a;
+  font-size: 11px;
 }
 .previewCaption > span:first-child {
   display: flex;
@@ -293,7 +320,7 @@
   padding: 7px;
   border: 1px solid #dce2d6;
   border-radius: 17px;
-  background: #edf0e9;
+  background: #f0f0e8;
   box-shadow:
     0 10px 40px #35463109,
     0 35px 80px -50px #35463140;
@@ -304,7 +331,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 0 8px 6px;
-  color: #90978a;
+  color: #737d69;
   font-family: monospace;
   font-size: 9px;
 }
@@ -361,8 +388,8 @@
   box-shadow: 0 3px 12px #292c2910;
   font-size: 11px;
   transition:
-    opacity 180ms ease,
-    transform 180ms ease;
+    opacity 180ms var(--ease),
+    transform 180ms var(--ease);
 }
 .previewFootnote {
   display: flex;
@@ -370,8 +397,8 @@
   align-items: center;
   gap: 6px;
   margin: 21px 0 0;
-  font-size: 10px;
-  color: #8a9382;
+  font-size: 11px;
+  color: #6e7b61;
 }
 .setup h2 {
   font-size: 44px;
@@ -397,7 +424,7 @@
 .setup {
   max-width: 1060px;
   margin: 0 auto;
-  padding: 90px 0 76px;
+  padding: 78px 0 64px;
 }
 .steps {
   list-style: none;
@@ -431,7 +458,7 @@
   font-weight: 650;
   box-shadow: 0 3px 0 #d9e5ee, 0 6px 10px #263b4808;
   transform: rotate(-5deg);
-  transition: transform 180ms ease;
+  transition: transform 180ms var(--ease);
 }
 .steps li:nth-child(2) .stepNumber {
   color: #9c773a;
@@ -469,7 +496,7 @@
   color: var(--green);
   font-size: 13px;
   margin-top: 18px;
-  transition: gap 180ms ease;
+  transition: gap 180ms var(--ease);
 }
 .steps a:hover {
   gap: 12px;
@@ -487,10 +514,13 @@
 }
 .command code {
   min-width: 0;
-  overflow-wrap: anywhere;
+  overflow-wrap: normal;
   line-height: 1.6;
-  color: #747c6d;
+  color: #53634a;
   user-select: all;
+}
+.command code > span {
+  white-space: nowrap;
 }
 .command button {
   display: inline-flex;
@@ -506,9 +536,9 @@
   border-radius: 6px;
   background: var(--surface);
   transition:
-    background 160ms ease,
-    color 160ms ease,
-    transform 160ms ease;
+    background 160ms var(--ease),
+    color 160ms var(--ease),
+    transform 160ms var(--ease);
 }
 .command button:hover {
   background: var(--soft-green);
@@ -528,6 +558,9 @@
   display: block;
   color: var(--green);
   font-size: 10px;
+}
+.copyStatus[data-state="error"] {
+  color: #aa503c;
 }
 .copyStatus:not(:empty) {
   margin-top: 6px;
@@ -558,8 +591,8 @@
   display: flex;
   gap: 23px;
   margin-left: auto;
-  font-size: 10px;
-  color: #7f8976;
+  font-size: 12px;
+  color: #66735a;
 }
 
 @media (min-width: 1600px) {
@@ -602,6 +635,7 @@
 }
 @media (max-width: 640px) {
   .header {
+    top: -4px;
     padding: 15px 16px 0;
   }
   .nav {
@@ -617,11 +651,15 @@
     height: 26px;
   }
   .navLinks {
-    gap: 18px;
-    font-size: 11px;
+    gap: 4px;
+    font-size: 12px;
+  }
+  .navLinks > a:not(.navGithub) {
+    padding: 9px 6px;
   }
   .navGithub {
-    padding: 9px 11px;
+    padding: 9px 10px;
+    gap: 6px;
   }
   .navGithub > span {
     margin-left: 1px;
@@ -630,7 +668,7 @@
     padding: 64px 15px 47px;
   }
   .openSource {
-    font-size: 8px;
+    font-size: 10px;
     gap: 7px;
     padding: 8px 10px;
   }
@@ -674,11 +712,15 @@
     gap: 14px;
   }
   .compatibility li {
-    font-size: 9px;
+    font-size: 11px;
     gap: 4px;
   }
-  .compatibility li svg {
-    width: 12px;
+  .databaseMark {
+    width: 15px;
+    height: 15px;
+  }
+  .mysql {
+    width: 20px;
   }
   .compatibility > span {
     font-size: 9px;
@@ -690,7 +732,7 @@
     margin-right: 19px;
   }
   .previewCaption {
-    font-size: 8px;
+    font-size: 10px;
     padding: 0 2px 9px;
   }
   .window {
@@ -716,7 +758,7 @@
     border-radius: 6px;
   }
   .previewFootnote {
-    font-size: 8px;
+    font-size: 10px;
     margin-top: 15px;
   }
   .preview {
@@ -749,8 +791,9 @@
   }
   .footer {
     padding: 28px 0;
-    gap: 10px;
-    align-items: flex-start;
+    gap: 18px;
+    flex-direction: column;
+    align-items: center;
   }
   .footer .brand {
     font-size: 19px;
@@ -761,9 +804,10 @@
     height: 21px;
   }
   .footer > div {
-    gap: 11px;
-    font-size: 8px;
-    padding-top: 6px;
+    gap: 22px;
+    font-size: 11px;
+    padding-top: 0;
+    margin-left: 0;
   }
 }
 .home .navLinks {
@@ -774,11 +818,44 @@
 }
 @media (max-width: 640px) {
   .home .navLinks {
-    gap: 12px;
+    gap: 4px;
     font-size: 12px;
   }
   .home .subtitle {
     font-size: 14px;
+  }
+}
+@media (max-width: 380px) {
+  .nav {
+    padding-left: 12px;
+    padding-right: 8px;
+  }
+  .nav .brand {
+    font-size: 21px;
+    gap: 6px;
+  }
+  .nav .brand img {
+    width: 24px;
+    height: 24px;
+  }
+  .home .navLinks {
+    font-size: 11px;
+    gap: 3px;
+  }
+  .navGithub {
+    padding: 9px 8px;
+    gap: 5px;
+  }
+  .navGithub svg {
+    width: 13px;
+    height: 13px;
+  }
+  .navGithub > span {
+    display: none;
+  }
+  .title {
+    font-size: clamp(23px, 7.1vw, 27px);
+    letter-spacing: -1.5px;
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -798,7 +875,7 @@
   .header,
   .hero > *,
   .preview {
-    animation: arrive 420ms ease-out both;
+    animation: arrive 480ms var(--ease) both;
   }
   .title {
     animation-delay: 40ms;
@@ -811,6 +888,14 @@
   }
   .preview {
     animation-delay: 160ms;
+  }
+  @supports (animation-timeline: view()) {
+    .setupIntro,
+    .steps li {
+      animation: arrive linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 85%;
+    }
   }
 }
 
@@ -836,6 +921,9 @@
 }
 
 @media (pointer: coarse) {
+  .navLinks > a {
+    min-height: 44px;
+  }
   .command button {
     width: 44px;
     height: 44px;

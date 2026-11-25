@@ -103,23 +103,26 @@ export default function HomePage() {
           </p>
           <div className={styles.compatibility}>
             <span>Works with</span>
-            <ul aria-label="Supported databases">
+            <ul aria-label="Supported databases" role="list">
               <li>
-                <span className={styles.postgres}>
-                  <Database size={14} aria-hidden="true" />
-                </span>
+                <span
+                  className={`${styles.databaseMark} ${styles.postgres}`}
+                  aria-hidden="true"
+                />
                 PostgreSQL
               </li>
               <li>
-                <span className={styles.mysql}>
-                  <Database size={14} aria-hidden="true" />
-                </span>
+                <span
+                  className={`${styles.databaseMark} ${styles.mysql}`}
+                  aria-hidden="true"
+                />
                 MySQL
               </li>
               <li>
-                <span className={styles.mongo}>
-                  <Database size={14} aria-hidden="true" />
-                </span>
+                <span
+                  className={`${styles.databaseMark} ${styles.mongo}`}
+                  aria-hidden="true"
+                />
                 MongoDB
               </li>
             </ul>
@@ -194,68 +197,89 @@ export default function HomePage() {
             </h2>
             <p>You’ll need Docker and Docker Compose installed.</p>
           </div>
-          <ol className={styles.steps}>
-              <li>
-                <span className={styles.stepNumber} aria-hidden="true">1</span>
-                <div>
-                  <h3>Clone it.</h3>
-                  <p>Get a copy of Velld on your server.</p>
-                  <div className={styles.command}>
-                    <code>{cloneCommand}</code>
-                    <button
-                      type="button"
-                      onClick={copyCommand}
-                      aria-label={
-                        copyState === "copied"
-                          ? "Command copied"
-                          : "Copy clone command"
-                      }
-                      title="Copy clone command"
-                      data-copy-state={copyState}
-                    >
-                      {copyState === "copied" ? (
-                        <Check size={15} />
-                      ) : (
-                        <Copy size={15} />
-                      )}
-                    </button>
-                  </div>
-                  <span className={styles.copyStatus} role="status">
-                    {copyState === "copied"
-                      ? "Copied to clipboard!"
-                      : copyState === "error"
-                        ? "Couldn’t copy. Select the command to copy it manually."
-                        : ""}
-                  </span>
-                </div>
-              </li>
-              <li>
-                <span className={styles.stepNumber} aria-hidden="true">2</span>
-                <div>
-                  <h3>Make it yours.</h3>
-                  <p>
-                    In the <code>velld</code> folder, copy <code>.env.example</code> to{" "}
-                    <code>.env</code>, then set your admin credentials and
-                    generate your secret keys.
-                  </p>
-                  <Link href="/docs/installation">
-                    Configuration guide <ArrowRight size={14} aria-hidden="true" />
-                  </Link>
-                </div>
-              </li>
-              <li>
-                <span className={styles.stepNumber} aria-hidden="true">3</span>
-                <div>
-                  <h3>Start it up.</h3>
-                  <p>
-                    From the <code>velld</code> folder, start Velld. Then open{" "}
-                    <code>localhost:3000</code> and connect your first database.
-                  </p>
-                  <code className={styles.launchCommand}>
-                    docker compose up -d
+          <ol className={styles.steps} role="list">
+            <li>
+              <span className={styles.stepNumber} aria-hidden="true">
+                1
+              </span>
+              <div>
+                <h3>Clone it.</h3>
+                <p>Get a copy of Velld on your server.</p>
+                <div className={styles.command}>
+                  <code>
+                    git clone <wbr />
+                    <span>https://github.com/</span>
+                    <wbr />
+                    <span>dendianugerah/</span>
+                    <wbr />
+                    <span>velld.git</span>
                   </code>
+                  <button
+                    type="button"
+                    onClick={copyCommand}
+                    aria-label={
+                      copyState === "copied"
+                        ? "Command copied"
+                        : "Copy clone command"
+                    }
+                    aria-describedby={
+                      copyState === "error" ? "clone-copy-status" : undefined
+                    }
+                    title={copyState === "copied" ? "Copied!" : "Copy clone command"}
+                    data-copy-state={copyState}
+                  >
+                    {copyState === "copied" ? (
+                      <Check size={15} />
+                    ) : (
+                      <Copy size={15} />
+                    )}
+                  </button>
                 </div>
-              </li>
+                <span
+                  id="clone-copy-status"
+                  className={styles.copyStatus}
+                  role="status"
+                  data-state={copyState}
+                >
+                  {copyState === "copied"
+                    ? "Copied to clipboard!"
+                    : copyState === "error"
+                      ? "Couldn’t copy. Select the command to copy it manually."
+                      : ""}
+                </span>
+              </div>
+            </li>
+            <li>
+              <span className={styles.stepNumber} aria-hidden="true">
+                2
+              </span>
+              <div>
+                <h3>Make it yours.</h3>
+                <p>
+                  In the <code>velld</code> folder, copy <code>.env.example</code>{" "}
+                  to <code>.env</code>, then set your admin credentials and
+                  generate your secret keys.
+                </p>
+                <Link href="/docs/installation">
+                  Configuration guide <ArrowRight size={14} aria-hidden="true" />
+                </Link>
+              </div>
+            </li>
+            <li>
+              <span className={styles.stepNumber} aria-hidden="true">
+                3
+              </span>
+              <div>
+                <h3>Start it up.</h3>
+                <p>
+                  From the <code>velld</code> folder, start Velld. Then open{" "}
+                  <code>localhost:3000</code> and connect your first database.
+                </p>
+                <code className={styles.launchCommand}>
+                  docker compose up -d
+                </code>
+              </div>
+            </li>
           </ol>
         </section>
       </main>
