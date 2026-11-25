@@ -167,7 +167,7 @@
 }
 .title {
   margin: 30px auto 23px;
-  font-size: clamp(40px, 5.8vw, 76px);
+  font-size: clamp(2.5rem, 7.6vw, 4.75rem);
   line-height: 1.43;
   font-weight: 650;
   letter-spacing: -4px;
@@ -313,7 +313,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 0 8px 6px;
-  color: #737d69;
+  color: #606957;
   font-family: monospace;
   font-size: 9px;
 }
@@ -427,7 +427,7 @@
   border: 1px solid #cfdeea;
   background: linear-gradient(#fff, #e9f2f9);
   border-radius: 12px;
-  color: #4488bd;
+  color: #21689c;
   font-size: 18px;
   font-weight: 650;
   box-shadow:
@@ -437,7 +437,7 @@
   transition: transform 180ms var(--ease);
 }
 .steps li:nth-child(2) .stepNumber {
-  color: #9c773a;
+  color: #8a6328;
   border-color: #e8ddc5;
   background: linear-gradient(#fff, #f8f0db);
   box-shadow:
@@ -446,7 +446,7 @@
   transform: rotate(4deg);
 }
 .steps li:nth-child(3) .stepNumber {
-  color: #4c8a60;
+  color: var(--green);
   border-color: #d5e3d3;
   background: linear-gradient(#fff, #eaf3e7);
   box-shadow:
@@ -561,7 +561,7 @@
 }
 .launchCommand {
   display: block;
-  color: #4c8a60;
+  color: var(--green);
   margin-top: 18px;
   padding: 15px 13px;
   background: #edf4e9;
@@ -609,9 +609,8 @@
   .hero {
     padding-top: 75px;
   }
-  .title {
-    font-size: 61px;
-    letter-spacing: -3.4px;
+  .setup h2 {
+    font-size: 2.25rem;
   }
   .chipIcon {
     width: 37px;
@@ -639,10 +638,6 @@
   }
   .brand {
     font-size: 23px;
-  }
-  .brand img {
-    width: 26px;
-    height: 26px;
   }
   .navLinks {
     gap: 4px;
@@ -725,10 +720,6 @@
     margin-left: 19px;
     margin-right: 19px;
   }
-  .previewCaption {
-    font-size: 10px;
-    padding: 0 2px 9px;
-  }
   .window {
     padding: 4px;
     border-radius: 10px;
@@ -750,10 +741,6 @@
   }
   .dashboardImage {
     border-radius: 6px;
-  }
-  .previewFootnote {
-    font-size: 10px;
-    margin-top: 15px;
   }
   .preview {
     padding-bottom: 0;
@@ -793,10 +780,6 @@
     font-size: 19px;
     gap: 5px;
   }
-  .footer .brand img {
-    width: 21px;
-    height: 21px;
-  }
   .footer > div {
     gap: 22px;
     font-size: 11px;
@@ -827,10 +810,6 @@
   .nav .brand {
     font-size: 21px;
     gap: 6px;
-  }
-  .nav .brand img {
-    width: 24px;
-    height: 24px;
   }
   .home .navLinks {
     font-size: 11px;
@@ -912,7 +891,7 @@
   }
 }
 
-@media (pointer: coarse) {
+@media (pointer: coarse), (max-width: 640px) {
   .navLinks > a {
     min-height: 44px;
   }
