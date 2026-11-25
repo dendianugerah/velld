@@ -129,37 +129,21 @@ func (s *BackupService) createMultiDatabaseBackup(conn *connection.StoredConnect
 
 	var failedDatabases []string
 	var successfulBackups []*Backup
+	var firstFailure error
 
 	for _, dbName := range conn.SelectedDatabases {
 		backupID := uuid.New()
-		filename := backupFilename(conn.Type, dbName, timestamp)
+		filename := backupFilename(conn.Type, dbName, timestamp, backupID)
 		backupPath := filepath.Join(connectionFolder, filename)
 
 		tempConn := *conn
 		tempConn.DatabaseName = dbName
 
-		var cmd *exec.Cmd
-		switch conn.Type {
-		case "postgresql":
-			cmd = s.createPgDumpCmd(&tempConn, backupPath)
-		case "mysql", "mariadb":
-			cmd = s.createMySQLDumpCmd(&tempConn, backupPath)
-		case "mongodb":
-			cmd = s.createMongoDumpCmd(&tempConn, backupPath)
-
-		default:
-			return nil, fmt.Errorf("unsupported database type for backup: %s", conn.Type)
-		}
-
-		if cmd == nil {
-			fmt.Printf("Warning: backup tool not found for database '%s'\n", dbName)
-			failedDatabases = append(failedDatabases, dbName)
-			continue
-		}
-
-		output, err := cmd.CombinedOutput()
-		if err != nil {
-			fmt.Printf("Warning: Failed to backup database '%s': %s\n", dbName, string(output))
+		if err := s.runDump(&tempConn, backupPath); err != nil {
+			fmt.Printf("Warning: Failed to backup database '%s': %v\n", dbName, err)
+			if firstFailure == nil {
+				firstFailure = err
+			}
 			failedDatabases = append(failedDatabases, dbName)
 			continue
 		}
@@ -199,6 +183,9 @@ func (s *BackupService) createMultiDatabaseBackup(conn *connection.StoredConnect
 	}
 
 	if len(successfulBackups) == 0 {
+		if firstFailure != nil {
+			return nil, fmt.Errorf("all database backups failed (%v): %w", failedDatabases, firstFailure)
+		}
 		if len(failedDatabases) > 0 {
 			return nil, fmt.Errorf("all database backups failed: %v", failedDatabases)
 		}
@@ -235,7 +222,7 @@ func (s *BackupService) createSingleDatabaseBackup(conn *connection.StoredConnec
 
 	backupID := uuid.New()
 	timestamp := time.Now().Format("20060102_150405")
-	filename := backupFilename(conn.Type, dbName, timestamp)
+	filename := backupFilename(conn.Type, dbName, timestamp, backupID)
 
 	connectionFolder := filepath.Join(s.backupDir, common.SanitizeConnectionName(conn.Name))
 	if err := os.MkdirAll(connectionFolder, 0755); err != nil {
@@ -254,31 +241,9 @@ func (s *BackupService) createSingleDatabaseBackup(conn *connection.StoredConnec
 		UpdatedAt:    time.Now(),
 	}
 
-	var cmd *exec.Cmd
-	switch conn.Type {
-	case "postgresql":
-		cmd = s.createPgDumpCmd(conn, backupPath)
-	case "mysql", "mariadb":
-		cmd = s.createMySQLDumpCmd(conn, backupPath)
-	case "mongodb":
-		cmd = s.createMongoDumpCmd(conn, backupPath)
-
-	default:
-		return nil, fmt.Errorf("unsupported database type for backup: %s", conn.Type)
-	}
-
-	if cmd == nil {
-		return nil, fmt.Errorf("backup tool not found for %s. Please ensure %s is installed and available in PATH", conn.Type, requiredTools[conn.Type])
-	}
-
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		errorMsg := string(output)
-		if errorMsg == "" {
-			errorMsg = err.Error()
-		}
-		return nil, fmt.Errorf("backup failed for %s database '%s' on %s:%d - %s",
-			conn.Type, dbName, conn.Host, conn.Port, errorMsg)
+	if err := s.runDump(conn, backupPath); err != nil {
+		return nil, fmt.Errorf("backup failed for %s database '%s' on %s:%d: %w",
+			conn.Type, dbName, conn.Host, conn.Port, err)
 	}
 
 	// Get file size
@@ -303,12 +268,49 @@ func (s *BackupService) createSingleDatabaseBackup(conn *connection.StoredConnec
 	return backup, nil
 }
 
-func backupFilename(dbType, dbName, timestamp string) string {
+func (s *BackupService) runDump(conn *connection.StoredConnection, path string) error {
+	var cmd *exec.Cmd
+	switch conn.Type {
+	case "postgresql":
+		cmd = s.createPgDumpCmd(conn)
+		if cmd != nil {
+			if err := s.verifyPostgresVersion(conn, cmd); err != nil {
+				return err
+			}
+			return writePostgresBackup(cmd, path)
+		}
+	case "mysql", "mariadb":
+		cmd = s.createMySQLDumpCmd(conn, path)
+	case "mongodb":
+		var cleanup func()
+		var err error
+		cmd, cleanup, err = s.createMongoDumpCmd(conn, path)
+		if err != nil {
+			return err
+		}
+		defer cleanup()
+	default:
+		return fmt.Errorf("unsupported database type for backup: %s", conn.Type)
+	}
+	if cmd == nil {
+		return fmt.Errorf("backup tool not found for %s; install %s", conn.Type, requiredTools[conn.Type])
+	}
+	output, err := cmd.CombinedOutput()
+	if err != nil && len(output) != 0 {
+		return fmt.Errorf("%w: %s", err, output)
+	}
+	return err
+}
+
+func backupFilename(dbType, dbName, timestamp string, backupID uuid.UUID) string {
 	extension := ".sql"
-	if dbType == "mongodb" {
+	switch dbType {
+	case "postgresql":
+		extension = ".sql.gz"
+	case "mongodb":
 		extension = ".archive"
 	}
-	return dbName + "_" + timestamp + extension
+	return dbName + "_" + timestamp + "_" + backupID.String() + extension
 }
 
 func (s *BackupService) GetBackup(id string) (*Backup, error) {

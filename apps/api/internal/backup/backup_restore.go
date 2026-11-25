@@ -67,11 +67,32 @@ func (s *BackupService) RestoreBackup(backupID string, connectionID string) erro
 	var cmd *exec.Cmd
 	switch conn.Type {
 	case "postgresql":
-		cmd = s.createPsqlRestoreCmd(conn, filePath)
+		cmd = s.createPsqlRestoreCmd(conn)
+		if cmd != nil {
+			input, closeInput, err := openPostgresBackup(filePath)
+			if err != nil {
+				return fmt.Errorf("open PostgreSQL backup: %w", err)
+			}
+			defer closeInput()
+			cmd.Stdin = input
+		}
 	case "mysql", "mariadb":
-		cmd = s.createMySQLRestoreCmd(conn, filePath)
+		cmd = s.createMySQLRestoreCmd(conn)
+		if cmd != nil {
+			file, err := os.Open(filePath)
+			if err != nil {
+				return fmt.Errorf("open MySQL backup: %w", err)
+			}
+			defer file.Close()
+			cmd.Stdin = file
+		}
 	case "mongodb":
-		cmd = s.createMongoRestoreCmd(conn, filePath)
+		var cleanup func()
+		cmd, cleanup, err = s.createMongoRestoreCmd(conn, filePath)
+		if err != nil {
+			return err
+		}
+		defer cleanup()
 	default:
 		return fmt.Errorf("unsupported database type for restore: %s", conn.Type)
 	}
@@ -182,7 +203,7 @@ func (s *BackupService) findDatabaseRestorePath(dbType string) string {
 	return ""
 }
 
-func (s *BackupService) createPsqlRestoreCmd(conn *connection.StoredConnection, backupPath string) *exec.Cmd {
+func (s *BackupService) createPsqlRestoreCmd(conn *connection.StoredConnection) *exec.Cmd {
 	binaryPath := s.findDatabaseRestorePath("postgresql")
 	if binaryPath == "" {
 		fmt.Printf("ERROR: psql binary not found. Please install PostgreSQL client tools.\n")
@@ -191,22 +212,10 @@ func (s *BackupService) createPsqlRestoreCmd(conn *connection.StoredConnection, 
 
 	binPath := filepath.Join(binaryPath, common.GetPlatformExecutableName(restoreTools["postgresql"]))
 
-	// Use -v ON_ERROR_STOP=1 to exit immediately on first error
-	// This ensures errors are properly caught
-	cmd := exec.Command(binPath,
-		"-h", conn.Host,
-		"-p", fmt.Sprintf("%d", conn.Port),
-		"-U", conn.Username,
-		"-d", conn.DatabaseName,
-		"-f", backupPath,
-		"-v", "ON_ERROR_STOP=1", // Exit on first error
-	)
-
-	cmd.Env = append(os.Environ(), fmt.Sprintf("PGPASSWORD=%s", conn.Password))
-	return cmd
+	return postgresCmd(binPath, conn, "-X", "-f", "-", "-v", "ON_ERROR_STOP=1")
 }
 
-func (s *BackupService) createMySQLRestoreCmd(conn *connection.StoredConnection, backupPath string) *exec.Cmd {
+func (s *BackupService) createMySQLRestoreCmd(conn *connection.StoredConnection) *exec.Cmd {
 	binaryPath := s.findDatabaseRestorePath(conn.Type)
 	if binaryPath == "" {
 		fmt.Printf("ERROR: mysql binary not found. Please install MySQL/MariaDB client tools.\n")
@@ -219,7 +228,6 @@ func (s *BackupService) createMySQLRestoreCmd(conn *connection.StoredConnection,
 		"-h", conn.Host,
 		"-P", fmt.Sprintf("%d", conn.Port),
 		"-u", conn.Username,
-		fmt.Sprintf("-p%s", conn.Password),
 	}
 
 	if !conn.SSL {
@@ -231,22 +239,14 @@ func (s *BackupService) createMySQLRestoreCmd(conn *connection.StoredConnection,
 	args = append(args, conn.DatabaseName)
 
 	cmd := exec.Command(binPath, args...)
-
-	file, err := os.Open(backupPath)
-	if err != nil {
-		fmt.Printf("ERROR: failed to open backup file: %v\n", err)
-		return nil
-	}
-
-	cmd.Stdin = file
+	cmd.Env = append(os.Environ(), "MYSQL_PWD="+conn.Password)
 	return cmd
 }
 
-func (s *BackupService) createMongoRestoreCmd(conn *connection.StoredConnection, backupPath string) *exec.Cmd {
+func (s *BackupService) createMongoRestoreCmd(conn *connection.StoredConnection, backupPath string) (*exec.Cmd, func(), error) {
 	binaryPath := s.findDatabaseRestorePath("mongodb")
 	if binaryPath == "" {
-		fmt.Printf("ERROR: mongorestore binary not found. Please install MongoDB Database Tools.\n")
-		return nil
+		return nil, nil, fmt.Errorf("mongorestore not found; install MongoDB Database Tools")
 	}
 
 	binPath := filepath.Join(binaryPath, common.GetPlatformExecutableName(restoreTools["mongodb"]))
@@ -262,13 +262,9 @@ func (s *BackupService) createMongoRestoreCmd(conn *connection.StoredConnection,
 		args = append(args, "--username", conn.Username)
 	}
 
-	if conn.Password != "" {
-		args = append(args, "--password", conn.Password)
-	}
-
 	if conn.MongoAuthSource != "" {
 		args = append(args, "--authenticationDatabase", conn.MongoAuthSource)
 	}
 
-	return exec.Command(binPath, args...)
+	return mongoToolCmd(binPath, conn.Password, args)
 }
