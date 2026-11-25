@@ -1,92 +1,36 @@
 "use client";
 
-import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { LogOut, Shield, User } from "lucide-react";
-import { useProfile } from "@/hooks/use-profile";
-import { logout } from "@/lib/helper";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useProfile } from "@/hooks/use-profile";
 import { NotificationSettings } from "./notification-settings";
 import { S3StorageSettings } from "./s3-storage-settings";
-import { PageHeader } from "@/components/layout/page-header";
 
 export function ProfileSettings() {
-  const [isLoading, setIsLoading] = useState(false);
-  const { data: profile, isLoading: isLoadingProfile } = useProfile();
-
-  const handleLogout = () => {
-    setIsLoading(true);
-    logout();
-  };
+  const { data: profile, isLoading } = useProfile();
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Settings"
-        description="Manage your account and notification preferences"
-      />
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Profile</CardTitle>
-          <CardDescription>Your account information</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between p-4 rounded-lg border bg-background/50">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-md bg-primary/10">
-                <User className="w-4 h-4 text-primary" />
-              </div>
-              <div>
-                <p className="text-sm font-medium">Username</p>
-                {isLoadingProfile ? (
-                  <Skeleton className="h-4 w-32 mt-1" />
-                ) : (
-                  <p className="text-sm text-muted-foreground">{profile?.data.username}</p>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between p-4 rounded-lg border bg-background/50">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-md bg-primary/10">
-                <Shield className="w-4 h-4 text-primary" />
-              </div>
-              <div>
-                <p className="text-sm font-medium">Password</p>
-                <p className="text-sm text-muted-foreground">Change your account password</p>
-              </div>
-            </div>
-            <Button variant="outline" size="sm" disabled>
-              Change
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      <NotificationSettings />
-
-      <S3StorageSettings />
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Sign Out</CardTitle>
-          <CardDescription>End your current session</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Button 
-            variant="destructive" 
-            onClick={handleLogout}
-            disabled={isLoading}
-            className="w-full sm:w-auto"
-          >
-            <LogOut className="w-4 h-4 mr-2" />
-            {isLoading ? "Signing out..." : "Sign out"}
-          </Button>
-        </CardContent>
-      </Card>
-    </div>
+    <Tabs defaultValue="account" className="space-y-5">
+      <TabsList aria-label="Settings categories" className="grid h-auto w-full max-w-md grid-cols-3 p-1">
+        <TabsTrigger value="account">Account</TabsTrigger>
+        <TabsTrigger value="alerts">Alerts</TabsTrigger>
+        <TabsTrigger value="storage">Storage</TabsTrigger>
+      </TabsList>
+      <TabsContent value="account">
+        <section aria-labelledby="account-heading" className="rounded-xl border px-5 py-6 sm:px-6">
+          <h2 id="account-heading" className="text-base font-semibold">Profile</h2>
+          <dl className="mt-5 flex items-center justify-between gap-4 border-t pt-4 text-sm">
+            <dt className="text-muted-foreground">Username</dt>
+            <dd className="min-w-0 truncate font-medium">{isLoading ? <Skeleton className="h-4 w-24" /> : (profile?.data.username ?? "Unavailable")}</dd>
+          </dl>
+        </section>
+      </TabsContent>
+      <TabsContent value="alerts" forceMount className="data-[state=inactive]:hidden">
+        <NotificationSettings />
+      </TabsContent>
+      <TabsContent value="storage" forceMount className="data-[state=inactive]:hidden">
+        <S3StorageSettings />
+      </TabsContent>
+    </Tabs>
   );
 }

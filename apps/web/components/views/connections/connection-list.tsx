@@ -2,7 +2,6 @@
 
 import { useConnections } from "@/hooks/use-connections";
 import { ConnectionsTableSkeleton } from "@/components/ui/skeleton/connections-table";
-import { EmptyState } from '@/components/ui/empty-state';
 import { useState } from 'react';
 import { ConnectionListHeader } from './connection-list/header';
 import { ConnectionsTable } from './connection-list/connections-table';
@@ -11,11 +10,10 @@ import { EditConnectionDialog } from './connection-list/edit-connection-dialog';
 import { DeleteConnectionDialog } from './connection-list/delete-connection-dialog';
 import { DiscoverDatabasesModal } from './discover-databases-modal';
 import { AddConnectionDialog } from './add-connection-dialog';
-import { Database } from 'lucide-react';
 import type { Connection } from '@/types/connection';
 
 export function ConnectionsList() {
-  const { connections, isLoading } = useConnections();
+  const { connections, isLoading, error } = useConnections();
   const [searchQuery, setSearchQuery] = useState('');
   const [scheduleDialogConnection, setScheduleDialogConnection] = useState<string | null>(null);
   const [editDialogConnection, setEditDialogConnection] = useState<string | null>(null);
@@ -29,7 +27,7 @@ export function ConnectionsList() {
   );
 
   return (
-    <div className="col-span-3 space-y-3">
+    <div className="space-y-4">
       <ConnectionListHeader 
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
@@ -49,12 +47,10 @@ export function ConnectionsList() {
           onDiscover={(connection) => setDiscoverConnectionId(connection.id)}
         />
       ) : (
-        <EmptyState
-          icon={Database}
-          title="No database connections"
-          description="Get started by adding your first database connection."
-          variant="minimal"
-        />
+        <div className="rounded-xl border px-5 py-7">
+          <p className="text-sm font-medium">{error ? "Couldn’t load connections" : searchQuery ? "No matching connections" : "No database connections yet"}</p>
+          <p className="mt-1 text-sm text-muted-foreground">{error ? "Refresh the page to try again." : searchQuery ? "Try a different name or host." : "Add your first connection to run a backup."}</p>
+        </div>
       )}
 
       <BackupScheduleDialog

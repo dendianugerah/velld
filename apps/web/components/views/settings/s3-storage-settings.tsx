@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, Cloud, Check, AlertCircle, HelpCircle } from "lucide-react";
+import { Loader2, Check, AlertCircle, HelpCircle } from "lucide-react";
 import { useSettings } from "@/hooks/use-settings";
 import { useToast } from "@/hooks/use-toast";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -130,7 +130,7 @@ export function S3StorageSettings() {
       <Card>
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
-            <Cloud className="w-5 h-5" />
+
             S3 Object Storage
           </CardTitle>
         </CardHeader>
@@ -149,7 +149,7 @@ export function S3StorageSettings() {
     <Card>
       <CardHeader>
         <CardTitle className="text-lg flex items-center gap-2">
-          <Cloud className="w-5 h-5" />
+
           S3 Object Storage
         </CardTitle>
         <CardDescription>
@@ -381,8 +381,8 @@ export function S3StorageSettings() {
             {testResult && (
               <div className={`flex items-center gap-2 p-4 rounded-lg border ${
                 testResult === "success" 
-                  ? "bg-green-500/10 border-green-500/20 text-green-600 dark:text-green-400" 
-                  : "bg-red-500/10 border-red-500/20 text-red-600 dark:text-red-400"
+                  ? "bg-green-500/10 border-green-500/20 text-green-600"
+                  : "bg-red-500/10 border-red-500/20 text-red-600"
               }`}>
                 {testResult === "success" ? (
                   <>

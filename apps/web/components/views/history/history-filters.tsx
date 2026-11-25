@@ -42,8 +42,9 @@ export function HistoryFilters({
       <div className="relative w-full">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
-          type="text"
-          placeholder="Search history..."
+          type="search"
+          aria-label="Search backups"
+          placeholder="Search backups"
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
           className="pl-10"
@@ -53,7 +54,7 @@ export function HistoryFilters({
       
       <div className="flex flex-wrap items-center gap-2">
         <Select value={dateRange} onValueChange={onDateRangeChange}>
-          <SelectTrigger className="w-full sm:w-[140px]">
+          <SelectTrigger className="w-full sm:w-[140px]" aria-label="Filter by date">
             <SelectValue placeholder="Last 7 Days" />
           </SelectTrigger>
           <SelectContent>
@@ -65,7 +66,7 @@ export function HistoryFilters({
         </Select>
 
         <Select value={status} onValueChange={onStatusChange}>
-          <SelectTrigger className="w-full sm:w-[130px]">
+          <SelectTrigger className="w-full sm:w-[130px]" aria-label="Filter by status">
             <SelectValue placeholder="All Status" />
           </SelectTrigger>
           <SelectContent>
@@ -77,7 +78,7 @@ export function HistoryFilters({
         </Select>
 
         <Select value={databaseType} onValueChange={onDatabaseTypeChange}>
-          <SelectTrigger className="w-full sm:w-[140px]">
+          <SelectTrigger className="w-full sm:w-[140px]" aria-label="Filter by database type">
             <SelectValue placeholder="All Databases" />
           </SelectTrigger>
           <SelectContent>
@@ -88,9 +89,11 @@ export function HistoryFilters({
           </SelectContent>
         </Select>
 
-        <Button variant="ghost" size="sm" onClick={onReset} className="w-full sm:w-auto">
-          Reset
-        </Button>
+        {(search || dateRange !== "all" || status !== "all" || databaseType !== "all") && (
+          <Button variant="ghost" size="sm" onClick={onReset} className="w-full sm:w-auto">
+            Clear filters
+          </Button>
+        )}
       </div>
     </div>
   );

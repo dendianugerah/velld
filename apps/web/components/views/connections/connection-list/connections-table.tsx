@@ -1,39 +1,14 @@
-'use client';
+"use client";
 
-import { formatSize, getScheduleFrequency } from '@/lib/helper';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from '@/components/ui/table';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { 
-  Play, 
-  CheckCircle2, 
-  Pencil, 
-  Trash2,
-  Settings2,
-  ArrowUpDown,
-  Database,
-  MoreHorizontal
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
-import type { Connection } from '@/types/connection';
-import { typeLabels } from '@/types/base';
-import { useBackup } from '@/hooks/use-backup';
-import { useState } from 'react';
+import { useState } from "react";
+import { ArrowDown, ArrowUp, MoreHorizontal } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useBackup } from "@/hooks/use-backup";
+import { formatSize, getScheduleFrequency } from "@/lib/helper";
+import { typeLabels } from "@/types/base";
+import type { Connection } from "@/types/connection";
 
 interface ConnectionsTableProps {
   connections: Connection[];
@@ -43,264 +18,91 @@ interface ConnectionsTableProps {
   onDiscover?: (connection: Connection) => void;
 }
 
-type SortField = 'name' | 'type' | 'status' | 'size' | 'lastBackup';
-type SortOrder = 'asc' | 'desc';
+const sortColumns = {
+  name: { label: "Connection", value: (connection: Connection) => connection.name },
+  type: { label: "Database", value: (connection: Connection) => connection.type },
+  lastBackup: { label: "Last backup", value: (connection: Connection) => connection.last_backup_time ? new Date(connection.last_backup_time).getTime() : 0 },
+  size: { label: "Size", value: (connection: Connection) => connection.database_size || 0 },
+};
 
-export function ConnectionsTable({
-  connections,
-  onEdit,
-  onDelete,
-  onSchedule,
-  onDiscover,
-}: ConnectionsTableProps) {
+type SortField = keyof typeof sortColumns;
+
+export function ConnectionsTable({ connections, onEdit, onDelete, onSchedule, onDiscover }: ConnectionsTableProps) {
   const { createBackup, isCreating } = useBackup();
-  const [sortField, setSortField] = useState<SortField>('name');
-  const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
-  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
-
-  const handleSort = (field: SortField) => {
-    if (sortField === field) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortField(field);
-      setSortOrder('asc');
-    }
-  };
+  const [sort, setSort] = useState<{ field: SortField; descending: boolean }>({ field: "name", descending: false });
 
   const sortedConnections = [...connections].sort((a, b) => {
-    let comparison = 0;
-    
-    switch (sortField) {
-      case 'name':
-        comparison = a.name.localeCompare(b.name);
-        break;
-      case 'type':
-        comparison = a.type.localeCompare(b.type);
-        break;
-      case 'status':
-        comparison = a.status.localeCompare(b.status);
-        break;
-      case 'size':
-        comparison = (a.database_size || 0) - (b.database_size || 0);
-        break;
-      case 'lastBackup':
-        const aTime = a.last_backup_time ? new Date(a.last_backup_time).getTime() : 0;
-        const bTime = b.last_backup_time ? new Date(b.last_backup_time).getTime() : 0;
-        comparison = aTime - bTime;
-        break;
-    }
-    
-    return sortOrder === 'asc' ? comparison : -comparison;
+    const left = sortColumns[sort.field].value(a);
+    const right = sortColumns[sort.field].value(b);
+    const order = typeof left === "number" && typeof right === "number" ? left - right : String(left).localeCompare(String(right));
+    return sort.descending ? -order : order;
   });
 
-  const SortButton = ({ field, children }: { field: SortField; children: React.ReactNode }) => (
-    <button
-      onClick={() => handleSort(field)}
-      className="flex items-center gap-1 hover:text-foreground transition-colors"
-    >
-      {children}
-      <ArrowUpDown className={cn(
-        "h-3 w-3 transition-opacity",
-        sortField === field ? "opacity-100" : "opacity-0 group-hover:opacity-50"
-      )} />
-    </button>
-  );
+  const renderSortHeader = (field: SortField) => {
+    const active = sort.field === field;
+    const Direction = sort.descending ? ArrowDown : ArrowUp;
+    return (
+      <TableHead className="h-10" aria-sort={active ? (sort.descending ? "descending" : "ascending") : "none"}>
+        <button
+          className="inline-flex items-center gap-1.5 whitespace-nowrap text-xs font-semibold hover:text-foreground"
+          onClick={() => setSort({ field, descending: active && !sort.descending })}
+        >
+          {sortColumns[field].label}
+          {active && <Direction aria-hidden="true" className="size-3" />}
+        </button>
+      </TableHead>
+    );
+  };
 
   return (
-    <div className="w-full">
-      <TooltipProvider>
-        <div className="overflow-hidden">
-          <Table>
-            <TableHeader className="border-b border-border/50">
-              <TableRow className="hover:bg-transparent">
-                <TableHead className="w-[280px] group font-semibold text-foreground/90 h-11">
-                  <SortButton field="name">Name</SortButton>
-                </TableHead>
-                <TableHead className="group font-semibold text-foreground/90 h-11">
-                  <SortButton field="type">Type</SortButton>
-                </TableHead>
-                <TableHead className="font-semibold text-foreground/90 h-11">Host</TableHead>
-                <TableHead className="font-semibold text-foreground/90 h-11">Schedule</TableHead>
-                <TableHead className="group font-semibold text-foreground/90 h-11">
-                  <SortButton field="lastBackup">Last Backup</SortButton>
-                </TableHead>
-                <TableHead className="group text-right font-semibold text-foreground/90 h-11">
-                  <SortButton field="size">Size</SortButton>
-                </TableHead>
-                <TableHead className="text-right font-semibold text-foreground/90 h-11">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {sortedConnections.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={8} className="h-32">
-                    <div className="flex flex-col items-center justify-center gap-3 text-muted-foreground">
-                      <div className="flex items-center justify-center w-12 h-12 rounded-full bg-muted">
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-                        </svg>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-sm font-medium">No connections found</p>
-                        <p className="text-xs text-muted-foreground/60 mt-1">Try adjusting your search or add a new connection</p>
-                      </div>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                sortedConnections.map((connection) => {
-                  const scheduleFrequency = getScheduleFrequency(connection.cron_schedule);
-                  
-                  return (
-                    <TableRow 
-                      key={connection.id} 
-                      className="group border-b border-border/40 hover:bg-accent/20 transition-all duration-150"
-                    >
-                      <TableCell className="font-medium py-3.5">
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span className="truncate block max-w-[260px] font-medium cursor-help text-foreground">
-                              {connection.name}
-                            </span>
-                          </TooltipTrigger>
-                          <TooltipContent side="top" align="start">
-                            <p>{connection.name}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TableCell>
-                      <TableCell className="py-3.5">
-                        <Badge variant="secondary" className="text-xs font-medium bg-accent/50 hover:bg-accent/70 border-0 px-2.5 py-0.5">
-                          {typeLabels[connection.type] ?? connection.type}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="py-3.5">
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span className="text-sm text-muted-foreground/90 truncate block max-w-[180px] font-mono text-[13px] cursor-help">
-                              {connection.host}:{connection.port}
-                            </span>
-                          </TooltipTrigger>
-                          <TooltipContent side="top" align="start">
-                            <p className="font-mono text-xs">{connection.host}:{connection.port}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TableCell>
-                      <TableCell className="py-3.5">
-                        {connection.backup_enabled ? (
-                          <div className="flex items-center gap-2">
-                            <CheckCircle2 className="h-3.5 w-3.5 text-green-600 dark:text-green-500" />
-                            <span className="text-sm font-medium text-foreground/80">
-                              {scheduleFrequency || 'Enabled'}
-                            </span>
-                          </div>
-                        ) : (
-                          <span className="text-sm text-muted-foreground/60">—</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="py-3.5">
-                        {connection.last_backup_time ? (
-                          <span className="text-sm text-muted-foreground/90 font-medium">
-                            {new Date(connection.last_backup_time).toLocaleDateString('en-US', {
-                              month: 'short',
-                              day: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })}
-                          </span>
-                        ) : (
-                          <span className="text-sm text-muted-foreground/60">—</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right py-3.5">
-                        <span className="text-sm font-semibold text-foreground/90">
-                          {formatSize(connection.database_size)}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-right py-3.5">
-                        <div className="flex items-center justify-end gap-1">
-                          <Tooltip delayDuration={300}>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => createBackup(connection.id)}
-                                disabled={isCreating}
-                                className="h-8 w-8 p-0 hover:bg-accent/80 transition-all duration-150"
-                              >
-                                <Play className="h-3.5 w-3.5" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent side="top">
-                              <p className="text-xs">Backup Now</p>
-                            </TooltipContent>
-                          </Tooltip>
-                          
-                          <DropdownMenu 
-                            open={openDropdownId === connection.id}
-                            onOpenChange={(open) => setOpenDropdownId(open ? connection.id : null)}
-                          >
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-8 w-8 p-0 hover:bg-accent/80 transition-all duration-150"
-                              >
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-[160px]">
-                              {onDiscover && (
-                                <DropdownMenuItem 
-                                  onClick={() => {
-                                    setOpenDropdownId(null);
-                                    onDiscover(connection);
-                                  }}
-                                >
-                                  <Database className="mr-2 h-4 w-4" />
-                                  Discover
-                                </DropdownMenuItem>
-                              )}
-                              <DropdownMenuItem 
-                                onClick={() => {
-                                  setOpenDropdownId(null);
-                                  onSchedule(connection.id);
-                                }}
-                              >
-                                <Settings2 className="mr-2 h-4 w-4" />
-                                Schedule
-                              </DropdownMenuItem>
-                              <DropdownMenuItem 
-                                onClick={() => {
-                                  setOpenDropdownId(null);
-                                  onEdit(connection.id);
-                                }}
-                              >
-                                <Pencil className="mr-2 h-4 w-4" />
-                                Edit
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem 
-                                onClick={() => {
-                                  setOpenDropdownId(null);
-                                  onDelete(connection);
-                                }}
-                                className="text-destructive focus:text-destructive"
-                              >
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </TooltipProvider>
+    <div className="overflow-hidden rounded-xl border">
+      <Table>
+        <TableHeader className="bg-muted/70">
+          <TableRow className="hover:bg-transparent">
+            {renderSortHeader("name")}
+            {renderSortHeader("type")}
+            <TableHead className="h-10 whitespace-nowrap text-xs font-semibold">Schedule</TableHead>
+            {renderSortHeader("lastBackup")}
+            {renderSortHeader("size")}
+            <TableHead><span className="sr-only">Actions</span></TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {sortedConnections.map((connection) => (
+            <TableRow key={connection.id} className="hover:bg-muted/40">
+              <TableCell className="min-w-[9rem]">
+                <p className="max-w-[16rem] truncate font-medium" title={connection.name}>{connection.name}</p>
+                <p className="mt-1 max-w-[16rem] truncate text-xs text-muted-foreground" title={connection.host}>{connection.host}</p>
+              </TableCell>
+              <TableCell className="whitespace-nowrap text-muted-foreground">{typeLabels[connection.type] ?? connection.type}</TableCell>
+              <TableCell className="whitespace-nowrap text-muted-foreground">
+                {connection.backup_enabled ? getScheduleFrequency(connection.cron_schedule) || "Enabled" : "Not scheduled"}
+              </TableCell>
+              <TableCell className="whitespace-nowrap text-muted-foreground">
+                {connection.last_backup_time ? new Date(connection.last_backup_time).toLocaleString("en", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : "—"}
+              </TableCell>
+              <TableCell className="whitespace-nowrap text-muted-foreground">{formatSize(connection.database_size)}</TableCell>
+              <TableCell className="text-right">
+                <div className="flex justify-end gap-1">
+                  <Button variant="outline" size="sm" onClick={() => createBackup(connection.id)} disabled={isCreating}>Back up</Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm" className="w-8 p-0" aria-label={`Actions for ${connection.name}`}><MoreHorizontal /></Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onSelect={() => onSchedule(connection.id)}>Manage schedule</DropdownMenuItem>
+                      {onDiscover && <DropdownMenuItem onSelect={() => onDiscover(connection)}>Discover databases</DropdownMenuItem>}
+                      <DropdownMenuItem onSelect={() => onEdit(connection.id)}>Edit connection</DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem className="text-destructive focus:text-destructive" onSelect={() => onDelete(connection)}>Delete connection</DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
     </div>
   );
 }

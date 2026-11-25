@@ -20,12 +20,12 @@ export function AddConnectionDialog() {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button className="font-medium">
-          New Connection
+          Add connection
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[600px] max-h-[85vh]">
         <DialogHeader>
-          <DialogTitle>Add New Connection</DialogTitle>
+          <DialogTitle>Add connection</DialogTitle>
           <DialogDescription>
             Add a new database connection. The connection will be tested before saving.
           </DialogDescription>

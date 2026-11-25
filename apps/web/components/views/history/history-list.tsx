@@ -1,20 +1,17 @@
 "use client";
 
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { EmptyState } from "@/components/ui/empty-state";
-import { Database, Download, History, RefreshCw, RotateCcw, Cloud, Trash2 } from "lucide-react";
-import { formatDistanceToNow, parseISO, subDays, isAfter } from "date-fns";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { typeLabels, type DatabaseType } from "@/types/base";
+import { MoreHorizontal } from "lucide-react";
+import { format, isValid, parseISO, subDays, isAfter } from "date-fns";
 import { useBackup } from "@/hooks/use-backup";
 import { BackupList } from "@/types/backup";
-import { statusColors } from "@/types/base";
 import { HistoryListSkeleton } from "@/components/ui/skeleton/history-list";
-import { calculateDuration, formatSize } from "@/lib/helper";
+import { formatSize } from "@/lib/helper";
 import { HistoryFilters } from "./history-filters";
 import { CustomPagination } from "@/components/ui/custom-pagination";
 import { RestoreDialog } from "./restore-dialog";
-import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import {
   Dialog,
   DialogContent,
@@ -27,7 +24,7 @@ import { useState, useMemo } from "react";
 import { useIsFetching } from "@tanstack/react-query";
 
 export function HistoryList() {
-  const { backups, isLoading, pagination, page, setPage, downloadBackupFile, isDownloading, search, setSearch, deleteBackupById, isDeleting } = useBackup();
+  const { backups, isLoading, error, pagination, page, setPage, downloadBackupFile, isDownloading, search, setSearch, deleteBackupById, isDeleting } = useBackup();
   const [restoreDialogOpen, setRestoreDialogOpen] = useState(false);
   const [selectedBackupForRestore, setSelectedBackupForRestore] = useState<BackupList | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -61,6 +58,7 @@ export function HistoryList() {
   };
 
   const handleResetFilters = () => {
+    setPage(1);
     setSearch("");
     setDateRange("all");
     setStatus("all");
@@ -71,11 +69,6 @@ export function HistoryList() {
     if (!backups) return [];
 
     return backups.filter((backup) => {
-      const searchLower = search.toLowerCase();
-      const matchesSearch = !search || 
-        backup.path.toLowerCase().includes(searchLower) ||
-        backup.database_type.toLowerCase().includes(searchLower);
-
       let matchesDateRange = true;
       if (dateRange !== "all") {
         const backupDate = parseISO(backup.created_at);
@@ -97,230 +90,77 @@ export function HistoryList() {
       const matchesStatus = status === "all" || backup.status.toLowerCase() === status.toLowerCase();
       const matchesDatabaseType = databaseType === "all" || backup.database_type.toLowerCase() === databaseType.toLowerCase();
 
-      return matchesSearch && matchesDateRange && matchesStatus && matchesDatabaseType;
+      return matchesDateRange && matchesStatus && matchesDatabaseType;
     });
-  }, [backups, search, dateRange, status, databaseType]);
+  }, [backups, dateRange, status, databaseType]);
+
+  const hasFilters = Boolean(search) || dateRange !== "all" || status !== "all" || databaseType !== "all";
 
   return (
-    <Card className="col-span-3 bg-card border">
-      <div className="flex flex-col h-full">
-        <div className="p-4 sm:p-6 border-b">
-          <div className="space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <h3 className="text-lg font-semibold">Recent Backups</h3>
-              {isFetchingBackups > 0 && !isLoading && (
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <RefreshCw className="h-3 w-3 animate-spin" />
-                  <span>Updating...</span>
-                </div>
-              )}
-            </div>
-            <HistoryFilters 
-              search={search}
-              onSearchChange={setSearch}
-              dateRange={dateRange}
-              onDateRangeChange={setDateRange}
-              status={status}
-              onStatusChange={setStatus}
-              databaseType={databaseType}
-              onDatabaseTypeChange={setDatabaseType}
-              onReset={handleResetFilters}
-              isLoading={isLoading}
-            />
+    <div className="space-y-4">
+      <HistoryFilters
+        search={search}
+        onSearchChange={(value) => { setPage(1); setSearch(value); }}
+        dateRange={dateRange}
+        onDateRangeChange={setDateRange}
+        status={status}
+        onStatusChange={setStatus}
+        databaseType={databaseType}
+        onDatabaseTypeChange={setDatabaseType}
+        onReset={handleResetFilters}
+        isLoading={isLoading}
+      />
+      {isFetchingBackups > 0 && !isLoading && <p role="status" className="sr-only">Updating backups</p>}
+
+      <div className="overflow-hidden rounded-xl border">
+        {isLoading ? (
+          <div className="p-5"><HistoryListSkeleton /></div>
+        ) : filteredBackups.length ? (
+          <ul className="divide-y">
+            {filteredBackups.map((backup) => {
+              const date = parseISO(backup.created_at);
+              const filename = backup.path.replaceAll("\\", "/").split("/").pop() || backup.database_name || "Database backup";
+              const database = typeLabels[backup.database_type as DatabaseType] ?? backup.database_type;
+              return (
+                <li key={backup.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 py-4 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:gap-5 sm:px-5">
+                  <div className="min-w-0">
+                    <p title={filename} className="truncate text-sm font-medium">{filename}</p>
+                    <p className="mt-1 flex flex-wrap gap-x-2 text-xs text-muted-foreground">
+                      <span>{database}</span>
+                      {isValid(date) && <time dateTime={backup.created_at}>{format(date, "MMM d, yyyy · p")}</time>}
+                      {backup.size > 0 && <span>{formatSize(backup.size)}</span>}
+                      {backup.s3_object_key && <span>Stored in S3</span>}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span aria-hidden="true" className={`size-1.5 rounded-full ${backup.status === "failed" ? "bg-destructive" : backup.status === "completed" ? "bg-[#49634d]" : "bg-muted-foreground"}`} />
+                    <span className="text-xs capitalize text-muted-foreground">{backup.status.replaceAll("_", " ")}</span>
+                  </div>
+                  <div className="col-span-2 flex items-center justify-end gap-1 sm:col-span-1">
+                    <Button variant="outline" size="sm" onClick={() => downloadBackupFile({ id: backup.id, path: backup.path })} disabled={isDownloading}>Download</Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" className="w-8 p-0" aria-label={`Actions for ${filename}`}><MoreHorizontal /></Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onSelect={() => handleRestore(backup)}>Restore backup</DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem className="text-destructive focus:text-destructive" onSelect={() => handleDelete(backup)}>Delete backup</DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        ) : (
+          <div className="px-5 py-7">
+            <p className="text-sm font-medium">{error ? "Couldn’t load backups" : hasFilters ? "No matching backups on this page" : "No backups yet"}</p>
+            <p className="mt-1 text-sm text-muted-foreground">{error ? "Refresh the page to try again." : hasFilters ? "Try changing your search or filters." : "Backups will appear here after they run."}</p>
           </div>
-        </div>
-        <div className="flex flex-col p-4 sm:p-6 flex-1">
-          <div className="flex-1 flex flex-col min-w-0">
-            <div className="flex-1 space-y-4">
-              {isLoading ? (
-                <HistoryListSkeleton />
-              ) : filteredBackups && filteredBackups.length > 0 ? (
-                <>
-                  {filteredBackups.map((item: BackupList) => (
-                    <div
-                      key={item.id}
-                      className="p-4 rounded-lg bg-background/50 hover:bg-background/60 transition-colors border"
-                    >
-                      {/* Mobile Layout */}
-                      <div className="flex md:hidden flex-col gap-3">
-                        <div className="flex items-start gap-3">
-                          <div className="p-2 rounded-md bg-primary/10 shrink-0">
-                            <Database className="h-5 w-5 text-primary" />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <h4 className="font-medium truncate">{item.path.split('\\').pop()}</h4>
-                            <div className="flex items-center gap-2 mt-1 flex-wrap">
-                              <Badge variant="secondary" className="text-xs">
-                                {item.database_type}
-                              </Badge>
-                              <Badge
-                                variant="secondary"
-                                className={statusColors[item.status as keyof typeof statusColors]}
-                              >
-                                {item.status}
-                              </Badge>
-                              {item.s3_object_key && (
-                                <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">
-                                  <Cloud className="h-3 w-3 mr-1" />
-                                  S3
-                                </Badge>
-                              )}
-                            </div>
-                            <p className="text-xs text-muted-foreground mt-2">
-                              {formatDistanceToNow(parseISO(item.created_at), { addSuffix: true })}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {formatSize(item.size)} • {calculateDuration(item.started_time, item.completed_time)}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex flex-col gap-2">
-                          <div className="flex gap-2">
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => handleRestore(item)}
-                              className="flex-1"
-                            >
-                              <RotateCcw className="h-4 w-4 mr-1" />
-                              Restore
-                            </Button>
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              onClick={() => downloadBackupFile({ id: item.id, path: item.path })}
-                              disabled={isDownloading}
-                              className="flex-1"
-                            >
-                              <Download className="h-4 w-4 mr-1" />
-                              Download
-                            </Button>
-                          </div>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleDelete(item)}
-                            className="w-full text-destructive hover:text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4 mr-1" />
-                            Delete
-                          </Button>
-                        </div>
-                      </div>
-
-                      {/* Desktop Layout */}
-                      <div className="hidden md:flex items-center justify-between">
-                        <div className="flex items-center space-x-4 min-w-0 flex-1">
-                          <div className="p-2 rounded-md bg-primary/10 shrink-0">
-                            <Database className="h-5 w-5 text-primary" />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center space-x-2">
-                              <h4 className="font-medium truncate">{item.path.split('\\').pop()}</h4>
-                              <Badge variant="secondary" className="text-xs shrink-0">
-                                {item.database_type}
-                              </Badge>
-                              {item.s3_object_key && (
-                                <Badge variant="secondary" className="text-xs shrink-0 bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">
-                                  <Cloud className="h-3 w-3 mr-1" />
-                                  S3
-                                </Badge>
-                              )}
-                            </div>
-                            <p className="text-sm text-muted-foreground mt-1">
-                              {formatDistanceToNow(parseISO(item.created_at), { addSuffix: true })} | {formatSize(item.size)}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center space-x-4 shrink-0">
-                          <div className="text-right">
-                            <Badge
-                              variant="secondary"
-                              className={statusColors[item.status as keyof typeof statusColors]}
-                            >
-                              {item.status}
-                            </Badge>
-                            <p className="text-sm text-muted-foreground mt-1">
-                              {calculateDuration(item.started_time, item.completed_time)}
-                            </p>
-                          </div>
-                          <div className="flex space-x-2">
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => handleRestore(item)}
-                                    >
-                                    <RotateCcw className="h-4 w-4" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent side="top">
-                                  <p className="text-xs">Restore this backup</p>
-                                </TooltipContent>
-                              </Tooltip>
-
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => downloadBackupFile({ id: item.id, path: item.path })}
-                                    disabled={isDownloading}
-                                    >
-                                    <Download className="h-4 w-4" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent side="top">
-                                  <p className="text-xs">Download backup</p>
-                                </TooltipContent>
-                              </Tooltip>
-
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => handleDelete(item)}
-                                    className="text-destructive hover:text-destructive"
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent side="top">
-                                  <p className="text-xs">Delete backup</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </>
-              ) : (
-                <EmptyState
-                  icon={History}
-                  title="No backup history"
-                  description="Your backup history will appear here once you start creating backups."
-                  variant="minimal"
-                />
-              )}
-            </div>
-            
-            {pagination && filteredBackups && filteredBackups.length > 0 && (
-              <div className="pt-4 sm:pt-6 flex justify-center sm:justify-end border-t mt-4">
-                <CustomPagination
-                  currentPage={page}
-                  totalPages={totalPages}
-                  onPageChange={setPage}
-                />
-              </div>
-            )}
-          </div>
-        </div>
+        )}
       </div>
+      {totalPages > 1 && <CustomPagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />}
 
       <RestoreDialog
         backup={selectedBackupForRestore}
@@ -351,6 +191,6 @@ export function HistoryList() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </Card>
+    </div>
   );
 }
