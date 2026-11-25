@@ -13,6 +13,9 @@
   -webkit-font-smoothing: antialiased;
   overflow: clip;
 }
+:global(html):has(.home) {
+  scroll-behavior: smooth;
+}
 .home * {
   box-sizing: border-box;
 }
@@ -112,6 +115,9 @@
   box-shadow:
     inset 0 1px 0 #ffffff30,
     0 2px 3px #29312715;
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease;
 }
 .navGithub > span {
   color: #b9c2b5;
@@ -170,6 +176,9 @@
     0 9px 17px #263b4810;
   vertical-align: 2px;
   font-weight: 620;
+  transition:
+    transform 250ms ease,
+    box-shadow 250ms ease;
 }
 .databaseChip {
   color: #4488bd;
@@ -218,45 +227,6 @@
 .mobileBreak {
   display: none;
 }
-.heroActions {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 13px;
-  margin-top: 26px;
-}
-.primaryButton,
-.secondaryButton {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 13px;
-  height: 43px;
-  padding: 0 19px;
-  border-radius: 10px;
-  font-size: 12px;
-  font-weight: 550;
-  transition:
-    transform 0.2s,
-    box-shadow 0.2s;
-}
-.primaryButton {
-  background: #30372f;
-  color: #fff;
-  border: 1px solid #293027;
-  box-shadow:
-    inset 0 1px 0 #ffffff30,
-    0 3px 4px #2d35291c;
-}
-.secondaryButton {
-  color: #60685b;
-  border: 1px solid var(--line);
-  background: var(--surface);
-  box-shadow: 0 2px 2px #2d352905;
-}
-.primaryButton:hover,
-.secondaryButton:hover,
 .navGithub:hover {
   transform: translateY(-2px);
   box-shadow: 0 5px 12px #2d352919;
@@ -376,6 +346,27 @@
   border: 1px solid #e1e5dd;
   border-radius: 10px;
 }
+.previewLink {
+  display: block;
+  position: relative;
+  border-radius: 10px;
+  cursor: zoom-in;
+}
+.previewHint {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  padding: 8px 11px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 3px 12px #292c2910;
+  font-size: 11px;
+  transition:
+    opacity 180ms ease,
+    transform 180ms ease;
+}
 .previewFootnote {
   display: flex;
   justify-content: center;
@@ -385,15 +376,6 @@
   font-size: 10px;
   color: #8a9382;
 }
-.features {
-  max-width: 1060px;
-  margin: 0 auto;
-  padding: 86px 0 100px;
-}
-.sectionHeading {
-  text-align: center;
-  margin-bottom: 40px;
-}
 .eyebrow {
   display: block;
   color: #8a9480;
@@ -402,7 +384,6 @@
   letter-spacing: 1.7px;
   margin-bottom: 16px;
 }
-.sectionHeading h2,
 .setup h2 {
   font-size: 39px;
   line-height: 1.23;
@@ -410,100 +391,18 @@
   font-weight: 600;
   margin: 0 0 17px;
 }
-.sectionHeading h2 > span,
 .setup h2 > span {
   color: #8a9581;
 }
-.sectionHeading p,
 .setupIntro > p {
   color: var(--muted);
   font-size: 13px;
   line-height: 1.8;
   margin: 0;
 }
-.featureGrid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 17px;
-}
-.featureCard {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  padding: 25px 24px 0;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 17px;
-  overflow: hidden;
-}
-.featureIcon {
-  display: flex;
-  padding: 11px;
-  border: 1px solid var(--tint-line);
-  background: var(--tint);
-  color: var(--color);
-  border-radius: 12px;
-  margin-bottom: 25px;
-  box-shadow: 0 2px 2px #232e2005;
-  transform: rotate(-5deg);
-}
-.purple {
-  --color: #9a81b6;
-  --tint: #f5f1f8;
-  --tint-line: #eae1f0;
-}
-.blue {
-  --color: #7b9bb7;
-  --tint: #eef4f8;
-  --tint-line: #dfebf3;
-}
-.green {
-  --color: #8caa7b;
-  --tint: #f0f5eb;
-  --tint-line: #e3ebda;
-}
-.featureLabel {
-  font-size: 8px;
-  color: var(--color);
-  letter-spacing: 1.2px;
-  font-weight: 600;
-  margin-bottom: 12px;
-}
-.featureCard h3 {
-  margin: 0 0 12px;
-  max-width: 210px;
-  font-size: 21px;
-  font-weight: 550;
-  line-height: 1.35;
-  letter-spacing: -0.7px;
-}
-.featureCard > p {
-  margin: 0 0 25px;
-  color: var(--muted);
-  font-size: 11px;
-  line-height: 1.9;
-}
-.featureDetail {
-  margin: auto -24px 0;
-  padding: 18px 24px;
-  width: calc(100% + 48px);
-  background: var(--tint);
-  border-top: 1px dashed var(--tint-line);
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.featureDetail > span {
-  color: var(--color);
-  font: 11px monospace;
-}
-.featureDetail small {
-  color: #90948c;
-  font-size: 9px;
-}
 .setup {
   max-width: 1060px;
-  margin: 0 auto;
+  margin: 42px auto 0;
   padding: 78px 0 100px;
   border-top: 1px dashed #d9dfd1;
   display: grid;
@@ -522,6 +421,7 @@
   color: var(--green);
   font-size: 12px;
   font-weight: 500;
+  transition: gap 180ms ease;
 }
 .textLink:hover {
   gap: 15px;
@@ -620,16 +520,31 @@
   align-items: center;
   justify-content: center;
   margin-left: auto;
-  width: 30px;
-  height: 30px;
+  width: 36px;
+  height: 36px;
   color: #85917a;
   cursor: pointer;
   border: 1px solid var(--line);
   border-radius: 6px;
   background: var(--surface);
+  transition:
+    background 160ms ease,
+    color 160ms ease,
+    transform 160ms ease;
 }
 .command button:hover {
   background: var(--soft-green);
+}
+.command button:active,
+.navGithub:active {
+  transform: translateY(1px);
+}
+.command button[data-copy-state="copied"] {
+  color: var(--green);
+  background: var(--soft-green);
+}
+.command button[data-copy-state="copied"] svg {
+  animation: copied 180ms ease-out;
 }
 .copyStatus {
   display: block;
@@ -656,10 +571,6 @@
 .footer .brand {
   font-size: 20px;
 }
-.footer > span {
-  font-size: 10px;
-  color: #90978a;
-}
 .footer > div {
   display: flex;
   gap: 23px;
@@ -675,7 +586,6 @@
 }
 @media (max-width: 1150px) {
   .preview,
-  .features,
   .setup,
   .footer {
     margin-left: 5%;
@@ -700,19 +610,6 @@
   .chipIcon svg {
     width: 22px;
   }
-  .featureCard {
-    padding: 20px 17px 0;
-  }
-  .featureDetail {
-    margin-left: -17px;
-    margin-right: -17px;
-    padding-left: 17px;
-    padding-right: 17px;
-    width: calc(100% + 34px);
-  }
-  .featureCard h3 {
-    font-size: 19px;
-  }
   .setup {
     gap: 25px;
     grid-template-columns: 1fr 1.2fr;
@@ -727,9 +624,6 @@
   .setupCardTitle {
     padding-left: 16px;
     padding-right: 16px;
-  }
-  .footer > span {
-    display: none;
   }
 }
 @media (max-width: 640px) {
@@ -751,9 +645,6 @@
   .navLinks {
     gap: 18px;
     font-size: 11px;
-  }
-  .featuresLink {
-    display: none;
   }
   .navGithub {
     padding: 9px 11px;
@@ -801,17 +692,6 @@
   .desktopBreak {
     display: none;
   }
-  .heroActions {
-    margin-top: 23px;
-    gap: 10px;
-  }
-  .primaryButton,
-  .secondaryButton {
-    height: 42px;
-    padding: 0 15px;
-    font-size: 11px;
-    gap: 9px;
-  }
   .compatibility {
     margin-top: 29px;
     gap: 12px;
@@ -830,7 +710,6 @@
     font-size: 9px;
   }
   .preview,
-  .features,
   .setup,
   .footer {
     margin-left: 19px;
@@ -869,49 +748,9 @@
   .preview {
     padding-bottom: 0;
   }
-  .features {
-    padding: 64px 0 55px;
-  }
   .eyebrow {
     font-size: 8px;
     margin-bottom: 13px;
-  }
-  .sectionHeading {
-    margin-bottom: 27px;
-  }
-  .sectionHeading h2 {
-    font-size: 29px;
-    letter-spacing: -1.3px;
-    margin-bottom: 13px;
-  }
-  .sectionHeading p {
-    font-size: 11px;
-  }
-  .featureGrid {
-    grid-template-columns: 1fr;
-    gap: 14px;
-  }
-  .featureCard {
-    padding: 23px 24px 0;
-  }
-  .featureIcon {
-    margin-bottom: 20px;
-  }
-  .featureCard h3 {
-    font-size: 23px;
-    max-width: 230px;
-  }
-  .featureCard > p {
-    font-size: 12px;
-  }
-  .featureLabel {
-    font-size: 9px;
-  }
-  .featureDetail {
-    margin-left: -24px;
-    margin-right: -24px;
-    width: calc(100% + 48px);
-    padding: 18px 24px;
   }
   .setup {
     grid-template-columns: 1fr;
@@ -981,13 +820,8 @@
 .home .subtitle {
   font-size: 18px;
 }
-.home .sectionHeading p,
 .home .setupIntro > p {
   font-size: 15px;
-}
-.home .featureCard > p {
-  font-size: 14px;
-  line-height: 1.8;
 }
 .home .steps p {
   font-size: 12px;
@@ -1001,15 +835,6 @@
 .home .steps a {
   font-size: 11px;
 }
-.home .featureLabel {
-  font-size: 9px;
-}
-.home .featureDetail > span {
-  font-size: 12px;
-}
-.home .featureDetail small {
-  font-size: 11px;
-}
 @media (max-width: 640px) {
   .home .navLinks {
     gap: 12px;
@@ -1018,17 +843,83 @@
   .home .subtitle {
     font-size: 14px;
   }
-  .home .sectionHeading p,
   .home .setupIntro > p {
     font-size: 14px;
   }
 }
 @media (prefers-reduced-motion: reduce) {
+  :global(html):has(.home) {
+    scroll-behavior: auto;
+  }
   .home *,
   .home *::before,
   .home *::after {
     transition: none !important;
     animation: none !important;
     scroll-behavior: auto !important;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .header,
+  .hero > *,
+  .preview {
+    animation: arrive 420ms ease-out both;
+  }
+  .title {
+    animation-delay: 40ms;
+  }
+  .subtitle {
+    animation-delay: 80ms;
+  }
+  .compatibility {
+    animation-delay: 120ms;
+  }
+  .preview {
+    animation-delay: 160ms;
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .title:hover .databaseChip {
+    transform: rotate(-0.5deg) translateY(-2px);
+  }
+  .title:hover .buildingChip {
+    transform: rotate(0.5deg) translateY(-2px);
+  }
+  .previewHint {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  .previewLink:hover .previewHint,
+  .previewLink:focus-visible .previewHint {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (pointer: coarse) {
+  .command button {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+@keyframes arrive {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes copied {
+  from {
+    transform: scale(0.75);
+  }
+  to {
+    transform: scale(1);
   }
 }

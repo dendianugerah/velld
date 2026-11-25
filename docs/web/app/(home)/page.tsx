@@ -1,18 +1,14 @@
 "use client";
 
 import {
-  ArrowDown,
   ArrowRight,
   Check,
   ChevronRight,
-  Clock3,
   Code2,
   Copy,
   Database,
   Github,
-  HardDrive,
   LockKeyhole,
-  RotateCcw,
   ShieldCheck,
   Terminal,
 } from "lucide-react";
@@ -23,38 +19,6 @@ import styles from "./page.module.css";
 
 const repository = "https://github.com/dendianugerah/velld";
 const cloneCommand = `git clone ${repository}.git`;
-const features = [
-  {
-    icon: Clock3,
-    color: "purple",
-    label: "SET IT. FORGET IT.",
-    title: "A little routine goes a long way.",
-    description:
-      "Hourly, daily, or your own cron schedule. Let your backups happen while you do literally anything else.",
-    detail: "0 2 * * *",
-    caption: "Every day, at 2:00 AM",
-  },
-  {
-    icon: HardDrive,
-    color: "blue",
-    label: "A HOME FOR YOUR DATA",
-    title: "Your storage. Your rules.",
-    description:
-      "Keep backups on your server or send them to S3-compatible storage. You decide where your data lives.",
-    detail: "Local storage + S3",
-    caption: "A place you already trust",
-  },
-  {
-    icon: RotateCcw,
-    color: "green",
-    label: "FOR THE JUST-IN-CASES",
-    title: "A way back when you need it.",
-    description:
-      "Browse your backup history, download a snapshot, and restore to an empty database when it’s time to recover.",
-    detail: "A fresh start, not a redo.",
-    caption: "Keep building with confidence",
-  },
-];
 
 export default function HomePage() {
   const [copyState, setCopyState] = useState<"idle" | "copied" | "error">(
@@ -93,9 +57,7 @@ export default function HomePage() {
             </span>
           </Link>
           <div className={styles.navLinks}>
-            <a href="#features" className={styles.featuresLink}>
-              Why Velld?
-            </a>
+            <a href="#installation">Install</a>
             <Link href="/docs">Docs</Link>
             <a
               href={repository}
@@ -112,15 +74,9 @@ export default function HomePage() {
 
       <main id="main">
         <section className={styles.hero} aria-labelledby="hero-title">
-          <a
-            className={styles.openSource}
-            href={repository}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
+          <span className={styles.openSource}>
             <span className={styles.statusDot} /> Self-hosted. Open source.
-            <ChevronRight size={13} aria-hidden="true" />
-          </a>
+          </span>
           <h1 id="hero-title" className={styles.title}>
             <span className={styles.titleLine}>
               Back up{" "}
@@ -147,16 +103,8 @@ export default function HomePage() {
             <br className={styles.desktopBreak} /> schedules, and restores. All
             on your own server.
           </p>
-          <div className={styles.heroActions}>
-            <Link href="/docs/installation" className={styles.primaryButton}>
-              Get started <ArrowRight size={16} aria-hidden="true" />
-            </Link>
-            <a href="#preview" className={styles.secondaryButton}>
-              Take a peek <ArrowDown size={15} aria-hidden="true" />
-            </a>
-          </div>
           <div className={styles.compatibility}>
-            <span>Happy together with</span>
+            <span>Works with</span>
             <ul aria-label="Supported databases">
               <li>
                 <span className={styles.postgres}>
@@ -211,15 +159,26 @@ export default function HomePage() {
             <h2 id="preview-title" className={styles.srOnly}>
               One dashboard for your database backups
             </h2>
-            <Image
-              src="/images/connections.png"
-              alt="Velld connections view with PostgreSQL databases, on-demand backup actions, and scheduled backups"
-              width={3024}
-              height={1572}
-              className={styles.dashboardImage}
-              priority
-              sizes="(max-width: 1100px) 94vw, 1060px"
-            />
+            <a
+              href="/images/connections.png"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={styles.previewLink}
+              aria-label="Open the Connections screenshot at full size in a new tab"
+            >
+              <Image
+                src="/images/connections.png"
+                alt="Velld connections view with PostgreSQL databases, on-demand backup actions, and scheduled backups"
+                width={3024}
+                height={1572}
+                className={styles.dashboardImage}
+                priority
+                sizes="(max-width: 1100px) 94vw, 1060px"
+              />
+              <span className={styles.previewHint} aria-hidden="true">
+                View full size ↗
+              </span>
+            </a>
           </div>
           <div className={styles.previewFootnote}>
             <ShieldCheck size={14} aria-hidden="true" /> Your infrastructure.
@@ -228,67 +187,23 @@ export default function HomePage() {
         </section>
 
         <section
-          id="features"
-          className={styles.features}
-          aria-labelledby="features-title"
+          id="installation"
+          className={styles.setup}
+          aria-labelledby="setup-title"
         >
-          <div className={styles.sectionHeading}>
-            <span className={styles.eyebrow}>THE ESSENTIALS</span>
-            <h2 id="features-title">
-              Good backups. <span>Better sleep.</span>
-            </h2>
-            <p>
-              Not another complicated platform.
-              <br />
-              Just the things you need to keep your databases safe.
-            </p>
-          </div>
-          <div className={styles.featureGrid}>
-            {features.map(
-              ({
-                icon: Icon,
-                color,
-                label,
-                title,
-                description,
-                detail,
-                caption,
-              }) => (
-                <article
-                  className={`${styles.featureCard} ${styles[color]}`}
-                  key={title}
-                >
-                  <span className={styles.featureIcon}>
-                    <Icon size={22} aria-hidden="true" />
-                  </span>
-                  <span className={styles.featureLabel}>{label}</span>
-                  <h3>{title}</h3>
-                  <p>{description}</p>
-                  <div className={styles.featureDetail}>
-                    <span>{detail}</span>
-                    <small>{caption}</small>
-                  </div>
-                </article>
-              ),
-            )}
-          </div>
-        </section>
-
-        <section className={styles.setup} aria-labelledby="setup-title">
           <div className={styles.setupIntro}>
             <span className={styles.eyebrow}>GETTING STARTED</span>
             <h2 id="setup-title">
-              A few small steps.
+              Run it on
               <br />
-              <span>A safer database.</span>
+              <span>your server.</span>
             </h2>
             <p>
-              No account with us. No subscription.
-              <br />
-              Just Velld, running on a server you control.
+              Use Docker Compose on your own server. Follow the installation
+              guide for configuration and storage options.
             </p>
             <Link href="/docs/installation" className={styles.textLink}>
-              Let’s get you set up <ArrowRight size={15} aria-hidden="true" />
+              Installation guide <ArrowRight size={15} aria-hidden="true" />
             </Link>
           </div>
           <div className={styles.setupCard}>
@@ -312,6 +227,7 @@ export default function HomePage() {
                           : "Copy clone command"
                       }
                       title="Copy clone command"
+                      data-copy-state={copyState}
                     >
                       {copyState === "copied" ? (
                         <Check size={15} />
@@ -368,7 +284,6 @@ export default function HomePage() {
             velld<span className={styles.brandDot}>.</span>
           </span>
         </Link>
-        <span>A little care for your databases.</span>
         <div>
           <Link href="/docs">Documentation</Link>
           <a href={repository} target="_blank" rel="noopener noreferrer">
