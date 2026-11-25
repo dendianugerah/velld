@@ -1,23 +1,18 @@
 "use client";
 
-import { Sidebar } from "@/components/layout/sidebar";
-import { PageHeader } from "@/components/layout/page-header";
+import { useEffect, useState } from "react";
+import { Workspace } from "@/components/layout/workspace";
 import { ActivityList } from "@/components/views/dashboard/activity-list";
 
 export default function Home() {
-  return (
-    <div className="flex h-screen bg-background">
-      <Sidebar />
-      <div className="flex-1 overflow-auto lg:ml-64">
-        <div className="h-full px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6 pt-16 lg:pt-6">
-          <PageHeader
-            title="Dashboard"
-            description="Monitor and manage your database backups"
-          />
+  const [today, setToday] = useState("");
+  useEffect(() => {
+    setToday(new Intl.DateTimeFormat("en", { dateStyle: "full" }).format(new Date()));
+  }, []);
 
-          <ActivityList />
-        </div>
-      </div>
-    </div>
+  return (
+    <Workspace title="Overview" description={<time>{today || "\u00A0"}</time>}>
+      <ActivityList />
+    </Workspace>
   );
 }

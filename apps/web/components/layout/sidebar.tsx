@@ -1,90 +1,88 @@
 "use client";
 
-import { Layout, Server, Settings, History, Menu, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import { usePathname } from "next/navigation";
-import Link from "next/link";
-import Logo from "../ui/logo";
 import { useState } from "react";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { Database, History, LayoutGrid, LogOut, Menu, Settings } from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { useProfile } from "@/hooks/use-profile";
+import { logout } from "@/lib/helper";
+import { cn } from "@/lib/utils";
 
-const navigation = [
-  { name: "Dashboard", href: "/", icon: Layout },
-  { name: "Connections", href: "/connections", icon: Server },
-  { name: "History", href: "/history", icon: History },
-  // { name: "Security", href: "/security", icon: Shield },
-  { name: "Settings", href: "/settings", icon: Settings },
+const sections = [
+  { label: "Workspace", items: [
+    { label: "Overview", href: "/", icon: LayoutGrid },
+    { label: "Connections", href: "/connections", icon: Database },
+    { label: "Backup History", href: "/history", icon: History },
+  ] },
+  { label: "Account", items: [
+    { label: "Settings", href: "/settings", icon: Settings },
+  ] },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { data: profile } = useProfile();
+  const [open, setOpen] = useState(false);
+  const username = profile?.data.username;
 
-  const sidebarContent = (
-    <div className="flex flex-col h-full">
-      <div className="flex justify-between items-start mb-8">
-        <Logo />
-        <div className="flex items-center gap-2">
-          <ThemeToggle />
-          <Button
-            variant="ghost"
-            size="icon"
-            className="lg:hidden"
-            onClick={() => setIsMobileMenuOpen(false)}
-          >
-            <X className="h-6 w-6" />
-          </Button>
-        </div>
-      </div>
-      <nav className="space-y-1 flex-1">
-        {navigation.map((item) => {
-          const Icon = item.icon;
-          return (
-            <Link key={item.name} href={item.href} onClick={() => setIsMobileMenuOpen(false)}>
-              <Button
-                variant={pathname === item.href ? "secondary" : "ghost"}
-                className={cn(
-                  "w-full justify-start my-0.5",
-                  pathname === item.href && "bg-secondary"
-                )}
-              >
-                <Icon className="mr-2 h-4 w-4" />
-                {item.name}
-              </Button>
-            </Link>
-          );
-        })}
+  const navigation = (
+    <div className="flex h-full flex-col">
+      <Link href="/" className="mx-4 mb-10 w-fit text-2xl font-bold tracking-[-0.07em]" onClick={() => setOpen(false)}>
+        velld<span className="text-[#3e5543]">.</span>
+      </Link>
+      <nav aria-label="Workspace navigation" className="flex-1 space-y-7">
+        {sections.map(({ label, items }) => (
+          <div key={label}>
+            <p className="mb-2 px-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">{label}</p>
+            <ul className="space-y-1">
+              {items.map(({ label, href, icon: Icon }) => (
+                <li key={href}>
+                  <Link
+                    href={href}
+                    aria-current={pathname === href ? "page" : undefined}
+                    className={cn(
+                      "flex items-center gap-3 rounded-lg border border-transparent px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground",
+                      pathname === href && "border-border bg-card text-foreground shadow-sm hover:bg-card"
+                    )}
+                    onClick={() => setOpen(false)}
+                  >
+                    <Icon aria-hidden="true" className="size-4" />
+                    {label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
       </nav>
+      <div className="mt-8 flex items-center gap-3 border-t px-2 pt-4">
+        <span aria-hidden="true" className="grid size-9 shrink-0 place-items-center rounded-full bg-[#e5ebe2] text-sm font-semibold text-[#354d3b]">
+          {username?.slice(0, 1).toUpperCase() || "V"}
+        </span>
+        <span className="min-w-0 flex-1 truncate text-sm font-medium">{username || "Velld account"}</span>
+        <Button variant="ghost" size="icon" onClick={logout} aria-label="Sign out"><LogOut /></Button>
+      </div>
     </div>
   );
 
   return (
     <>
-      <Button
-        variant="ghost"
-        size="icon"
-        className="fixed top-4 left-4 lg:hidden z-50"
-        onClick={() => setIsMobileMenuOpen(true)}
-      >
-        <Menu className="h-6 w-6" />
-      </Button>
-
-      <div
-        className={cn(
-          "fixed inset-0 bg-background/80 backdrop-blur-sm z-40 lg:hidden",
-          isMobileMenuOpen ? "block" : "hidden"
-        )}
-        onClick={() => setIsMobileMenuOpen(false)}
-      />
-
-      <div
-        className={cn(
-          "fixed inset-y-0 left-0 w-64 border-r bg-card backdrop-blur-xl p-6 z-50 transition-transform duration-300",
-          isMobileMenuOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
-        )}
-      >
-        {sidebarContent}
+      <aside className="sticky top-0 hidden h-dvh w-56 shrink-0 border-r px-3 pb-5 pt-7 lg:block">
+        {navigation}
+      </aside>
+      <div className="flex items-center justify-between border-b px-5 py-3 lg:hidden">
+        <Link href="/" className="text-xl font-bold tracking-[-0.07em]">velld.</Link>
+        <Sheet open={open} onOpenChange={setOpen}>
+          <SheetTrigger asChild>
+            <Button variant="ghost" size="icon" aria-label="Open navigation"><Menu /></Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="w-64 px-3 pt-7" aria-describedby={undefined}>
+            <SheetTitle className="sr-only">Velld navigation</SheetTitle>
+            {navigation}
+          </SheetContent>
+        </Sheet>
       </div>
     </>
   );

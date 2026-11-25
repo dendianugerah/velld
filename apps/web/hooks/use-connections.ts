@@ -7,7 +7,7 @@ export function useConnections() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  const { data: connections, isLoading } = useQuery({
+  const { data: connections, isLoading, error } = useQuery({
     queryKey: ['connections'],
     queryFn: getConnections,
   });
@@ -99,6 +99,7 @@ export function useConnections() {
   return {
     connections,
     isLoading,
+    error,
     addConnection,
     isAdding,
     editConnection,

@@ -1,205 +1,103 @@
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { HistoryListSkeleton } from "@/components/ui/skeleton/history-list";
-import { ConnectionListSkeleton } from "@/components/ui/skeleton/connection-list";
-import { EmptyState } from "@/components/ui/empty-state";
+"use client";
 
-import { Database, Clock, HardDrive, Calendar, Activity, Timer, Cloud } from "lucide-react";
-
-import { formatDistanceToNow, parseISO } from "date-fns";
-import { formatSize, getScheduleFrequency } from "@/lib/helper";
-import { cn } from "@/lib/utils";
-import { useRouter } from "next/navigation";
-
-import { BackupList } from "@/types/backup";
-import { Connection } from "@/types/connection";
-import { statusColors, StatusColor, typeLabels, DatabaseType } from "@/types/base";
-
+import { format, isValid, parseISO } from "date-fns";
+import { ArrowRight } from "lucide-react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useBackup } from "@/hooks/use-backup";
 import { useConnections } from "@/hooks/use-connections";
+import { formatSize } from "@/lib/helper";
+import type { BackupList } from "@/types/backup";
 
 export function ActivityList() {
-  const { backups, isLoading: isLoadingBackups } = useBackup();
-  const { connections, isLoading: isLoadingConnections } = useConnections();
-  const router = useRouter();
+  const { backups, isLoading, error } = useBackup();
+  const { connections, isLoading: loadingConnections, error: connectionError } = useConnections();
+  const scheduled = connections?.filter((connection) => connection.backup_enabled).length ?? 0;
+  const nextAction = connectionError
+    ? { title: "Couldn’t load connections", detail: "Open Connections to check your database sources.", label: "View connections" }
+    : !connections?.length
+      ? { title: "Add a database connection", detail: "Connect PostgreSQL, MySQL, or MongoDB to run your first backup.", label: "Set up a connection" }
+      : scheduled === 0
+        ? { title: "Schedule a backup", detail: "Choose a database and set how often it should be backed up.", label: "Set up a schedule" }
+        : { title: scheduled === 1 ? "1 active backup schedule" : `${scheduled} active backup schedules`, detail: "Scheduled backups run automatically. You can review or change them from Connections.", label: "Manage schedules" };
 
-  const renderBackupItem = (item: BackupList) => {
-    const connection = connections?.find(c => c.id === item.connection_id);
-    return (
-      <div
-        key={item.id}
-        className="p-4 rounded-lg border bg-card"
-      >
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-0">
-          <div className="flex items-start sm:items-center space-x-4">
-            <div className={cn(
-              "p-2.5 rounded-md shrink-0",
-              item.status === 'completed' ? "bg-green-500/10" : 
-              item.status === 'failed' ? "bg-red-500/10" : "bg-primary/10"
-            )}>
-              <Database className={cn(
-                "h-5 w-5",
-                item.status === 'completed' ? "text-green-600 dark:text-green-500" :
-                item.status === 'failed' ? "text-red-600 dark:text-red-500" : "text-primary"
-              )} />
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <p className="font-medium truncate">{item.path.split('\\').pop()}</p>
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="text-xs font-normal">
-                    {typeLabels[item.database_type as DatabaseType] ?? item.database_type}
-                  </Badge>
-                  {item.s3_object_key && (
-                    <Badge variant="outline" className="text-xs font-normal bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 border-blue-200 dark:border-blue-800">
-                      <Cloud className="h-3 w-3 mr-1" />
-                      S3
-                    </Badge>
-                  )}
-                  <Badge 
-                    variant="outline" 
-                    className={cn(
-                      "text-xs sm:hidden",
-                      statusColors[item.status as StatusColor]
-                    )}
-                  >
-                    {item.status}
-                  </Badge>
-                </div>
-              </div>
-              <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground mt-1.5">
-                <span className="items-center gap-1 hidden sm:flex">
-                  <HardDrive className="h-3.5 w-3.5" />
-                  <span className="truncate max-w-[120px] sm:max-w-none">{connection?.name}</span>
-                </span>
-                <span className="hidden sm:inline text-muted-foreground/40">•</span>
-                <span className="hidden sm:block">{formatSize(item.size)}</span>
-                <span className="hidden sm:inline text-muted-foreground/40">•</span>
-                <span className="flex items-center">
-                  <Clock className="h-3.5 w-3.5 mr-1" />
-                  <span className="truncate max-w-[120px] sm:max-w-none">
-                    {formatDistanceToNow(parseISO(item.created_at), { addSuffix: true })}
-                  </span>
-                </span>
-              </div>
-            </div>
-          </div>
-          <Badge 
-            variant="outline" 
-            className={cn(
-              "hidden sm:inline-flex text-xs",
-              statusColors[item.status as StatusColor]
-            )}
-          >
-            {item.status}
-          </Badge>
-        </div>
-      </div>
-    );
-  };
-
-  const renderScheduledConnection = (connection: Connection) => (
-    <div
-      key={connection.id}
-      className="p-4 rounded-lg border bg-card"
-    >
-      <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-4">
-        <div className="flex items-start sm:items-center space-x-4">
-          <div className="p-2.5 rounded-md shrink-0 bg-primary/10">
-            <Database className="h-5 w-5 text-primary" />
-          </div>
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <p className="font-medium truncate">{connection.name}</p>
-              <Badge variant="outline" className="text-xs font-normal">
-                {typeLabels[connection.type] ?? connection.type}
-              </Badge>
-            </div>
-            <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground mt-1.5">
-              <span className="flex items-center">
-                <Calendar className="h-3.5 w-3.5 mr-1" />
-                {getScheduleFrequency(connection.cron_schedule)}
-              </span>
-              {connection.retention_days && (
-                <div className="flex items-center gap-2">
-                  <span className="hidden sm:inline text-muted-foreground/40">•</span>
-                  <span>{connection.retention_days} days retention</span>
-                </div>
-              )}
-              {connection.last_backup_time && (
-                <div className="flex items-center gap-2">
-                  <span className="hidden sm:inline text-muted-foreground/40">•</span>
-                  <span className="flex items-center">
-                    <Clock className="h-3.5 w-3.5 mr-1" />
-                    <span className="truncate">
-                      Last backup {formatDistanceToNow(parseISO(connection.last_backup_time), { addSuffix: true })}
-                    </span>
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+  const groups = new Map<string, BackupList[]>();
+  for (const backup of backups?.slice(0, 6) ?? []) {
+    const date = parseISO(backup.created_at);
+    const day = isValid(date) ? format(date, "dd MMM yyyy") : "Unknown date";
+    const items = groups.get(day) ?? [];
+    items.push(backup);
+    groups.set(day, items);
+  }
 
   return (
-    <Card className="col-span-3 bg-card border">
-      <div className="p-4 sm:p-6">
-        <Tabs defaultValue="recent" className="w-full">
-          <div className="flex justify-between items-center mb-4">
-            <TabsList className="h-8">
-              <TabsTrigger value="recent" className="text-xs">Recent Activity</TabsTrigger>
-              <TabsTrigger value="scheduled" className="text-xs">Scheduled</TabsTrigger>
-            </TabsList>
-          </div>
+    <div className="space-y-9">
+      <section aria-labelledby="next-up" className="overflow-hidden rounded-xl border">
+        <h2 id="next-up" className="flex items-center gap-2.5 border-b bg-muted/70 px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.15em] text-muted-foreground sm:px-6">
+          <span className="size-2 rounded-full bg-[#49634d]" aria-hidden="true" /> Next up
+        </h2>
+        <div className="p-5 sm:p-6">
+          {loadingConnections ? <Skeleton className="h-20 w-full max-w-sm" /> : (
+            <>
+              <p className="text-lg font-semibold tracking-tight">{nextAction.title}</p>
+              <p className="mt-1.5 text-sm leading-6 text-muted-foreground">{nextAction.detail}</p>
+              <Button asChild className="mt-5">
+                <Link href="/connections">{nextAction.label}<ArrowRight aria-hidden="true" /></Link>
+              </Button>
+            </>
+          )}
+        </div>
+      </section>
 
-          <TabsContent value="recent" className="m-0">
-            <ScrollArea className="h-[600px] lg:h-[700px]">
-              <div className="space-y-2">
-                {isLoadingBackups ? (
-                  <HistoryListSkeleton />
-                ) : backups && backups.length > 0 ? (
-                  backups.map(renderBackupItem)
-                ) : (
-                  <EmptyState
-                    icon={Activity}
-                    title="No recent activity"
-                    description="Set up database connections and run your first backup to see activity."
-                    variant="minimal"
-                  />
-                )}
+      <section aria-labelledby="recent-activity">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <h2 id="recent-activity" className="text-base font-semibold tracking-tight">Recent activity</h2>
+          <Link href="/history" className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:underline">
+            View history <ArrowRight aria-hidden="true" className="size-3.5" />
+          </Link>
+        </div>
+        <div className="overflow-hidden rounded-xl border">
+          {isLoading ? (
+            <div className="p-5"><Skeleton className="h-16 w-full" /></div>
+          ) : groups.size ? (
+            Array.from(groups, ([day, items]) => (
+              <div key={day}>
+                <h3 className="border-b bg-muted/70 px-5 py-2.5 text-[11px] font-semibold uppercase tracking-[0.13em] text-muted-foreground sm:px-6">{day}</h3>
+                <ul className="divide-y">
+                  {items.map((backup) => {
+                    const date = parseISO(backup.created_at);
+                    const connection = connections?.find((item) => item.id === backup.connection_id);
+                    return (
+                      <li key={backup.id} className="flex items-center justify-between gap-4 px-5 py-3.5 sm:px-6">
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium">{backup.database_name || connection?.name || "Database backup"}</p>
+                          <p className="mt-1 truncate text-xs text-muted-foreground">
+                            {isValid(date) && <time dateTime={backup.created_at}>{format(date, "p")}</time>}
+                            {isValid(date) && connection && " · "}
+                            {connection?.name}
+                          </p>
+                        </div>
+                        <div className="shrink-0 text-right text-xs">
+                          <p className="font-medium capitalize">{backup.status.replaceAll("_", " ")}</p>
+                          {backup.size > 0 && <p className="mt-1 text-muted-foreground">{formatSize(backup.size)}</p>}
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
               </div>
-            </ScrollArea>
-          </TabsContent>
-
-          <TabsContent value="scheduled" className="m-0">
-            <ScrollArea className="h-[600px] lg:h-[700px]">
-              <div className="space-y-2">
-                {isLoadingConnections ? (
-                  <ConnectionListSkeleton />
-                ) : connections && connections.filter(c => c.backup_enabled).length > 0 ? (
-                  connections.filter(c => c.backup_enabled).map(renderScheduledConnection)
-                ) : (
-                  <EmptyState
-                    icon={Timer}
-                    title="No scheduled backups"
-                    description="Automate your database backups by setting up schedules. This ensures your data is regularly backed up without manual intervention."
-                    action={{
-                      label: "Manage Connections",
-                      onClick: () => router.push('/connections'),
-                      variant: "outline"
-                    }}
-                  />
-                )}
-              </div>
-            </ScrollArea>
-          </TabsContent>
-        </Tabs>
-      </div>
-    </Card>
+            ))
+          ) : (
+            <div className="px-5 py-6 sm:px-6">
+              <p className="text-sm font-medium">{error ? "Couldn’t load backup activity" : "No backups yet"}</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {error ? "Open Backup History to try again." : "Backups will appear here after they run."}
+              </p>
+            </div>
+          )}
+        </div>
+      </section>
+    </div>
   );
 }
