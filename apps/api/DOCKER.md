@@ -83,3 +83,20 @@ All Dockerfiles use multi-stage builds:
 2. **Runtime stage:** Minimal Alpine Linux with only necessary database clients
 
 This keeps the final image as small and secure as possible.
+
+### Backup and restore integration tests
+
+Run from this directory with the Go version in `go.mod` on a host with Docker
+(including access to `/var/run/docker.sock` for MySQL discovery), PostgreSQL
+14–16 client tools (`pg_dump` and `psql`), the MariaDB client tools used by
+the Velld API image (`mysqldump` and `mysql`), and MongoDB Database Tools
+(`mongodump` and `mongorestore`) installed.
+
+```bash
+go vet ./...
+go test ./...
+go test -v -count=1 -tags integration -run '^TestDocker' ./internal/backup
+```
+
+The integration suite starts and removes its own containers and uses
+Docker-assigned loopback ports. It fails if Docker or the tools are unavailable.

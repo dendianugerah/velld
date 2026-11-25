@@ -1,0 +1,34 @@
+name: Go Tests
+
+on:
+  push:
+    branches:
+      - 'dendi/**'
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: apps/api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: apps/api/go.mod
+          cache-dependency-path: apps/api/go.sum
+      - run: go vet ./...
+      - run: go test ./...
+      - name: Install database client tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client-16 mariadb-client
+          curl -fsSL https://fastdl.mongodb.org/tools/db/mongodb-database-tools-ubuntu2404-x86_64-100.14.0.tgz |
+            tar -xz -C "$RUNNER_TEMP" --strip-components=2 --wildcards '*/bin/mongodump' '*/bin/mongorestore'
+          echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
+      - name: Run database integration tests
+        run: go test -v -count=1 -tags integration -run '^TestDocker' ./internal/backup
