@@ -124,12 +124,6 @@ export default function HomePage() {
                 </span>
                 MongoDB
               </li>
-              <li>
-                <span className={styles.redis}>
-                  <Database size={14} aria-hidden="true" />
-                </span>
-                Redis
-              </li>
             </ul>
           </div>
         </section>
