@@ -25,6 +25,7 @@ export interface Connection {
   backup_enabled: boolean;
   cron_schedule?: string;
   retention_days?: number;
+  retention_count?: number | null;
   s3_cleanup_on_retention: boolean;
 }
 

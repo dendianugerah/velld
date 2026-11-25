@@ -38,13 +38,14 @@ export function ConnectionListHeader({
   }, []);
 
   return (
-    <div className="flex items-center justify-between gap-4 pb-3">
+    <div className="flex flex-col-reverse justify-between gap-4 pb-2 sm:flex-row sm:items-center">
       <div className="flex items-center gap-3 flex-1">
         <div className="relative max-w-md group flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground transition-colors group-focus-within:text-foreground" />
           <Input
             id="connection-search"
             placeholder="Search connections..."
+            aria-label="Search connections"
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
             className="pl-9 pr-14 h-10 bg-background/50 border-border/50 transition-all duration-200 focus:bg-background focus:border-border group-hover:border-border/80 rounded-lg shadow-sm"
@@ -66,9 +67,9 @@ export function ConnectionListHeader({
         )}
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="min-w-0 sm:shrink-0">
         {actionButton && (
-          <div className="shrink-0">
+          <div className="min-w-0">
             {actionButton}
           </div>
         )}

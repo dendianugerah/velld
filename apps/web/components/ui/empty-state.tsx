@@ -29,14 +29,14 @@ export function EmptyState({
       "flex flex-col items-center justify-center text-center py-12 px-6",
       className
     )}>
-      <div className="relative mb-6">
+      {variant === "default" && <div className="relative mb-6">
         <div className="w-14 h-14 rounded-full bg-muted/50 flex items-center justify-center">
           <Icon className="w-7 h-7 text-muted-foreground/60" />
         </div>
         {variant === "default" && (
           <div className="absolute inset-0 w-14 h-14 rounded-full bg-gradient-to-br from-primary/5 to-primary/10 animate-pulse" />
         )}
-      </div>
+      </div>}
       
       <h3 className="font-semibold text-base text-foreground mb-2">
         {title}

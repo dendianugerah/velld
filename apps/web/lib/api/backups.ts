@@ -20,15 +20,11 @@ export async function saveBackup(connectionId: string): Promise<void> {
 }
 
 export async function getBackups(params?: GetBackupsParams): Promise<BackupListResponse> {
-  let url = `/api/backups`;
-
-  if (params?.page && params?.limit) {
-    url += `?page=${params.page}&limit=${params.limit}`;
-  }
-
-  if (params?.search) {
-    url += `&search=${params.search}`;
-  }
+  const query = new URLSearchParams();
+  if (params?.page) query.set("page", String(params.page));
+  if (params?.limit) query.set("limit", String(params.limit));
+  if (params?.search) query.set("search", params.search);
+  const url = `/api/backups${query.size ? `?${query}` : ""}`;
 
   return apiRequest<BackupListResponse>(url, {
     method: 'GET',

@@ -38,12 +38,13 @@ export function HistoryFilters({
 }: HistoryFiltersProps) {
   
   return (
-    <div className="flex flex-col gap-3">
-      <div className="relative w-full">
+    <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+      <div className="relative w-full xl:max-w-xs">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           type="text"
           placeholder="Search history..."
+          aria-label="Search backup history"
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
           className="pl-10"
@@ -51,9 +52,9 @@ export function HistoryFilters({
         />
       </div>
       
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="grid grid-cols-2 items-center gap-2 sm:flex sm:flex-wrap">
         <Select value={dateRange} onValueChange={onDateRangeChange}>
-          <SelectTrigger className="w-full sm:w-[140px]">
+          <SelectTrigger aria-label="Filter by date" className="w-full sm:w-[140px]">
             <SelectValue placeholder="Last 7 Days" />
           </SelectTrigger>
           <SelectContent>
@@ -65,7 +66,7 @@ export function HistoryFilters({
         </Select>
 
         <Select value={status} onValueChange={onStatusChange}>
-          <SelectTrigger className="w-full sm:w-[130px]">
+          <SelectTrigger aria-label="Filter by status" className="w-full sm:w-[130px]">
             <SelectValue placeholder="All Status" />
           </SelectTrigger>
           <SelectContent>
@@ -77,7 +78,7 @@ export function HistoryFilters({
         </Select>
 
         <Select value={databaseType} onValueChange={onDatabaseTypeChange}>
-          <SelectTrigger className="w-full sm:w-[140px]">
+          <SelectTrigger aria-label="Filter by database engine" className="w-full sm:w-[140px]">
             <SelectValue placeholder="All Databases" />
           </SelectTrigger>
           <SelectContent>

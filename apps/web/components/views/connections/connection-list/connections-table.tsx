@@ -1,306 +1,69 @@
-'use client';
+"use client";
 
-import { formatSize, getScheduleFrequency } from '@/lib/helper';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from '@/components/ui/table';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { 
-  Play, 
-  CheckCircle2, 
-  Pencil, 
-  Trash2,
-  Settings2,
-  ArrowUpDown,
-  Database,
-  MoreHorizontal
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
-import type { Connection } from '@/types/connection';
-import { typeLabels } from '@/types/base';
-import { useBackup } from '@/hooks/use-backup';
-import { useState } from 'react';
+import { useState } from "react";
+import { ArrowUpDown, MoreHorizontal } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
+import { getScheduleFrequency } from "@/lib/helper";
+import { Button } from "@/components/ui/button";
+import { DatabaseMark } from "@/components/ui/database-mark";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { typeLabels } from "@/types/base";
+import { useBackup } from "@/hooks/use-backup";
+import type { Connection } from "@/types/connection";
 
 interface ConnectionsTableProps {
   connections: Connection[];
   onEdit: (connectionId: string) => void;
   onDelete: (connection: Connection) => void;
-  onSchedule: (connectionId: string) => void;
+  onSchedule: (connectionId: string, trigger?: HTMLElement | null) => void;
   onDiscover?: (connection: Connection) => void;
 }
 
-type SortField = 'name' | 'type' | 'status' | 'size' | 'lastBackup';
-type SortOrder = 'asc' | 'desc';
-
-export function ConnectionsTable({
-  connections,
-  onEdit,
-  onDelete,
-  onSchedule,
-  onDiscover,
-}: ConnectionsTableProps) {
+export function ConnectionsTable({ connections, onEdit, onDelete, onSchedule, onDiscover }: ConnectionsTableProps) {
   const { createBackup, isCreating } = useBackup();
-  const [sortField, setSortField] = useState<SortField>('name');
-  const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
-  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
-
-  const handleSort = (field: SortField) => {
-    if (sortField === field) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortField(field);
-      setSortOrder('asc');
-    }
-  };
-
-  const sortedConnections = [...connections].sort((a, b) => {
-    let comparison = 0;
-    
-    switch (sortField) {
-      case 'name':
-        comparison = a.name.localeCompare(b.name);
-        break;
-      case 'type':
-        comparison = a.type.localeCompare(b.type);
-        break;
-      case 'status':
-        comparison = a.status.localeCompare(b.status);
-        break;
-      case 'size':
-        comparison = (a.database_size || 0) - (b.database_size || 0);
-        break;
-      case 'lastBackup':
-        const aTime = a.last_backup_time ? new Date(a.last_backup_time).getTime() : 0;
-        const bTime = b.last_backup_time ? new Date(b.last_backup_time).getTime() : 0;
-        comparison = aTime - bTime;
-        break;
-    }
-    
-    return sortOrder === 'asc' ? comparison : -comparison;
+  const [sort, setSort] = useState<"name" | "lastBackup">("name");
+  const [ascending, setAscending] = useState(true);
+  const sorted = [...connections].sort((a, b) => {
+    const result = sort === "name" ? a.name.localeCompare(b.name) : (Date.parse(a.last_backup_time || "") || 0) - (Date.parse(b.last_backup_time || "") || 0);
+    return ascending ? result : -result;
   });
+  const sortBy = (field: typeof sort) => { setSort(field); setAscending(sort === field ? !ascending : true); };
 
-  const SortButton = ({ field, children }: { field: SortField; children: React.ReactNode }) => (
-    <button
-      onClick={() => handleSort(field)}
-      className="flex items-center gap-1 hover:text-foreground transition-colors"
-    >
-      {children}
-      <ArrowUpDown className={cn(
-        "h-3 w-3 transition-opacity",
-        sortField === field ? "opacity-100" : "opacity-0 group-hover:opacity-50"
-      )} />
-    </button>
-  );
-
-  return (
-    <div className="w-full">
-      <TooltipProvider>
-        <div className="overflow-hidden">
-          <Table>
-            <TableHeader className="border-b border-border/50">
-              <TableRow className="hover:bg-transparent">
-                <TableHead className="w-[280px] group font-semibold text-foreground/90 h-11">
-                  <SortButton field="name">Name</SortButton>
-                </TableHead>
-                <TableHead className="group font-semibold text-foreground/90 h-11">
-                  <SortButton field="type">Type</SortButton>
-                </TableHead>
-                <TableHead className="font-semibold text-foreground/90 h-11">Host</TableHead>
-                <TableHead className="font-semibold text-foreground/90 h-11">Schedule</TableHead>
-                <TableHead className="group font-semibold text-foreground/90 h-11">
-                  <SortButton field="lastBackup">Last Backup</SortButton>
-                </TableHead>
-                <TableHead className="group text-right font-semibold text-foreground/90 h-11">
-                  <SortButton field="size">Size</SortButton>
-                </TableHead>
-                <TableHead className="text-right font-semibold text-foreground/90 h-11">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {sortedConnections.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={8} className="h-32">
-                    <div className="flex flex-col items-center justify-center gap-3 text-muted-foreground">
-                      <div className="flex items-center justify-center w-12 h-12 rounded-full bg-muted">
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-                        </svg>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-sm font-medium">No connections found</p>
-                        <p className="text-xs text-muted-foreground/60 mt-1">Try adjusting your search or add a new connection</p>
-                      </div>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                sortedConnections.map((connection) => {
-                  const scheduleFrequency = getScheduleFrequency(connection.cron_schedule);
-                  
-                  return (
-                    <TableRow 
-                      key={connection.id} 
-                      className="group border-b border-border/40 hover:bg-accent/20 transition-all duration-150"
-                    >
-                      <TableCell className="font-medium py-3.5">
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span className="truncate block max-w-[260px] font-medium cursor-help text-foreground">
-                              {connection.name}
-                            </span>
-                          </TooltipTrigger>
-                          <TooltipContent side="top" align="start">
-                            <p>{connection.name}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TableCell>
-                      <TableCell className="py-3.5">
-                        <Badge variant="secondary" className="text-xs font-medium bg-accent/50 hover:bg-accent/70 border-0 px-2.5 py-0.5">
-                          {typeLabels[connection.type] ?? connection.type}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="py-3.5">
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span className="text-sm text-muted-foreground/90 truncate block max-w-[180px] font-mono text-[13px] cursor-help">
-                              {connection.host}:{connection.port}
-                            </span>
-                          </TooltipTrigger>
-                          <TooltipContent side="top" align="start">
-                            <p className="font-mono text-xs">{connection.host}:{connection.port}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TableCell>
-                      <TableCell className="py-3.5">
-                        {connection.backup_enabled ? (
-                          <div className="flex items-center gap-2">
-                            <CheckCircle2 className="h-3.5 w-3.5 text-green-600 dark:text-green-500" />
-                            <span className="text-sm font-medium text-foreground/80">
-                              {scheduleFrequency || 'Enabled'}
-                            </span>
-                          </div>
-                        ) : (
-                          <span className="text-sm text-muted-foreground/60">—</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="py-3.5">
-                        {connection.last_backup_time ? (
-                          <span className="text-sm text-muted-foreground/90 font-medium">
-                            {new Date(connection.last_backup_time).toLocaleDateString('en-US', {
-                              month: 'short',
-                              day: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })}
-                          </span>
-                        ) : (
-                          <span className="text-sm text-muted-foreground/60">—</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right py-3.5">
-                        <span className="text-sm font-semibold text-foreground/90">
-                          {formatSize(connection.database_size)}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-right py-3.5">
-                        <div className="flex items-center justify-end gap-1">
-                          <Tooltip delayDuration={300}>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => createBackup(connection.id)}
-                                disabled={isCreating}
-                                className="h-8 w-8 p-0 hover:bg-accent/80 transition-all duration-150"
-                              >
-                                <Play className="h-3.5 w-3.5" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent side="top">
-                              <p className="text-xs">Backup Now</p>
-                            </TooltipContent>
-                          </Tooltip>
-                          
-                          <DropdownMenu 
-                            open={openDropdownId === connection.id}
-                            onOpenChange={(open) => setOpenDropdownId(open ? connection.id : null)}
-                          >
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-8 w-8 p-0 hover:bg-accent/80 transition-all duration-150"
-                              >
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-[160px]">
-                              {onDiscover && (
-                                <DropdownMenuItem 
-                                  onClick={() => {
-                                    setOpenDropdownId(null);
-                                    onDiscover(connection);
-                                  }}
-                                >
-                                  <Database className="mr-2 h-4 w-4" />
-                                  Discover
-                                </DropdownMenuItem>
-                              )}
-                              <DropdownMenuItem 
-                                onClick={() => {
-                                  setOpenDropdownId(null);
-                                  onSchedule(connection.id);
-                                }}
-                              >
-                                <Settings2 className="mr-2 h-4 w-4" />
-                                Schedule
-                              </DropdownMenuItem>
-                              <DropdownMenuItem 
-                                onClick={() => {
-                                  setOpenDropdownId(null);
-                                  onEdit(connection.id);
-                                }}
-                              >
-                                <Pencil className="mr-2 h-4 w-4" />
-                                Edit
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem 
-                                onClick={() => {
-                                  setOpenDropdownId(null);
-                                  onDelete(connection);
-                                }}
-                                className="text-destructive focus:text-destructive"
-                              >
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </TooltipProvider>
+  return <div className="overflow-hidden rounded-lg border bg-white">
+    <div className="hidden grid-cols-[minmax(0,1fr)_130px_120px_165px] items-center gap-4 border-b bg-[#fafafa] px-4 py-2.5 text-[11px] text-muted-foreground xl:grid">
+      <button onClick={() => sortBy("name")} className="flex w-fit items-center gap-2" aria-label="Sort connections by name">Connection<ArrowUpDown className="h-3 w-3" /></button>
+      <span>Schedule</span>
+      <button onClick={() => sortBy("lastBackup")} className="flex w-fit items-center gap-2" aria-label="Sort connections by last backup">Last backup<ArrowUpDown className="h-3 w-3" /></button>
+      <span className="text-right">Actions</span>
     </div>
-  );
+    {sorted.map(connection => {
+      const frequency = getScheduleFrequency(connection.cron_schedule);
+      return <div key={connection.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-3 border-b px-4 py-3.5 last:border-b-0 xl:grid-cols-[minmax(0,1fr)_130px_120px_165px]">
+        <div className="col-span-2 flex min-w-0 items-start gap-3.5 xl:col-span-1">
+          <DatabaseMark type={connection.type} small />
+          <div className="min-w-0">
+          <p className="break-words text-[13px] font-medium">{connection.name}</p>
+          <p className="mt-1 break-all text-[11px] text-muted-foreground">{typeLabels[connection.type] ?? connection.type} · {connection.host}:{connection.port}</p>
+          </div>
+        </div>
+        <button className="w-fit rounded-md border bg-white px-2 py-1.5 text-start text-[11px] capitalize hover:bg-muted" onClick={event => onSchedule(connection.id, event.currentTarget)} aria-label={`Edit schedule for ${connection.name}`}>
+          {connection.backup_enabled ? (frequency === "test" ? "Every minute" : frequency === "custom" ? "Custom schedule" : frequency || "Scheduled") : "Add schedule"}
+        </button>
+        <p className="text-end text-[11px] text-muted-foreground xl:text-start">{connection.last_backup_time ? formatDistanceToNow(new Date(connection.last_backup_time), { addSuffix: true }) : "No backups yet"}</p>
+        <div className="col-span-2 flex items-center justify-end gap-2 xl:col-span-1">
+          <Button variant="outline" size="sm" className="text-[11px]" onClick={() => createBackup(connection.id)} disabled={isCreating} aria-label={`Back up ${connection.name} now`}>{isCreating ? "Starting…" : "Back up now"}</Button>
+          <DropdownMenu modal={false}>
+            <DropdownMenuTrigger asChild><Button id={`connection-actions-${connection.id}`} variant="ghost" size="icon" className="h-8 w-8" aria-label={`Actions for ${connection.name}`}><MoreHorizontal /></Button></DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => onSchedule(connection.id, document.getElementById(`connection-actions-${connection.id}`))}>Backup schedule</DropdownMenuItem>
+              {onDiscover && <DropdownMenuItem onClick={() => onDiscover(connection)}>Select databases</DropdownMenuItem>}
+              <DropdownMenuItem onClick={() => onEdit(connection.id)}>Edit connection</DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => onDelete(connection)} className="text-destructive focus:text-destructive">Delete connection</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>;
+    })}
+  </div>;
 }

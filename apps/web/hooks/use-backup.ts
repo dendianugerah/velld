@@ -120,7 +120,7 @@ export function useBackup() {
       const a = document.createElement('a');
       a.href = url;
       
-      const filename = backup.path.split('\\').pop() || `backup-${backup.id}.sql`;
+      const filename = backup.path.split(/[\\/]/).pop() || `backup-${backup.id}.sql`;
       a.download = filename;
       document.body.appendChild(a);
       a.click();

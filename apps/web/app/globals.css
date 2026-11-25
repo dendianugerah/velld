@@ -4,75 +4,82 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222 47% 11%;
+    color-scheme: light;
+    --background: 45 22% 97%;
+    --foreground: 100 7% 16%;
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 96 9% 15%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
-    --primary: 217 91% 60%;
+    --popover-foreground: 96 9% 15%;
+    --primary: 205 62% 40%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222 47% 11%;
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
-    --accent: 210 40% 96%;
-    --accent-foreground: 222 47% 11%;
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 217 91% 60%;
+    --secondary: 205 55% 94%;
+    --secondary-foreground: 205 62% 32%;
+    --muted: 60 12% 96%;
+    --muted-foreground: 96 4% 43%;
+    --accent: 205 40% 96%;
+    --accent-foreground: 205 62% 32%;
+    --destructive: 0 63% 43%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 60 12% 88%;
+    --input: 60 12% 84%;
+    --ring: 205 62% 40%;
     --radius: 0.75rem;
-    --success: 142 76% 36%;
-    --success-foreground: 0 0% 98%;
-    --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 98%;
-    --info: 217 91% 60%;
-    --info-foreground: 0 0% 98%;
+    --success: 142 40% 32%;
+    --warning: 38 75% 36%;
+    --info: 212 55% 40%;
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   }
-  
-  .dark {
-    --background: 222 47% 11%;
-    --foreground: 210 40% 98%;
-    --card: 222 47% 11%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222 47% 11%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 217 91% 60%;
-    --primary-foreground: 222 47% 11%;
-    --secondary: 217 33% 17%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217 33% 17%;
-    --muted-foreground: 215 20% 65%;
-    --accent: 217 33% 17%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 63% 31%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217 33% 17%;
-    --input: 217 33% 17%;
-    --ring: 217 91% 60%;
-    --success: 142 76% 36%;
-    --success-foreground: 0 0% 98%;
-    --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 98%;
-    --info: 217 91% 60%;
-    --info-foreground: 0 0% 98%;
-  }
-}
 
-@layer base {
-  * {
-    @apply border-border;
-  }
+  * { @apply border-border; }
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
+  html { scroll-padding-block-start: 140px; }
+  ::selection { background: #d9eaf7; color: #252922; }
+  button, input, select, textarea { font: inherit; }
+  a, button, input, select, textarea { -webkit-tap-highlight-color: transparent; }
+}
+
+/* Occasional overlays: spatial continuity, not motion on the data itself. */
+@layer components {
+  .pressable { transition: transform 150ms ease-out, background-color 150ms ease, box-shadow 150ms ease; }
+  .pressable:active:not(:disabled) { transform: scale(0.96); }
+  .modal-surface[data-state="open"] { animation: dialog-in 200ms var(--ease-out); }
+  .modal-surface[data-state="closed"] { animation: dialog-out 150ms var(--ease-out); }
+  .menu-surface { animation-timing-function: var(--ease-out); animation-duration: 150ms; }
+}
+
+@keyframes dialog-in {
+  from { opacity: 0; transform: translate(-50%, calc(-50% + 6px)) scale(0.98); }
+  to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+@keyframes dialog-out {
+  from { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  to { opacity: 0; transform: translate(-50%, -50%) scale(0.98); }
+}
+@keyframes dialog-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes dialog-fade-out { from { opacity: 1; } to { opacity: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .pressable:active:not(:disabled) { transform: none; }
+  .modal-surface[data-state="open"] { animation: dialog-fade-in 100ms ease-out; }
+  .modal-surface[data-state="closed"] { animation: dialog-fade-out 100ms ease-out; }
+  .menu-surface, .sheet-surface {
+    --tw-enter-translate-x: 0 !important;
+    --tw-enter-translate-y: 0 !important;
+    --tw-enter-scale: 1 !important;
+    --tw-exit-translate-x: 0 !important;
+    --tw-exit-translate-y: 0 !important;
+    --tw-exit-scale: 1 !important;
+    animation-duration: 100ms;
+  }
+  /* Override the Radix/Tailwind slide utilities in the later utility layer. */
+  .sheet-surface[data-state="open"] { animation: dialog-fade-in 100ms ease-out !important; }
+  .sheet-surface[data-state="closed"] { animation: dialog-fade-out 100ms ease-out !important; }
 }
 
 @layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
+  .text-balance { text-wrap: balance; }
 }

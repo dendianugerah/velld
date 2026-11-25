@@ -1,356 +1,78 @@
 "use client";
 
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { EmptyState } from "@/components/ui/empty-state";
-import { Database, Download, History, RefreshCw, RotateCcw, Cloud, Trash2 } from "lucide-react";
-import { formatDistanceToNow, parseISO, subDays, isAfter } from "date-fns";
+import { useMemo, useState } from "react";
+import { formatDistanceToNow, isAfter, parseISO, subDays } from "date-fns";
+import { MoreHorizontal } from "lucide-react";
 import { useBackup } from "@/hooks/use-backup";
-import { BackupList } from "@/types/backup";
-import { statusColors } from "@/types/base";
-import { HistoryListSkeleton } from "@/components/ui/skeleton/history-list";
-import { calculateDuration, formatSize } from "@/lib/helper";
-import { HistoryFilters } from "./history-filters";
+import { formatSize } from "@/lib/helper";
+import { typeLabels, DatabaseType } from "@/types/base";
+import type { BackupList } from "@/types/backup";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { BackupStatus } from "@/components/ui/backup-status";
 import { CustomPagination } from "@/components/ui/custom-pagination";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { RestoreDialog } from "./restore-dialog";
-import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { useState, useMemo } from "react";
-import { useIsFetching } from "@tanstack/react-query";
+import { HistoryFilters } from "./history-filters";
 
 export function HistoryList() {
-  const { backups, isLoading, pagination, page, setPage, downloadBackupFile, isDownloading, search, setSearch, deleteBackupById, isDeleting } = useBackup();
-  const [restoreDialogOpen, setRestoreDialogOpen] = useState(false);
-  const [selectedBackupForRestore, setSelectedBackupForRestore] = useState<BackupList | null>(null);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [selectedBackupForDelete, setSelectedBackupForDelete] = useState<BackupList | null>(null);
-  const isFetchingBackups = useIsFetching({ queryKey: ['backups'] });
-  
+  const { backups, isLoading, error, pagination, page, setPage, downloadBackupFile, isDownloading, search, setSearch, deleteBackupById, isDeleting } = useBackup();
+  const [restore, setRestore] = useState<BackupList | null>(null);
+  const [deleting, setDeleting] = useState<BackupList | null>(null);
+  const [actionTrigger, setActionTrigger] = useState<HTMLElement | null>(null);
   const [dateRange, setDateRange] = useState("all");
   const [status, setStatus] = useState("all");
   const [databaseType, setDatabaseType] = useState("all");
+  const filtered = useMemo(() => (backups ?? []).filter(backup => {
+    const days = { "24hours": 1, "7days": 7, "30days": 30 }[dateRange];
+    return (!days || isAfter(parseISO(backup.created_at), subDays(new Date(), days)))
+      && (status === "all" || backup.status === status)
+      && (databaseType === "all" || backup.database_type === databaseType);
+  }), [backups, dateRange, status, databaseType]);
+  const reset = () => { setSearch(""); setDateRange("all"); setStatus("all"); setDatabaseType("all"); setPage(1); };
 
-  const totalPages = pagination?.total_pages || 1;
-
-  const handleRestore = (backup: BackupList) => {
-    setSelectedBackupForRestore(backup);
-    setRestoreDialogOpen(true);
-  };
-
-  const handleDelete = (backup: BackupList) => {
-    setSelectedBackupForDelete(backup);
-    setDeleteDialogOpen(true);
-  };
-
-  const confirmDelete = () => {
-    if (!selectedBackupForDelete) return;
-    deleteBackupById(selectedBackupForDelete.id, {
-      onSuccess: () => {
-        setDeleteDialogOpen(false);
-        setSelectedBackupForDelete(null);
-      },
-    });
-  };
-
-  const handleResetFilters = () => {
-    setSearch("");
-    setDateRange("all");
-    setStatus("all");
-    setDatabaseType("all");
-  };
-
-  const filteredBackups = useMemo(() => {
-    if (!backups) return [];
-
-    return backups.filter((backup) => {
-      const searchLower = search.toLowerCase();
-      const matchesSearch = !search || 
-        backup.path.toLowerCase().includes(searchLower) ||
-        backup.database_type.toLowerCase().includes(searchLower);
-
-      let matchesDateRange = true;
-      if (dateRange !== "all") {
-        const backupDate = parseISO(backup.created_at);
-        const now = new Date();
-        
-        switch (dateRange) {
-          case "24hours":
-            matchesDateRange = isAfter(backupDate, subDays(now, 1));
-            break;
-          case "7days":
-            matchesDateRange = isAfter(backupDate, subDays(now, 7));
-            break;
-          case "30days":
-            matchesDateRange = isAfter(backupDate, subDays(now, 30));
-            break;
-        }
-      }
-
-      const matchesStatus = status === "all" || backup.status.toLowerCase() === status.toLowerCase();
-      const matchesDatabaseType = databaseType === "all" || backup.database_type.toLowerCase() === databaseType.toLowerCase();
-
-      return matchesSearch && matchesDateRange && matchesStatus && matchesDatabaseType;
-    });
-  }, [backups, search, dateRange, status, databaseType]);
-
-  return (
-    <Card className="col-span-3 bg-card border">
-      <div className="flex flex-col h-full">
-        <div className="p-4 sm:p-6 border-b">
-          <div className="space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <h3 className="text-lg font-semibold">Recent Backups</h3>
-              {isFetchingBackups > 0 && !isLoading && (
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <RefreshCw className="h-3 w-3 animate-spin" />
-                  <span>Updating...</span>
-                </div>
-              )}
-            </div>
-            <HistoryFilters 
-              search={search}
-              onSearchChange={setSearch}
-              dateRange={dateRange}
-              onDateRangeChange={setDateRange}
-              status={status}
-              onStatusChange={setStatus}
-              databaseType={databaseType}
-              onDatabaseTypeChange={setDatabaseType}
-              onReset={handleResetFilters}
-              isLoading={isLoading}
-            />
-          </div>
-        </div>
-        <div className="flex flex-col p-4 sm:p-6 flex-1">
-          <div className="flex-1 flex flex-col min-w-0">
-            <div className="flex-1 space-y-4">
-              {isLoading ? (
-                <HistoryListSkeleton />
-              ) : filteredBackups && filteredBackups.length > 0 ? (
-                <>
-                  {filteredBackups.map((item: BackupList) => (
-                    <div
-                      key={item.id}
-                      className="p-4 rounded-lg bg-background/50 hover:bg-background/60 transition-colors border"
-                    >
-                      {/* Mobile Layout */}
-                      <div className="flex md:hidden flex-col gap-3">
-                        <div className="flex items-start gap-3">
-                          <div className="p-2 rounded-md bg-primary/10 shrink-0">
-                            <Database className="h-5 w-5 text-primary" />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <h4 className="font-medium truncate">{item.path.split('\\').pop()}</h4>
-                            <div className="flex items-center gap-2 mt-1 flex-wrap">
-                              <Badge variant="secondary" className="text-xs">
-                                {item.database_type}
-                              </Badge>
-                              <Badge
-                                variant="secondary"
-                                className={statusColors[item.status as keyof typeof statusColors]}
-                              >
-                                {item.status}
-                              </Badge>
-                              {item.s3_object_key && (
-                                <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">
-                                  <Cloud className="h-3 w-3 mr-1" />
-                                  S3
-                                </Badge>
-                              )}
-                            </div>
-                            <p className="text-xs text-muted-foreground mt-2">
-                              {formatDistanceToNow(parseISO(item.created_at), { addSuffix: true })}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {formatSize(item.size)} • {calculateDuration(item.started_time, item.completed_time)}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex flex-col gap-2">
-                          <div className="flex gap-2">
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => handleRestore(item)}
-                              className="flex-1"
-                            >
-                              <RotateCcw className="h-4 w-4 mr-1" />
-                              Restore
-                            </Button>
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              onClick={() => downloadBackupFile({ id: item.id, path: item.path })}
-                              disabled={isDownloading}
-                              className="flex-1"
-                            >
-                              <Download className="h-4 w-4 mr-1" />
-                              Download
-                            </Button>
-                          </div>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleDelete(item)}
-                            className="w-full text-destructive hover:text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4 mr-1" />
-                            Delete
-                          </Button>
-                        </div>
-                      </div>
-
-                      {/* Desktop Layout */}
-                      <div className="hidden md:flex items-center justify-between">
-                        <div className="flex items-center space-x-4 min-w-0 flex-1">
-                          <div className="p-2 rounded-md bg-primary/10 shrink-0">
-                            <Database className="h-5 w-5 text-primary" />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center space-x-2">
-                              <h4 className="font-medium truncate">{item.path.split('\\').pop()}</h4>
-                              <Badge variant="secondary" className="text-xs shrink-0">
-                                {item.database_type}
-                              </Badge>
-                              {item.s3_object_key && (
-                                <Badge variant="secondary" className="text-xs shrink-0 bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">
-                                  <Cloud className="h-3 w-3 mr-1" />
-                                  S3
-                                </Badge>
-                              )}
-                            </div>
-                            <p className="text-sm text-muted-foreground mt-1">
-                              {formatDistanceToNow(parseISO(item.created_at), { addSuffix: true })} | {formatSize(item.size)}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center space-x-4 shrink-0">
-                          <div className="text-right">
-                            <Badge
-                              variant="secondary"
-                              className={statusColors[item.status as keyof typeof statusColors]}
-                            >
-                              {item.status}
-                            </Badge>
-                            <p className="text-sm text-muted-foreground mt-1">
-                              {calculateDuration(item.started_time, item.completed_time)}
-                            </p>
-                          </div>
-                          <div className="flex space-x-2">
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => handleRestore(item)}
-                                    >
-                                    <RotateCcw className="h-4 w-4" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent side="top">
-                                  <p className="text-xs">Restore this backup</p>
-                                </TooltipContent>
-                              </Tooltip>
-
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => downloadBackupFile({ id: item.id, path: item.path })}
-                                    disabled={isDownloading}
-                                    >
-                                    <Download className="h-4 w-4" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent side="top">
-                                  <p className="text-xs">Download backup</p>
-                                </TooltipContent>
-                              </Tooltip>
-
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => handleDelete(item)}
-                                    className="text-destructive hover:text-destructive"
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent side="top">
-                                  <p className="text-xs">Delete backup</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </>
-              ) : (
-                <EmptyState
-                  icon={History}
-                  title="No backup history"
-                  description="Your backup history will appear here once you start creating backups."
-                  variant="minimal"
-                />
-              )}
-            </div>
-            
-            {pagination && filteredBackups && filteredBackups.length > 0 && (
-              <div className="pt-4 sm:pt-6 flex justify-center sm:justify-end border-t mt-4">
-                <CustomPagination
-                  currentPage={page}
-                  totalPages={totalPages}
-                  onPageChange={setPage}
-                />
-              </div>
-            )}
-          </div>
-        </div>
+  return <div className="space-y-5">
+    <HistoryFilters search={search} onSearchChange={value => { setSearch(value); setPage(1); }}
+      dateRange={dateRange} onDateRangeChange={setDateRange} status={status} onStatusChange={setStatus}
+      databaseType={databaseType} onDatabaseTypeChange={setDatabaseType} onReset={reset} isLoading={isLoading} />
+    <div className="overflow-hidden rounded-lg border bg-white">
+      <div className="hidden grid-cols-[minmax(0,1fr)_100px_72px_115px_32px] gap-4 border-b bg-[#fafafa] px-4 py-2.5 text-[11px] text-muted-foreground md:grid">
+        <span>Database / file</span><span>Status</span><span>Size</span><span>Created</span><span className="sr-only">Actions</span>
       </div>
-
-      <RestoreDialog
-        backup={selectedBackupForRestore}
-        open={restoreDialogOpen}
-        onOpenChange={setRestoreDialogOpen}
-      />
-
-      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete Backup</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete this backup? The file will be removed from local storage
-              {selectedBackupForDelete?.s3_object_key ? " and from S3" : ""}. This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)} disabled={isDeleting}>
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={confirmDelete}
-              disabled={isDeleting}
-            >
-              {isDeleting ? "Deleting..." : "Delete"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </Card>
-  );
+      {isLoading ? <div className="space-y-5 p-5"><Skeleton className="h-12 w-full" /><Skeleton className="h-12 w-full" /></div> : error ? <p role="alert" className="p-6 text-sm text-destructive">Couldn’t load backups. Refresh the page to try again.</p> : filtered.length ? filtered.map(backup => {
+        const filename = backup.path.split(/[\\/]/).pop() || "Backup file";
+        return <div key={backup.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b px-4 py-3.5 last:border-b-0 md:grid-cols-[minmax(0,1fr)_100px_72px_115px_32px] md:gap-4">
+          <div className="min-w-0">
+            <p className="break-words text-[12px] font-medium">{backup.database_name || typeLabels[backup.database_type as DatabaseType] || backup.database_type}<span className="ms-2 text-[10px] font-normal text-muted-foreground">{backup.s3_object_key ? "S3" : "Local"}</span></p>
+            <p className="mt-1 break-all font-mono text-[10px] leading-relaxed text-muted-foreground">{filename}</p>
+          </div>
+          <BackupStatus status={backup.status} />
+          <p className="text-xs text-muted-foreground">{formatSize(backup.size)}<span className="ml-2 md:hidden">· {formatDistanceToNow(parseISO(backup.created_at), { addSuffix: true })}</span></p>
+          <p className="hidden text-xs text-muted-foreground md:block">{formatDistanceToNow(parseISO(backup.created_at), { addSuffix: true })}</p>
+          <div className="justify-self-end">
+            <DropdownMenu modal={false}>
+              <DropdownMenuTrigger asChild><Button id={`backup-actions-${backup.id}`} variant="ghost" size="icon" className="h-8 w-8" aria-label={`Actions for ${filename}`}><MoreHorizontal /></Button></DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem disabled={backup.status !== "completed" || isDownloading} onClick={() => downloadBackupFile(backup)}>Download backup</DropdownMenuItem>
+                <DropdownMenuItem disabled={backup.status !== "completed"} onClick={() => { setActionTrigger(document.getElementById(`backup-actions-${backup.id}`)); setRestore(backup); }}>Restore database…</DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => { setActionTrigger(document.getElementById(`backup-actions-${backup.id}`)); setDeleting(backup); }}>Delete backup…</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>;
+      }) : <div className="px-6 py-12"><h2 className="text-sm font-medium">{search || dateRange !== "all" || status !== "all" || databaseType !== "all" ? "No matching backups on this page." : "No backups yet."}</h2><p className="mt-2 text-xs text-muted-foreground">{search || dateRange !== "all" || status !== "all" || databaseType !== "all" ? "Try another page or clear the filters." : "Run a backup from Connections to get started."}</p></div>}
+    </div>
+    <div className="flex flex-wrap items-center justify-between gap-4">
+      <p className="text-[11px] text-muted-foreground">{dateRange !== "all" || status !== "all" || databaseType !== "all" ? "Filters apply to the current page. " : ""}{pagination ? `${pagination.total} backups · Page ${page} of ${Math.max(1, pagination.total_pages)}` : "Backups refresh every 30 seconds."}</p>
+      {pagination && pagination.total_pages > 1 && <CustomPagination currentPage={page} totalPages={pagination.total_pages} onPageChange={setPage} />}
+    </div>
+    <RestoreDialog backup={restore} open={!!restore} returnFocusTo={actionTrigger} onOpenChange={open => { if (!open) setRestore(null); }} />
+    <Dialog open={!!deleting} onOpenChange={open => { if (!open && !isDeleting) setDeleting(null); }}>
+      <DialogContent onCloseAutoFocus={event => { if (actionTrigger?.isConnected) { event.preventDefault(); actionTrigger.focus(); } }}><DialogHeader><DialogTitle>Delete this backup?</DialogTitle><DialogDescription>The file will be removed from local storage{deleting?.s3_object_key ? " and S3" : ""}. This cannot be undone.</DialogDescription></DialogHeader>
+        <DialogFooter><Button variant="outline" onClick={() => setDeleting(null)} disabled={isDeleting}>Cancel</Button><Button variant="destructive" disabled={isDeleting} onClick={() => { if (deleting) deleteBackupById(deleting.id, { onSuccess: () => setDeleting(null) }); }}>{isDeleting ? "Deleting…" : "Delete backup"}</Button></DialogFooter>
+      </DialogContent>
+    </Dialog>
+  </div>;
 }

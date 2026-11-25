@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -26,12 +26,17 @@ import type { Backup } from "@/types/backup";
 interface RestoreDialogProps {
   backup: Backup | null;
   open: boolean;
+  returnFocusTo?: HTMLElement | null;
   onOpenChange: (open: boolean) => void;
 }
 
-export function RestoreDialog({ backup, open, onOpenChange }: RestoreDialogProps) {
+export function RestoreDialog({ backup, open, returnFocusTo, onOpenChange }: RestoreDialogProps) {
   const [selectedConnectionId, setSelectedConnectionId] = useState<string>("");
   const [confirmed, setConfirmed] = useState(false);
+  useEffect(() => {
+    setSelectedConnectionId("");
+    setConfirmed(false);
+  }, [backup?.id, open]);
   
   const { connections, isLoading: isLoadingConnections } = useConnections();
   const { restoreBackupToDatabase, isRestoring } = useBackup();
@@ -70,7 +75,7 @@ export function RestoreDialog({ backup, open, onOpenChange }: RestoreDialogProps
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px]" onCloseAutoFocus={event => { if (returnFocusTo?.isConnected) { event.preventDefault(); returnFocusTo.focus(); } }}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Database className="h-5 w-5" />
