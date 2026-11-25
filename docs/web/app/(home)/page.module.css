@@ -374,125 +374,45 @@
     opacity 180ms var(--ease),
     transform 180ms var(--ease);
 }
-.setup h2 {
-  font-size: 44px;
-  line-height: 1.6;
-  letter-spacing: -2px;
-  font-weight: 650;
-  margin: 0 0 18px;
-}
-.setupTitleChip {
-  padding: 2px 13px 4px;
-  white-space: nowrap;
-  vertical-align: 0;
-}
-.setupIntro {
-  text-align: center;
-}
-.setupIntro > p {
-  color: var(--muted);
-  font-size: 15px;
-  line-height: 1.8;
-  margin: 0;
-}
 .setup {
-  max-width: 1060px;
-  margin: 0 auto;
-  padding: 78px 0 64px;
+  max-width: 760px;
+  margin: 52px auto 36px;
 }
-.steps {
-  list-style: none;
-  margin: 48px 0 0;
-  padding: 0;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 38px;
-}
-.steps li {
+.installHeader {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 19px;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 16px;
 }
-.steps li > div {
-  width: 100%;
-  min-width: 0;
-}
-.stepNumber {
-  flex-shrink: 0;
-  display: grid;
-  place-items: center;
-  width: 39px;
-  height: 39px;
-  border: 1px solid #cfdeea;
-  background: linear-gradient(#fff, #e9f2f9);
-  border-radius: 12px;
-  color: #21689c;
-  font-size: 18px;
-  font-weight: 650;
-  box-shadow:
-    0 3px 0 #d9e5ee,
-    0 6px 10px #263b4808;
-  transform: rotate(-5deg);
-  transition: transform 180ms var(--ease);
-}
-.steps li:nth-child(2) .stepNumber {
-  color: #8a6328;
-  border-color: #e8ddc5;
-  background: linear-gradient(#fff, #f8f0db);
-  box-shadow:
-    0 3px 0 #e9dfc8,
-    0 6px 10px #263b4808;
-  transform: rotate(4deg);
-}
-.steps li:nth-child(3) .stepNumber {
-  color: var(--green);
-  border-color: #d5e3d3;
-  background: linear-gradient(#fff, #eaf3e7);
-  box-shadow:
-    0 3px 0 #d9e5d5,
-    0 6px 10px #263b4808;
-  transform: rotate(-3deg);
-}
-.steps h3 {
-  font-size: 19px;
-  font-weight: 600;
-  letter-spacing: -0.4px;
-  margin: 0 0 11px;
-}
-.steps p {
+.setup h2 {
   margin: 0;
-  color: var(--muted);
-  font-size: 14px;
-  line-height: 1.85;
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.04em;
 }
-.steps code {
-  font-size: 12px;
-}
-.steps a {
+.installHeader a {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  min-height: 44px;
   color: var(--green);
   font-size: 13px;
-  margin-top: 18px;
-  transition: gap 180ms var(--ease);
-}
-.steps a:hover {
-  gap: 12px;
+  text-decoration: underline;
+  text-underline-offset: 4px;
 }
 .command {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-top: 18px;
-  padding: 11px 9px 11px 13px;
+  margin-top: 12px;
+  padding: 8px 8px 8px 16px;
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 12px;
-  box-shadow: 0 3px 0 #e5e8e160;
+  border-radius: 15px;
 }
 .command code {
+  font-size: 13px;
   min-width: 0;
   overflow-wrap: normal;
   line-height: 1.6;
@@ -521,8 +441,10 @@
     color 160ms var(--ease),
     transform 150ms ease-out;
 }
-.command button:hover {
-  background: var(--soft-green);
+@media (hover: hover) {
+  .command button:hover {
+    background: var(--soft-green);
+  }
 }
 .command button:not(:disabled):active,
 .navGithub:active {
@@ -553,22 +475,19 @@
   font-size: 0.75rem;
   line-height: 1.5;
 }
+.copyStatus:not([data-state="error"]) {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
 .copyStatus[data-state="error"] {
   color: #aa503c;
 }
 .copyStatus:not(:empty) {
   margin-top: 6px;
-}
-.launchCommand {
-  display: block;
-  color: var(--green);
-  margin-top: 18px;
-  padding: 15px 13px;
-  background: #edf4e9;
-  border: 1px solid #dce6d6;
-  border-radius: 12px;
-  box-shadow: 0 3px 0 #dce6d650;
-  overflow-wrap: anywhere;
 }
 .footer {
   max-width: 1060px;
@@ -601,16 +520,10 @@
     margin-left: 5%;
     margin-right: 5%;
   }
-  .steps {
-    gap: 25px;
-  }
 }
 @media (max-width: 900px) {
   .hero {
     padding-top: 75px;
-  }
-  .setup h2 {
-    font-size: 2.25rem;
   }
   .chipIcon {
     width: 37px;
@@ -618,12 +531,6 @@
   }
   .chipIcon svg {
     width: 22px;
-  }
-  .steps {
-    gap: 22px;
-  }
-  .steps p {
-    font-size: 13px;
   }
 }
 @media (max-width: 640px) {
@@ -746,29 +653,10 @@
     padding-bottom: 0;
   }
   .setup {
-    padding: 56px 0 44px;
+    margin-block: 36px 28px;
   }
   .setup h2 {
-    font-size: clamp(1.5rem, 6.8vw, 1.875rem);
-  }
-  .setupIntro > p {
-    font-size: 14px;
-  }
-  .steps {
-    grid-template-columns: 1fr;
-    max-width: 420px;
-    margin: 36px auto 0;
-    gap: 32px;
-  }
-  .steps h3 {
-    font-size: 18px;
-  }
-  .steps p {
-    font-size: 14px;
-  }
-  .steps li {
-    flex-direction: row;
-    gap: 18px;
+    font-size: 1.375rem;
   }
   .footer {
     padding: 28px 0;
@@ -830,9 +718,6 @@
     font-size: clamp(23px, 7.1vw, 27px);
     letter-spacing: -1.5px;
   }
-  .setup h2 {
-    font-size: clamp(1.25rem, 6.3vw, 1.5rem);
-  }
 }
 @media (prefers-reduced-motion: reduce) {
   :global(html):has(.home) {
@@ -871,9 +756,6 @@
 }
 
 @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
-  .steps li:hover .stepNumber {
-    transform: rotate(0deg) translateY(-2px);
-  }
   .title:hover .databaseChip {
     transform: rotate(-0.5deg) translateY(-2px);
   }
