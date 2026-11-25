@@ -373,136 +373,117 @@
   font-size: 10px;
   color: #8a9382;
 }
-.eyebrow {
-  display: block;
-  color: #8a9480;
-  font-size: 9px;
-  font-weight: 600;
-  letter-spacing: 1.7px;
-  margin-bottom: 16px;
-}
 .setup h2 {
-  font-size: 39px;
-  line-height: 1.23;
-  letter-spacing: -1.9px;
-  font-weight: 600;
-  margin: 0 0 17px;
+  font-size: 44px;
+  line-height: 1.6;
+  letter-spacing: -2px;
+  font-weight: 650;
+  margin: 0 0 18px;
 }
-.setup h2 > span {
-  color: #8a9581;
+.setupTitleChip {
+  padding: 2px 13px 4px;
+  white-space: nowrap;
+  vertical-align: 0;
+}
+.setupIntro {
+  text-align: center;
 }
 .setupIntro > p {
   color: var(--muted);
-  font-size: 13px;
+  font-size: 15px;
   line-height: 1.8;
   margin: 0;
 }
 .setup {
   max-width: 1060px;
-  margin: 42px auto 0;
-  padding: 78px 0 100px;
-  border-top: 1px dashed #d9dfd1;
-  display: grid;
-  grid-template-columns: 1fr 1.25fr;
-  align-items: center;
-  gap: 70px;
-}
-.setup h2 {
-  font-size: 38px;
-}
-.textLink {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 25px;
-  color: var(--green);
-  font-size: 12px;
-  font-weight: 500;
-  transition: gap 180ms ease;
-}
-.textLink:hover {
-  gap: 15px;
-}
-.setupCard {
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  box-shadow: 0 6px 20px #28312804;
-}
-.setupCardTitle {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 18px 22px;
-  border-bottom: 1px solid var(--line);
-  color: #6f7867;
-  font-size: 11px;
-  font-weight: 500;
-}
-.setupCardTitle > span {
-  margin-left: auto;
-  font-size: 8px;
-  font-weight: 400;
-  color: #9a9f95;
+  margin: 0 auto;
+  padding: 90px 0 76px;
 }
 .steps {
   list-style: none;
-  margin: 0;
-  padding: 24px 22px 26px;
-  display: flex;
-  flex-direction: column;
-  gap: 25px;
+  margin: 48px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 38px;
 }
 .steps li {
   display: flex;
-  gap: 13px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 19px;
 }
 .steps li > div {
-  flex: 1;
+  width: 100%;
   min-width: 0;
 }
 .stepNumber {
   flex-shrink: 0;
   display: grid;
   place-items: center;
-  width: 23px;
-  height: 23px;
-  border: 1px solid #dce6d3;
-  background: #f3f7ef;
-  border-radius: 8px;
-  color: #7b936d;
-  font-size: 10px;
+  width: 39px;
+  height: 39px;
+  border: 1px solid #cfdeea;
+  background: linear-gradient(#fff, #e9f2f9);
+  border-radius: 12px;
+  color: #4488bd;
+  font-size: 18px;
+  font-weight: 650;
+  box-shadow: 0 3px 0 #d9e5ee, 0 6px 10px #263b4808;
+  transform: rotate(-5deg);
+  transition: transform 180ms ease;
+}
+.steps li:nth-child(2) .stepNumber {
+  color: #9c773a;
+  border-color: #e8ddc5;
+  background: linear-gradient(#fff, #f8f0db);
+  box-shadow: 0 3px 0 #e9dfc8, 0 6px 10px #263b4808;
+  transform: rotate(4deg);
+}
+.steps li:nth-child(3) .stepNumber {
+  color: #4c8a60;
+  border-color: #d5e3d3;
+  background: linear-gradient(#fff, #eaf3e7);
+  box-shadow: 0 3px 0 #d9e5d5, 0 6px 10px #263b4808;
+  transform: rotate(-3deg);
 }
 .steps h3 {
-  font-size: 12px;
-  font-weight: 550;
-  margin: 3px 0 9px;
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -0.4px;
+  margin: 0 0 11px;
 }
 .steps p {
   margin: 0;
   color: var(--muted);
-  font-size: 10px;
-  line-height: 1.8;
+  font-size: 14px;
+  line-height: 1.85;
 }
 .steps code {
-  font-size: 9px;
+  font-size: 12px;
 }
 .steps a {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
+  gap: 8px;
   color: var(--green);
-  font-size: 9px;
-  margin-top: 7px;
+  font-size: 13px;
+  margin-top: 18px;
+  transition: gap 180ms ease;
+}
+.steps a:hover {
+  gap: 12px;
 }
 .command {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 8px 10px 10px;
-  background: var(--page);
+  margin-top: 18px;
+  padding: 11px 9px 11px 13px;
+  background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 7px;
+  border-radius: 12px;
+  box-shadow: 0 3px 0 #e5e8e160;
 }
 .command code {
   min-width: 0;
@@ -553,8 +534,13 @@
 }
 .launchCommand {
   display: block;
-  color: #758b65;
-  margin-bottom: 8px;
+  color: #4c8a60;
+  margin-top: 18px;
+  padding: 15px 13px;
+  background: #edf4e9;
+  border: 1px solid #dce6d6;
+  border-radius: 12px;
+  box-shadow: 0 3px 0 #dce6d650;
   overflow-wrap: anywhere;
 }
 .footer {
@@ -588,8 +574,8 @@
     margin-left: 5%;
     margin-right: 5%;
   }
-  .setup {
-    gap: 35px;
+  .steps {
+    gap: 25px;
   }
 }
 @media (max-width: 900px) {
@@ -607,20 +593,11 @@
   .chipIcon svg {
     width: 22px;
   }
-  .setup {
-    gap: 25px;
-    grid-template-columns: 1fr 1.2fr;
+  .steps {
+    gap: 22px;
   }
-  .setup h2 {
-    font-size: 30px;
-  }
-  .setupCardTitle > span {
-    display: none;
-  }
-  .steps,
-  .setupCardTitle {
-    padding-left: 16px;
-    padding-right: 16px;
+  .steps p {
+    font-size: 13px;
   }
 }
 @media (max-width: 640px) {
@@ -745,52 +722,30 @@
   .preview {
     padding-bottom: 0;
   }
-  .eyebrow {
-    font-size: 8px;
-    margin-bottom: 13px;
-  }
   .setup {
-    grid-template-columns: 1fr;
-    gap: 30px;
-    padding: 46px 0 55px;
-  }
-  .setupIntro {
-    text-align: center;
+    padding: 56px 0 44px;
   }
   .setup h2 {
     font-size: 32px;
   }
   .setupIntro > p {
-    font-size: 12px;
-  }
-  .setupCardTitle {
-    padding: 17px;
-  }
-  .setupCardTitle > span {
-    display: inline;
+    font-size: 14px;
   }
   .steps {
-    padding: 22px 17px;
-    gap: 22px;
+    grid-template-columns: 1fr;
+    max-width: 420px;
+    margin: 36px auto 0;
+    gap: 32px;
   }
   .steps h3 {
-    font-size: 12px;
+    font-size: 18px;
   }
   .steps p {
-    font-size: 11px;
-  }
-  .steps code {
-    font-size: 9px;
-  }
-  .steps a {
-    font-size: 10px;
-  }
-  .stepNumber {
-    width: 22px;
-    height: 22px;
+    font-size: 14px;
   }
   .steps li {
-    gap: 11px;
+    flex-direction: row;
+    gap: 18px;
   }
   .footer {
     padding: 28px 0;
@@ -817,30 +772,12 @@
 .home .subtitle {
   font-size: 18px;
 }
-.home .setupIntro > p {
-  font-size: 15px;
-}
-.home .steps p {
-  font-size: 12px;
-}
-.home .steps h3 {
-  font-size: 14px;
-}
-.home .steps code {
-  font-size: 11px;
-}
-.home .steps a {
-  font-size: 11px;
-}
 @media (max-width: 640px) {
   .home .navLinks {
     gap: 12px;
     font-size: 12px;
   }
   .home .subtitle {
-    font-size: 14px;
-  }
-  .home .setupIntro > p {
     font-size: 14px;
   }
 }
@@ -878,6 +815,9 @@
 }
 
 @media (hover: hover) and (pointer: fine) {
+  .steps li:hover .stepNumber {
+    transform: rotate(0deg) translateY(-2px);
+  }
   .title:hover .databaseChip {
     transform: rotate(-0.5deg) translateY(-2px);
   }

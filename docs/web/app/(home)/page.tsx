@@ -3,14 +3,12 @@
 import {
   ArrowRight,
   Check,
-  ChevronRight,
   Code2,
   Copy,
   Database,
   Github,
   LockKeyhole,
   ShieldCheck,
-  Terminal,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -186,30 +184,22 @@ export default function HomePage() {
           aria-labelledby="setup-title"
         >
           <div className={styles.setupIntro}>
-            <span className={styles.eyebrow}>GETTING STARTED</span>
             <h2 id="setup-title">
-              Run it on
-              <br />
-              <span>your server.</span>
+              Run it on{" "}
+              <span
+                className={`${styles.wordChip} ${styles.buildingChip} ${styles.setupTitleChip}`}
+              >
+                your server.
+              </span>
             </h2>
-            <p>
-              Use Docker Compose on your own server. Follow the installation
-              guide for configuration and storage options.
-            </p>
-            <Link href="/docs/installation" className={styles.textLink}>
-              Installation guide <ArrowRight size={15} aria-hidden="true" />
-            </Link>
+            <p>You’ll need Docker and Docker Compose installed.</p>
           </div>
-          <div className={styles.setupCard}>
-            <div className={styles.setupCardTitle}>
-              <Terminal size={16} aria-hidden="true" /> Run it yourself{" "}
-              <span>Docker Compose</span>
-            </div>
-            <ol className={styles.steps}>
+          <ol className={styles.steps}>
               <li>
-                <span className={styles.stepNumber}>1</span>
+                <span className={styles.stepNumber} aria-hidden="true">1</span>
                 <div>
-                  <h3>Bring Velld home</h3>
+                  <h3>Clone it.</h3>
+                  <p>Get a copy of Velld on your server.</p>
                   <div className={styles.command}>
                     <code>{cloneCommand}</code>
                     <button
@@ -240,35 +230,33 @@ export default function HomePage() {
                 </div>
               </li>
               <li>
-                <span className={styles.stepNumber}>2</span>
+                <span className={styles.stepNumber} aria-hidden="true">2</span>
                 <div>
-                  <h3>Give it the keys</h3>
+                  <h3>Make it yours.</h3>
                   <p>
-                    In the cloned folder, copy <code>.env.example</code> to{" "}
+                    In the <code>velld</code> folder, copy <code>.env.example</code> to{" "}
                     <code>.env</code>, then set your admin credentials and
                     generate your secret keys.
                   </p>
                   <Link href="/docs/installation">
-                    Follow the configuration guide{" "}
-                    <ChevronRight size={12} aria-hidden="true" />
+                    Configuration guide <ArrowRight size={14} aria-hidden="true" />
                   </Link>
                 </div>
               </li>
               <li>
-                <span className={styles.stepNumber}>3</span>
+                <span className={styles.stepNumber} aria-hidden="true">3</span>
                 <div>
-                  <h3>You’re ready to roll</h3>
+                  <h3>Start it up.</h3>
+                  <p>
+                    From the <code>velld</code> folder, start Velld. Then open{" "}
+                    <code>localhost:3000</code> and connect your first database.
+                  </p>
                   <code className={styles.launchCommand}>
                     docker compose up -d
                   </code>
-                  <p>
-                    From the cloned folder, start Velld. Then open{" "}
-                    <code>localhost:3000</code> and connect your first database.
-                  </p>
                 </div>
               </li>
-            </ol>
-          </div>
+          </ol>
         </section>
       </main>
       <footer className={styles.footer}>
