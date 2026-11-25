@@ -8,7 +8,6 @@ import {
   Database,
   Github,
   LockKeyhole,
-  ShieldCheck,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -49,10 +48,7 @@ export default function HomePage() {
       <header className={styles.header}>
         <nav className={styles.nav} aria-label="Main navigation">
           <Link href="/" className={styles.brand} aria-label="Velld home">
-            <Image src="/images/logo.png" alt="" width={29} height={29} />
-            <span>
-              velld<span className={styles.brandDot}>.</span>
-            </span>
+            <span>velld</span>
           </Link>
           <div className={styles.navLinks}>
             <a href="#installation">Install</a>
@@ -134,11 +130,6 @@ export default function HomePage() {
           className={styles.preview}
           aria-labelledby="preview-title"
         >
-          <div className={styles.previewCaption}>
-            <span>
-              <span className={styles.statusDot} /> Your databases, in one place.
-            </span>
-          </div>
           <div className={styles.window}>
             <div className={styles.windowBar} aria-hidden="true">
               <div className={styles.windowDots}>
@@ -174,10 +165,6 @@ export default function HomePage() {
                 View full size ↗
               </span>
             </a>
-          </div>
-          <div className={styles.previewFootnote}>
-            <ShieldCheck size={14} aria-hidden="true" /> Your infrastructure.
-            Your credentials. Your data.
           </div>
         </section>
 
@@ -225,14 +212,23 @@ export default function HomePage() {
                     aria-describedby={
                       copyState === "error" ? "clone-copy-status" : undefined
                     }
-                    title={copyState === "copied" ? "Copied!" : "Copy clone command"}
+                    title={
+                      copyState === "copied" ? "Copied!" : "Copy clone command"
+                    }
                     data-copy-state={copyState}
                   >
-                    {copyState === "copied" ? (
-                      <Check size={15} />
-                    ) : (
-                      <Copy size={15} />
-                    )}
+                    <Copy
+                      size={15}
+                      className={styles.copyGlyph}
+                      data-visible={copyState !== "copied"}
+                      aria-hidden="true"
+                    />
+                    <Check
+                      size={15}
+                      className={styles.copyGlyph}
+                      data-visible={copyState === "copied"}
+                      aria-hidden="true"
+                    />
                   </button>
                 </div>
                 <span
@@ -256,12 +252,13 @@ export default function HomePage() {
               <div>
                 <h3>Make it yours.</h3>
                 <p>
-                  In the <code>velld</code> folder, copy <code>.env.example</code>{" "}
-                  to <code>.env</code>, then set your admin credentials and
-                  generate your secret keys.
+                  In the <code>velld</code> folder, copy{" "}
+                  <code>.env.example</code> to <code>.env</code>, then set your
+                  admin credentials and generate your secret keys.
                 </p>
                 <Link href="/docs/installation">
-                  Configuration guide <ArrowRight size={14} aria-hidden="true" />
+                  Configuration guide{" "}
+                  <ArrowRight size={14} aria-hidden="true" />
                 </Link>
               </div>
             </li>
@@ -285,10 +282,7 @@ export default function HomePage() {
       </main>
       <footer className={styles.footer}>
         <Link href="/" className={styles.brand}>
-          <Image src="/images/logo.png" alt="" width={24} height={24} />
-          <span>
-            velld<span className={styles.brandDot}>.</span>
-          </span>
+          <span>velld</span>
         </Link>
         <div>
           <Link href="/docs">Documentation</Link>

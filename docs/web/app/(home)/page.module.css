@@ -16,6 +16,7 @@
 }
 :global(html):has(.home) {
   scroll-behavior: smooth;
+  scroll-padding-block-start: 88px;
 }
 .home * {
   box-sizing: border-box;
@@ -34,7 +35,7 @@
 }
 .home section[id],
 .home main {
-  scroll-margin-top: 116px;
+  scroll-margin-block-start: 20px;
 }
 .srOnly,
 .skipLink:not(:focus) {
@@ -89,12 +90,6 @@
   letter-spacing: -1.5px;
   font-weight: 750;
   color: var(--ink);
-}
-.brand img {
-  border-radius: 8px;
-}
-.brandDot {
-  color: var(--green);
 }
 .navLinks {
   display: flex;
@@ -286,35 +281,22 @@
 }
 /* Database marks: Simple Icons 15.0.0, CC0 (github.com/simple-icons/simple-icons). */
 .postgres {
-  --mark: url('/images/postgresql.svg');
+  --mark: url("/images/postgresql.svg");
   color: #416b8b;
 }
 .mysql {
-  --mark: url('/images/mysql.svg');
+  --mark: url("/images/mysql.svg");
   color: #996e35;
   width: 23px;
 }
 .mongo {
-  --mark: url('/images/mongodb.svg');
+  --mark: url("/images/mongodb.svg");
   color: #4c8242;
 }
 .preview {
   max-width: 1060px;
   margin: 0 auto;
   padding: 0 0 35px;
-}
-.previewCaption {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0 7px 14px;
-  color: #64715a;
-  font-size: 11px;
-}
-.previewCaption > span:first-child {
-  display: flex;
-  align-items: center;
-  gap: 8px;
 }
 .window {
   padding: 7px;
@@ -367,7 +349,8 @@
   display: block;
   width: 100%;
   height: auto;
-  border: 1px solid #e1e5dd;
+  outline: 1px solid oklch(0 0 0 / 0.1);
+  outline-offset: -1px;
   border-radius: 10px;
 }
 .previewLink {
@@ -390,15 +373,6 @@
   transition:
     opacity 180ms var(--ease),
     transform 180ms var(--ease);
-}
-.previewFootnote {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 6px;
-  margin: 21px 0 0;
-  font-size: 11px;
-  color: #6e7b61;
 }
 .setup h2 {
   font-size: 44px;
@@ -456,7 +430,9 @@
   color: #4488bd;
   font-size: 18px;
   font-weight: 650;
-  box-shadow: 0 3px 0 #d9e5ee, 0 6px 10px #263b4808;
+  box-shadow:
+    0 3px 0 #d9e5ee,
+    0 6px 10px #263b4808;
   transform: rotate(-5deg);
   transition: transform 180ms var(--ease);
 }
@@ -464,14 +440,18 @@
   color: #9c773a;
   border-color: #e8ddc5;
   background: linear-gradient(#fff, #f8f0db);
-  box-shadow: 0 3px 0 #e9dfc8, 0 6px 10px #263b4808;
+  box-shadow:
+    0 3px 0 #e9dfc8,
+    0 6px 10px #263b4808;
   transform: rotate(4deg);
 }
 .steps li:nth-child(3) .stepNumber {
   color: #4c8a60;
   border-color: #d5e3d3;
   background: linear-gradient(#fff, #eaf3e7);
-  box-shadow: 0 3px 0 #d9e5d5, 0 6px 10px #263b4808;
+  box-shadow:
+    0 3px 0 #d9e5d5,
+    0 6px 10px #263b4808;
   transform: rotate(-3deg);
 }
 .steps h3 {
@@ -523,6 +503,7 @@
   white-space: nowrap;
 }
 .command button {
+  position: relative;
   display: inline-flex;
   flex-shrink: 0;
   align-items: center;
@@ -538,26 +519,39 @@
   transition:
     background 160ms var(--ease),
     color 160ms var(--ease),
-    transform 160ms var(--ease);
+    transform 150ms ease-out;
 }
 .command button:hover {
   background: var(--soft-green);
 }
-.command button:active,
+.command button:not(:disabled):active,
 .navGithub:active {
-  transform: translateY(1px);
+  transform: scale(0.96);
 }
 .command button[data-copy-state="copied"] {
   color: var(--green);
   background: var(--soft-green);
 }
-.command button[data-copy-state="copied"] svg {
-  animation: copied 180ms ease-out;
+.copyGlyph {
+  position: absolute;
+  opacity: 0;
+  transform: scale(0.25);
+  filter: blur(4px);
+  transition:
+    opacity 300ms cubic-bezier(0.2, 0, 0, 1),
+    transform 300ms cubic-bezier(0.2, 0, 0, 1),
+    filter 300ms cubic-bezier(0.2, 0, 0, 1);
+}
+.copyGlyph[data-visible="true"] {
+  opacity: 1;
+  transform: scale(1);
+  filter: blur(0);
 }
 .copyStatus {
   display: block;
   color: var(--green);
-  font-size: 10px;
+  font-size: 0.75rem;
+  line-height: 1.5;
 }
 .copyStatus[data-state="error"] {
   color: #aa503c;
@@ -768,7 +762,7 @@
     padding: 56px 0 44px;
   }
   .setup h2 {
-    font-size: 32px;
+    font-size: clamp(1.5rem, 6.8vw, 1.875rem);
   }
   .setupIntro > p {
     font-size: 14px;
@@ -857,6 +851,9 @@
     font-size: clamp(23px, 7.1vw, 27px);
     letter-spacing: -1.5px;
   }
+  .setup h2 {
+    font-size: clamp(1.25rem, 6.3vw, 1.5rem);
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   :global(html):has(.home) {
@@ -869,37 +866,32 @@
     animation: none !important;
     scroll-behavior: auto !important;
   }
+  .command button .copyGlyph {
+    transform: none;
+    filter: none;
+    transition: opacity 150ms ease-out !important;
+  }
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .header,
-  .hero > *,
+  .title,
+  .subtitle,
+  .compatibility,
   .preview {
-    animation: arrive 480ms var(--ease) both;
-  }
-  .title {
-    animation-delay: 40ms;
+    animation: arrive 300ms ease-out both;
   }
   .subtitle {
-    animation-delay: 80ms;
+    animation-delay: 100ms;
   }
   .compatibility {
-    animation-delay: 120ms;
+    animation-delay: 200ms;
   }
   .preview {
-    animation-delay: 160ms;
-  }
-  @supports (animation-timeline: view()) {
-    .setupIntro,
-    .steps li {
-      animation: arrive linear both;
-      animation-timeline: view();
-      animation-range: entry 0% entry 85%;
-    }
+    animation-delay: 300ms;
   }
 }
 
-@media (hover: hover) and (pointer: fine) {
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
   .steps li:hover .stepNumber {
     transform: rotate(0deg) translateY(-2px);
   }
@@ -933,18 +925,12 @@
 @keyframes arrive {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(12px);
+    filter: blur(4px);
   }
   to {
     opacity: 1;
     transform: translateY(0);
-  }
-}
-@keyframes copied {
-  from {
-    transform: scale(0.75);
-  }
-  to {
-    transform: scale(1);
+    filter: blur(0);
   }
 }
