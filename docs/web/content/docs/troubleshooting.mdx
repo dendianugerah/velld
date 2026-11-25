@@ -242,36 +242,6 @@ See [Installation Guide](/docs/installation) for details.
 
 ---
 
-## Backup Comparison Issues
-
-### Comparison Fails or Shows Error
-
-**Solutions:**
-
-1. **Ensure both backups are valid**
-2. **Check backups aren't corrupted:**
-   ```bash
-   # PostgreSQL
-   pg_restore --list backup.dump
-   
-   # MySQL
-   head -n 20 backup.sql
-   ```
-
-3. **Try downloading and comparing manually**
-
-### Comparison is Slow for Large Backups
-
-**Expected behavior** - Large backups take time to compare.
-
-**Solutions:**
-
-1. **Be patient** - 10-100MB files may take 10-30 seconds
-2. **Compare smaller subsets** if possible
-3. **Use filtered backups** (exclude large tables)
-
----
-
 ## Notification Issues
 
 ### Email Notifications Not Sending

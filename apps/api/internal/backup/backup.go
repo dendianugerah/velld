@@ -201,22 +201,6 @@ func (h *BackupHandler) UpdateBackupSchedule(w http.ResponseWriter, r *http.Requ
 	response.SendSuccess(w, "Backup schedule updated successfully", nil)
 }
 
-func (h *BackupHandler) GetBackupStats(w http.ResponseWriter, r *http.Request) {
-	userID, err := common.GetUserIDFromContext(r.Context())
-	if err != nil {
-		response.SendError(w, http.StatusBadRequest, err.Error())
-		return
-	}
-
-	stats, err := h.backupService.GetBackupStats(userID)
-	if err != nil {
-		response.SendError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	response.SendSuccess(w, "Backup statistics retrieved successfully", stats)
-}
-
 func (h *BackupHandler) DownloadBackup(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	backupID := vars["id"]

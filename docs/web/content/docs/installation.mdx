@@ -16,7 +16,7 @@ Before you begin, ensure you have:
 
 - **Docker** and **Docker Compose** installed
 - At least **512MB RAM** and **1GB disk space**
-- A database you want to backup (PostgreSQL, MySQL, MongoDB, or Redis)
+- A database you want to backup (PostgreSQL, MySQL, or MongoDB)
 
 <Callout type="info">
   Velld only installs the database clients you need. This keeps the Docker image lightweight and secure.
@@ -38,7 +38,6 @@ JWT_SECRET=$(openssl rand -hex 32)
 ENCRYPTION_KEY=$(openssl rand -hex 32)
 ADMIN_USERNAME_CREDENTIAL=admin
 ADMIN_PASSWORD_CREDENTIAL=changeme
-ALLOW_REGISTER=true
 EOF
 
 # Run API
@@ -55,7 +54,6 @@ docker run -d \
   --name velld-web \
   -p 3000:3000 \
   -e NEXT_PUBLIC_API_URL=http://localhost:8080 \
-  -e ALLOW_REGISTER=true \
   ghcr.io/dendianugerah/velld/web:latest
 ```
 
@@ -161,7 +159,6 @@ Choose only the database client you need to keep your installation lightweight:
           - "3000:3000"
         environment:
           NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
-          ALLOW_REGISTER: ${ALLOW_REGISTER}
         depends_on:
           - api
         restart: unless-stopped
@@ -245,7 +242,6 @@ Choose only the database client you need to keep your installation lightweight:
           - "3000:3000"
         environment:
           NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
-          ALLOW_REGISTER: ${ALLOW_REGISTER}
         depends_on:
           - api
         restart: unless-stopped
@@ -329,7 +325,6 @@ Choose only the database client you need to keep your installation lightweight:
           - "3000:3000"
         environment:
           NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
-          ALLOW_REGISTER: ${ALLOW_REGISTER}
         depends_on:
           - api
         restart: unless-stopped
@@ -368,6 +363,8 @@ cp .env.example .env
 | `NEXT_PUBLIC_API_URL` | API server URL (must be accessible from browser) | `http://localhost:8080` |
 | `JWT_SECRET` | JWT signing key - generate with `openssl rand -hex 32` | 64 hex characters |
 | `ENCRYPTION_KEY` | Database credential encryption key - generate with `openssl rand -hex 32` | 64 hex characters |
+| `ADMIN_USERNAME_CREDENTIAL` | Admin username for initial setup | - |
+| `ADMIN_PASSWORD_CREDENTIAL` | Admin password for initial setup | - |
 
 <Callout type="error">
   **Production:** Always set `JWT_SECRET` and `ENCRYPTION_KEY` manually. While they auto-generate if missing, changing keys will log out users and break database connections.
@@ -378,13 +375,9 @@ cp .env.example .env
   ```
 </Callout>
 
-### Authentication
+### Admin account
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `ALLOW_REGISTER` | Enable public registration | `true` |
-| `ADMIN_USERNAME_CREDENTIAL` | Admin username (required if `ALLOW_REGISTER=false`) | - |
-| `ADMIN_PASSWORD_CREDENTIAL` | Admin password (required if `ALLOW_REGISTER=false`) | - |
+Set both admin credentials before the first start so you can log in. Existing accounts continue to work without these variables, and public registration is unavailable. Changing the environment password does not change an existing account's password.
 
 ### Optional: Email Notifications
 
@@ -433,13 +426,15 @@ Once the services are running, verify everything works:
    
    Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-4. **Create your account**
+4. **Sign in**
    
-   Sign up with your email and start managing backups!
+   Log in with the admin username and password you configured, or use your existing account. When both admin credentials are set, the API creates that account on startup if the username does not already exist.
 
 ---
 
 ## Updating Velld
+
+Redis backups are no longer supported. Before upgrading, disable any Redis backup schedules and move those backups to another tool. This update does not delete existing backup records or files.
 
 To update to the latest version:
 

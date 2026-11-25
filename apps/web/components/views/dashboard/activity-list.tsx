@@ -50,7 +50,7 @@ export function ActivityList() {
                 <p className="font-medium truncate">{item.path.split('\\').pop()}</p>
                 <div className="flex items-center gap-2">
                   <Badge variant="outline" className="text-xs font-normal">
-                    {typeLabels[item.database_type as DatabaseType]}
+                    {typeLabels[item.database_type as DatabaseType] ?? item.database_type}
                   </Badge>
                   {item.s3_object_key && (
                     <Badge variant="outline" className="text-xs font-normal bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 border-blue-200 dark:border-blue-800">
@@ -114,7 +114,7 @@ export function ActivityList() {
             <div className="flex flex-wrap items-center gap-2">
               <p className="font-medium truncate">{connection.name}</p>
               <Badge variant="outline" className="text-xs font-normal">
-                {typeLabels[connection.type]}
+                {typeLabels[connection.type] ?? connection.type}
               </Badge>
             </div>
             <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground mt-1.5">

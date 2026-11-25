@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/dendianugerah/velld/internal/mail"
-	"github.com/dendianugerah/velld/internal/notification"
 	"github.com/dendianugerah/velld/internal/settings"
 	"github.com/google/uuid"
 )
@@ -49,27 +48,6 @@ func (s *BackupService) createFailureNotification(connID string, backupErr error
 		"database_type": conn.Type,
 		"error":         backupErr.Error(),
 		"timestamp":     time.Now().Format(time.RFC3339),
-	}
-
-	metadataJSON, _ := json.Marshal(metadata)
-
-	// Create dashboard notification if enabled
-	if userSettings.NotifyDashboard {
-		notification := &notification.Notification{
-			ID:        uuid.New(),
-			UserID:    conn.UserID,
-			Title:     "Backup Failed",
-			Message:   fmt.Sprintf("Backup failed for database '%s': %v", conn.DatabaseName, backupErr),
-			Type:      notification.BackupFailed,
-			Status:    notification.StatusUnread,
-			Metadata:  metadataJSON,
-			CreatedAt: time.Now(),
-			UpdatedAt: time.Now(),
-		}
-
-		if err := s.notificationRepo.CreateNotification(notification); err != nil {
-			fmt.Printf("Error creating dashboard notification: %v\n", err)
-		}
 	}
 
 	// Send webhook notification if enabled

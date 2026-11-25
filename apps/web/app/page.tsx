@@ -2,7 +2,6 @@
 
 import { Sidebar } from "@/components/layout/sidebar";
 import { PageHeader } from "@/components/layout/page-header";
-import { StatsCards } from "@/components/views/dashboard/stats-card";
 import { ActivityList } from "@/components/views/dashboard/activity-list";
 
 export default function Home() {
@@ -15,8 +14,6 @@ export default function Home() {
             title="Dashboard"
             description="Monitor and manage your database backups"
           />
-
-          <StatsCards />
 
           <ActivityList />
         </div>

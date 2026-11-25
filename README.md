@@ -6,12 +6,11 @@ A self-hosted database backup management tool. Schedule automated backups, monit
 
 ## Features
 
-- Multiple database support (PostgreSQL, MySQL, MongoDB, Redis)
+- Multiple database support (PostgreSQL, MySQL, MongoDB)
 - Automated scheduling with cron syntax
 - S3-compatible storage integration
-- Built-in backup comparison and diff viewer
 - Database restore functionality
-- Email notifications for failed backups
+- Email and webhook notifications for failed backups
 
 ## Getting Started
 
@@ -28,12 +27,9 @@ NEXT_PUBLIC_API_URL=http://localhost:8080
 JWT_SECRET=$(openssl rand -hex 32)
 ENCRYPTION_KEY=$(openssl rand -hex 32)
 
-# Admin credentials
+# Admin credentials for initial setup
 ADMIN_USERNAME_CREDENTIAL=admin
 ADMIN_PASSWORD_CREDENTIAL=changeme
-
-# Registration (set to false in production)
-ALLOW_REGISTER=true
 ```
 
 > **Important:** The `ENCRYPTION_KEY` must be a **64-character hex string**. Don't use shell commands like `$(openssl rand -hex 32)` directly in `.env` files - they won't execute. Instead, run the command in your terminal and paste the output.
@@ -54,7 +50,7 @@ Start the containers:
 docker compose up -d
 ```
 
-Visit [localhost:3000](http://localhost:3000) and log in with your admin credentials.
+On startup, the API creates the configured admin account if that username does not already exist. Visit [localhost:3000](http://localhost:3000) and log in with those credentials. Existing accounts continue to work; public registration is unavailable.
 
 For detailed setup instructions, see the [Installation Guide](https://velld.vercel.app/docs/installation).
 

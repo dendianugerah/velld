@@ -16,7 +16,6 @@ type Secrets struct {
 	EncryptionKey           string
 	AdminUsernameCredential string
 	AdminPasswordCredential string
-	IsAllowSignup           bool
 }
 
 var once sync.Once
@@ -51,14 +50,11 @@ func loadSecrets() *Secrets {
 	adminUsernameCredential := os.Getenv("ADMIN_USERNAME_CREDENTIAL")
 	adminPasswordCredential := os.Getenv("ADMIN_PASSWORD_CREDENTIAL")
 
-	isAllowSignup := getWithDefault("ALLOW_REGISTER", "true")
-
 	return &Secrets{
 		JWTSecret:               jwtSecret,
 		EncryptionKey:           encryptionKey,
 		AdminUsernameCredential: adminUsernameCredential,
 		AdminPasswordCredential: adminPasswordCredential,
-		IsAllowSignup:           strings.ToLower(isAllowSignup) == "true",
 	}
 }
 
@@ -76,14 +72,6 @@ func getRequiredSecret(envVar string) (string, error) {
 	}
 
 	return secret, nil
-}
-
-func getWithDefault(envVar, defaultValue string) string {
-	value := strings.TrimSpace(os.Getenv(envVar))
-	if value == "" {
-		return defaultValue
-	}
-	return value
 }
 
 func validateEncryptionKey(key string) error {

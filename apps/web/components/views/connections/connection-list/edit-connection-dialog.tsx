@@ -100,7 +100,6 @@ export function EditConnectionDialog({
       'postgresql': 5432,
       'mysql': 3306,
       'mongodb': 27017,
-      'redis': 6379,
     };
     return ports[type] || 5432;
   };
@@ -160,7 +159,6 @@ export function EditConnectionDialog({
                 <SelectItem value="mysql">MySQL</SelectItem>
                 <SelectSeparator />
                 <SelectItem value="mongodb">MongoDB</SelectItem>
-                <SelectItem value="redis">Redis</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -190,23 +188,23 @@ export function EditConnectionDialog({
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="edit-username">
-                Username {formData.type === 'redis' && <span className="text-xs text-muted-foreground">(optional)</span>}
+                Username
               </Label>
               <Input
                 id="edit-username"
-                required={formData.type !== 'redis'}
+                required
                 value={formData.username || ''}
                 onChange={(e) => setFormData({ ...formData, username: e.target.value })}
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="edit-password">
-                Password {formData.type === 'redis' && <span className="text-xs text-muted-foreground">(optional)</span>}
+                Password
               </Label>
               <Input
                 id="edit-password"
                 type="password"
-                required={formData.type !== 'redis'}
+                required
                 value={formData.password || ''}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               />
@@ -216,21 +214,15 @@ export function EditConnectionDialog({
           <div className="space-y-2">
             <Label htmlFor="edit-database">
               Database Name
-              {formData.type === 'redis' && <span className="text-xs text-muted-foreground ml-1">(optional)</span>}
               {formData.type === 'mongodb' && <span className="text-xs text-muted-foreground ml-1">(optional)</span>}
             </Label>
             <Input
               id="edit-database"
-              required={formData.type !== 'redis' && formData.type !== 'mongodb'}
-              placeholder={formData.type === 'redis' ? 'Leave empty for default (0)' : formData.type === 'mongodb' ? 'Leave empty for admin' : ''}
+              required={formData.type !== 'mongodb'}
+              placeholder={formData.type === 'mongodb' ? 'Leave empty for admin' : ''}
               value={formData.database || ''}
               onChange={(e) => setFormData({ ...formData, database: e.target.value })}
             />
-            {formData.type === 'redis' && (
-              <p className="text-xs text-muted-foreground">
-                Redis databases are numbered 0-15. Most users just use the default (0).
-              </p>
-            )}
           </div>
 
           <div className="flex items-center justify-between space-x-2 rounded-lg border p-3">

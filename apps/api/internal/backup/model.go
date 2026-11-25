@@ -63,15 +63,6 @@ type ScheduleBackupRequest struct {
 	RetentionDays int    `json:"retention_days"`
 }
 
-// BackupStats represents backup statistics
-type BackupStats struct {
-	TotalBackups    int     `json:"total_backups"`
-	FailedBackups   int     `json:"failed_backups"`
-	TotalSize       int64   `json:"total_size"`
-	AverageDuration float64 `json:"average_duration"`
-	SuccessRate     float64 `json:"success_rate"`
-}
-
 // PaginatedBackupResponse represents a paginated response of backups
 type PaginatedBackupResponse struct {
 	Data       []*BackupList `json:"data"`

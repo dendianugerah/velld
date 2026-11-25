@@ -2,7 +2,6 @@
 
 import { Sidebar } from "@/components/layout/sidebar";
 import { PageHeader } from "@/components/layout/page-header";
-import { HistoryStats } from "@/components/views/history/history-stats";
 import { HistoryList } from "@/components/views/history/history-list";
 
 export default function HistoryPage() {
@@ -16,10 +15,7 @@ export default function HistoryPage() {
             description="View and manage all your database backups"
           />
           
-          <div className="flex flex-col gap-4 sm:gap-6">
-            <HistoryStats />
-            <HistoryList />
-          </div>
+          <HistoryList />
         </div>
       </div>
     </div>

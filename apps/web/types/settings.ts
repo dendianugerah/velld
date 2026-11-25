@@ -3,7 +3,6 @@ import { Base } from "./base";
 export interface UserSettings {
   id: string;
   user_id: string;
-  notify_dashboard: boolean;
   notify_email: boolean;
   notify_webhook: boolean;
   webhook_url?: string;

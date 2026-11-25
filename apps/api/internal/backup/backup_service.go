@@ -11,21 +11,19 @@ import (
 
 	"github.com/dendianugerah/velld/internal/common"
 	"github.com/dendianugerah/velld/internal/connection"
-	"github.com/dendianugerah/velld/internal/notification"
 	"github.com/dendianugerah/velld/internal/settings"
 	"github.com/google/uuid"
 	"github.com/robfig/cron/v3"
 )
 
 type BackupService struct {
-	connStorage      *connection.ConnectionRepository
-	backupDir        string
-	backupRepo       *BackupRepository
-	cronManager      *cron.Cron
-	cronEntries      map[string]cron.EntryID // map[scheduleID]entryID
-	settingsService  *settings.SettingsService
-	notificationRepo *notification.NotificationRepository
-	cryptoService    *common.EncryptionService
+	connStorage     *connection.ConnectionRepository
+	backupDir       string
+	backupRepo      *BackupRepository
+	cronManager     *cron.Cron
+	cronEntries     map[string]cron.EntryID // map[scheduleID]entryID
+	settingsService *settings.SettingsService
+	cryptoService   *common.EncryptionService
 }
 
 func NewBackupService(
@@ -33,7 +31,6 @@ func NewBackupService(
 	backupDir string,
 	backupRepo *BackupRepository,
 	settingsService *settings.SettingsService,
-	notificationRepo *notification.NotificationRepository,
 	cryptoService *common.EncryptionService,
 ) *BackupService {
 	if err := os.MkdirAll(backupDir, 0755); err != nil {
@@ -42,14 +39,13 @@ func NewBackupService(
 
 	cronManager := cron.New(cron.WithSeconds())
 	service := &BackupService{
-		connStorage:      connStorage,
-		backupDir:        backupDir,
-		backupRepo:       backupRepo,
-		settingsService:  settingsService,
-		notificationRepo: notificationRepo,
-		cryptoService:    cryptoService,
-		cronManager:      cronManager,
-		cronEntries:      make(map[string]cron.EntryID),
+		connStorage:     connStorage,
+		backupDir:       backupDir,
+		backupRepo:      backupRepo,
+		settingsService: settingsService,
+		cryptoService:   cryptoService,
+		cronManager:     cronManager,
+		cronEntries:     make(map[string]cron.EntryID),
 	}
 
 	// Recover existing schedules before starting the cron manager
@@ -150,8 +146,7 @@ func (s *BackupService) createMultiDatabaseBackup(conn *connection.StoredConnect
 			cmd = s.createMySQLDumpCmd(&tempConn, backupPath)
 		case "mongodb":
 			cmd = s.createMongoDumpCmd(&tempConn, backupPath)
-		case "redis":
-			cmd = s.createRedisDumpCmd(&tempConn, backupPath)
+
 		default:
 			return nil, fmt.Errorf("unsupported database type for backup: %s", conn.Type)
 		}
@@ -267,8 +262,7 @@ func (s *BackupService) createSingleDatabaseBackup(conn *connection.StoredConnec
 		cmd = s.createMySQLDumpCmd(conn, backupPath)
 	case "mongodb":
 		cmd = s.createMongoDumpCmd(conn, backupPath)
-	case "redis":
-		cmd = s.createRedisDumpCmd(conn, backupPath)
+
 	default:
 		return nil, fmt.Errorf("unsupported database type for backup: %s", conn.Type)
 	}
@@ -391,10 +385,6 @@ func (s *BackupService) GetAllBackupsWithPagination(opts BackupListOptions) ([]*
 	}
 
 	return s.backupRepo.GetAllBackupsWithPagination(opts)
-}
-
-func (s *BackupService) GetBackupStats(userID uuid.UUID) (*BackupStats, error) {
-	return s.backupRepo.GetBackupStats(userID)
 }
 
 func (s *BackupService) uploadToS3IfEnabled(backup *Backup, userID uuid.UUID, connectionName string) error {
