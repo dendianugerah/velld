@@ -212,10 +212,10 @@ export default function HomePage() {
               One dashboard for your database backups
             </h2>
             <Image
-              src="/images/connections-preview.png"
-              alt="Velld Connections view listing PostgreSQL, MySQL, and MongoDB databases with schedules, last backup times, and backup actions"
-              width={1440}
-              height={960}
+              src="/images/connections.png"
+              alt="Velld connections view with PostgreSQL databases, on-demand backup actions, and scheduled backups"
+              width={3024}
+              height={1572}
               className={styles.dashboardImage}
               priority
               sizes="(max-width: 1100px) 94vw, 1060px"
