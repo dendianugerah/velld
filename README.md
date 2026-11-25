@@ -54,6 +54,18 @@ On startup, the API creates the configured admin account if that username does n
 
 For detailed setup instructions, see the [Installation Guide](https://velld.vercel.app/docs/installation).
 
+### Discover databases on the Docker host
+
+Enable Docker discovery by adding the optional Compose file:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.discovery.yml up -d
+```
+
+Use the first filename that matches your installation (for example, `docker-compose.prebuilt.yml` when using the published images). Then log in as the configured admin and open **Connections → Discover Docker**. Velld finds running PostgreSQL, MySQL/MariaDB, and MongoDB containers on a shared Docker network or a reachable published port. **Add & schedule** adds a connection and enables daily backups at midnight (API server time), with 30 days of retention; you can change that schedule from Connections.
+
+Velld reads the database image's standard initialization environment variables. If credentials were changed later, or supplied via Docker secrets instead of environment variables, add the connection manually. Only enable this on a trusted Velld installation: giving the API access to the Docker socket grants privileged access to the host even with a read-only bind mount.
+
 ## Screenshots
 
 <table>

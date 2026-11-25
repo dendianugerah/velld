@@ -1,6 +1,26 @@
 import { Connection, ConnectionForm } from "@/types/connection";
 import { apiRequest } from "@/lib/api-client";
 
+export interface DockerDatabase {
+  id: string;
+  name: string;
+  type: Connection['type'];
+  host: string;
+  port: number;
+  database: string;
+}
+
+export function discoverDockerDatabases() {
+  return apiRequest<{ containers: DockerDatabase[]; hint?: string }>('/api/connections/docker');
+}
+
+export function importDockerDatabase(id: string, database: string) {
+  return apiRequest<{ id: string }>(`/api/connections/docker/${encodeURIComponent(id)}`, {
+    method: 'POST',
+    body: JSON.stringify({ database }),
+  });
+}
+
 export async function getConnections(): Promise<Connection[]> {
   return apiRequest<Connection[]>("/api/connections");
 }

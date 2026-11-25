@@ -10,6 +10,7 @@ export interface Connection {
   password: string;
   database: string;
   database_name: string;
+  mongo_auth_source?: string;
   database_size: number;
   selected_databases?: string[];
   ssl: boolean;
@@ -35,6 +36,7 @@ export type ConnectionForm = Pick<Connection,
   | "username" 
   | "password" 
   | "database" 
+  | "mongo_auth_source"
   | "ssl"
   | "ssh_enabled"
   | "ssh_host"

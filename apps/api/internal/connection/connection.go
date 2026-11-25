@@ -103,6 +103,11 @@ func (h *ConnectionHandler) GetConnection(w http.ResponseWriter, r *http.Request
 		response.SendError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
+	userID, err := common.GetUserIDFromContext(r.Context())
+	if err != nil || connection.UserID != userID {
+		response.SendError(w, http.StatusNotFound, "Connection not found.")
+		return
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)

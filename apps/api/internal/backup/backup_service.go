@@ -132,7 +132,7 @@ func (s *BackupService) createMultiDatabaseBackup(conn *connection.StoredConnect
 
 	for _, dbName := range conn.SelectedDatabases {
 		backupID := uuid.New()
-		filename := fmt.Sprintf("%s_%s.sql", dbName, timestamp)
+		filename := backupFilename(conn.Type, dbName, timestamp)
 		backupPath := filepath.Join(connectionFolder, filename)
 
 		tempConn := *conn
@@ -235,7 +235,7 @@ func (s *BackupService) createSingleDatabaseBackup(conn *connection.StoredConnec
 
 	backupID := uuid.New()
 	timestamp := time.Now().Format("20060102_150405")
-	filename := fmt.Sprintf("%s_%s.sql", dbName, timestamp)
+	filename := backupFilename(conn.Type, dbName, timestamp)
 
 	connectionFolder := filepath.Join(s.backupDir, common.SanitizeConnectionName(conn.Name))
 	if err := os.MkdirAll(connectionFolder, 0755); err != nil {
@@ -301,6 +301,14 @@ func (s *BackupService) createSingleDatabaseBackup(conn *connection.StoredConnec
 	}
 
 	return backup, nil
+}
+
+func backupFilename(dbType, dbName, timestamp string) string {
+	extension := ".sql"
+	if dbType == "mongodb" {
+		extension = ".archive"
+	}
+	return dbName + "_" + timestamp + extension
 }
 
 func (s *BackupService) GetBackup(id string) (*Backup, error) {

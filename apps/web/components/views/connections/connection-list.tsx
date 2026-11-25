@@ -11,6 +11,7 @@ import { EditConnectionDialog } from './connection-list/edit-connection-dialog';
 import { DeleteConnectionDialog } from './connection-list/delete-connection-dialog';
 import { DiscoverDatabasesModal } from './discover-databases-modal';
 import { AddConnectionDialog } from './add-connection-dialog';
+import { DockerDiscoveryDialog } from './docker-discovery-dialog';
 import { Database } from 'lucide-react';
 import type { Connection } from '@/types/connection';
 
@@ -33,7 +34,7 @@ export function ConnectionsList() {
       <ConnectionListHeader 
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
-        actionButton={<AddConnectionDialog />}
+        actionButton={<div className="flex flex-wrap justify-end gap-2"><DockerDiscoveryDialog /><AddConnectionDialog /></div>}
         resultCount={searchQuery ? filteredConnections?.length : undefined}
         totalCount={connections?.length}
       />

@@ -14,6 +14,7 @@ import (
 	"github.com/dendianugerah/velld/internal/database"
 	"github.com/dendianugerah/velld/internal/middleware"
 	"github.com/dendianugerah/velld/internal/settings"
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -92,8 +93,19 @@ func main() {
 
 	// Create connHandler after backupService is available
 	connHandler := connection.NewConnectionHandler(connService, backupService)
+	var adminID uuid.UUID
+	if admin, err := authRepo.GetUserByUsername(secrets.AdminUsernameCredential); err == nil {
+		adminID = admin.ID
+	}
+	dockerHandler := connection.NewDockerDiscoveryHandler(connRepo, adminID, func(id string) error {
+		return backupService.ScheduleBackup(&backup.ScheduleBackupRequest{
+			ConnectionID: id, CronSchedule: "0 0 0 * * *", RetentionDays: 30,
+		})
+	})
 
 	protected.HandleFunc("/connections/test", connHandler.TestConnection).Methods("POST", "OPTIONS")
+	protected.HandleFunc("/connections/docker", dockerHandler.List).Methods("GET", "OPTIONS")
+	protected.HandleFunc("/connections/docker/{id}", dockerHandler.Import).Methods("POST", "OPTIONS")
 	protected.HandleFunc("/connections/{id}/discover", connHandler.DiscoverDatabases).Methods("GET", "OPTIONS")
 	protected.HandleFunc("/connections/{id}/databases", connHandler.UpdateSelectedDatabases).Methods("PUT", "OPTIONS")
 	protected.HandleFunc("/connections/{id}/settings", connHandler.UpdateConnectionSettings).Methods("POST", "OPTIONS")

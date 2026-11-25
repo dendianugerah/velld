@@ -66,9 +66,9 @@ func (r *ConnectionRepository) Save(conn StoredConnection) error {
 			id, name, type, host, port, username, password, 
 			database_name, ssl, database_size, created_at, updated_at, 
 			last_connected_at, user_id, status, ssh_enabled, ssh_host, 
-			ssh_port, ssh_username, ssh_password, ssh_private_key, s3_cleanup_on_retention
+			ssh_port, ssh_username, ssh_password, ssh_private_key, s3_cleanup_on_retention, mongo_auth_source
 		) VALUES (
-			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22
+			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23
 		)`
 
 	_, err = r.db.Exec(
@@ -95,6 +95,7 @@ func (r *ConnectionRepository) Save(conn StoredConnection) error {
 		sshPassword,
 		sshPrivateKey,
 		s3CleanupInt,
+		conn.MongoAuthSource,
 	)
 
 	return err
@@ -112,7 +113,7 @@ func (r *ConnectionRepository) GetConnection(id string) (*StoredConnection, erro
 		database_size, created_at, updated_at, last_connected_at, user_id, status,
 		ssh_enabled, ssh_host, ssh_port, ssh_username, ssh_password, ssh_private_key,
 		COALESCE(selected_databases, '') as selected_databases,
-		COALESCE(s3_cleanup_on_retention, 1) as s3_cleanup_on_retention
+		COALESCE(s3_cleanup_on_retention, 1) as s3_cleanup_on_retention, mongo_auth_source
 	FROM connections WHERE id = $1`
 
 	err := r.db.QueryRow(query, id).Scan(
@@ -139,6 +140,7 @@ func (r *ConnectionRepository) GetConnection(id string) (*StoredConnection, erro
 		&encryptedSSHPrivateKey,
 		&selectedDatabasesStr,
 		&s3CleanupInt,
+		&conn.MongoAuthSource,
 	)
 	if err != nil {
 		return nil, err
@@ -238,8 +240,8 @@ func (r *ConnectionRepository) Update(conn StoredConnection) error {
 			username = $5, password = $6, database_name = $7, 
 			ssl = $8, ssh_enabled = $9, ssh_host = $10, ssh_port = $11,
 			ssh_username = $12, ssh_password = $13, ssh_private_key = $14,
-			database_size = $15, s3_cleanup_on_retention = $16, updated_at = CURRENT_TIMESTAMP
-		WHERE id = $17`
+			database_size = $15, s3_cleanup_on_retention = $16, mongo_auth_source = $17, updated_at = CURRENT_TIMESTAMP
+		WHERE id = $18`
 
 	_, err = r.db.Exec(
 		query,
@@ -259,6 +261,7 @@ func (r *ConnectionRepository) Update(conn StoredConnection) error {
 		sshPrivateKey,
 		conn.DatabaseSize,
 		s3CleanupInt,
+		conn.MongoAuthSource,
 		conn.ID,
 	)
 
@@ -337,6 +340,28 @@ func (r *ConnectionRepository) ListByUserID(userID uuid.UUID) ([]ConnectionListI
 		connections = append(connections, conn)
 	}
 	return connections, nil
+}
+
+func (r *ConnectionRepository) connectionEndpoints(userID uuid.UUID) (map[string]map[dockerEndpoint]bool, error) {
+	rows, err := r.db.Query("SELECT type, host, port FROM connections WHERE user_id = $1", userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	endpoints := make(map[string]map[dockerEndpoint]bool)
+	for rows.Next() {
+		var dbType, host string
+		var port int
+		if err := rows.Scan(&dbType, &host, &port); err != nil {
+			return nil, err
+		}
+		if endpoints[dbType] == nil {
+			endpoints[dbType] = make(map[dockerEndpoint]bool)
+		}
+		endpoints[dbType][normalizeDockerEndpoint(host, port)] = true
+	}
+	return endpoints, rows.Err()
 }
 
 func (r *ConnectionRepository) Delete(id string) error {

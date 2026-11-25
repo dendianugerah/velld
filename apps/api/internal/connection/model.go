@@ -15,6 +15,7 @@ type StoredConnection struct {
 	Username          string     `json:"username"`
 	Password          string     `json:"password"`
 	DatabaseName      string     `json:"database_name"`
+	MongoAuthSource   string     `json:"mongo_auth_source,omitempty"`
 	SelectedDatabases []string   `json:"selected_databases"`
 	SSL               bool       `json:"ssl"`
 	SSHEnabled        bool       `json:"ssh_enabled"`
@@ -41,6 +42,7 @@ type ConnectionConfig struct {
 	Username             string `json:"username"`
 	Password             string `json:"password"`
 	Database             string `json:"database"`
+	MongoAuthSource      string `json:"mongo_auth_source,omitempty"`
 	SSL                  bool   `json:"ssl"`
 	SSHEnabled           bool   `json:"ssh_enabled"`
 	SSHHost              string `json:"ssh_host"`

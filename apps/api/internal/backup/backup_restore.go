@@ -251,13 +251,11 @@ func (s *BackupService) createMongoRestoreCmd(conn *connection.StoredConnection,
 
 	binPath := filepath.Join(binaryPath, common.GetPlatformExecutableName(restoreTools["mongodb"]))
 
-	backupDir := filepath.Dir(backupPath)
-
 	args := []string{
 		"--host", conn.Host,
 		"--port", fmt.Sprintf("%d", conn.Port),
-		"--db", conn.DatabaseName,
-		backupDir,
+		"--nsInclude", conn.DatabaseName + ".*",
+		"--archive=" + backupPath,
 	}
 
 	if conn.Username != "" {
@@ -266,6 +264,10 @@ func (s *BackupService) createMongoRestoreCmd(conn *connection.StoredConnection,
 
 	if conn.Password != "" {
 		args = append(args, "--password", conn.Password)
+	}
+
+	if conn.MongoAuthSource != "" {
+		args = append(args, "--authenticationDatabase", conn.MongoAuthSource)
 	}
 
 	return exec.Command(binPath, args...)

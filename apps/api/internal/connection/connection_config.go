@@ -4,6 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"net"
+	"net/url"
+	"strconv"
 
 	"github.com/go-sql-driver/mysql"
 	"github.com/lib/pq"
@@ -97,10 +100,12 @@ func (cm *ConnectionManager) connectMySQL(config ConnectionConfig) error {
 		database = "information_schema"
 	}
 
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?tls=%s",
-		config.Username, config.Password, config.Host, config.Port, database, sslMode)
+	dsnConfig := mysql.NewConfig()
+	dsnConfig.User, dsnConfig.Passwd = config.Username, config.Password
+	dsnConfig.Net, dsnConfig.Addr = "tcp", net.JoinHostPort(config.Host, strconv.Itoa(config.Port))
+	dsnConfig.DBName, dsnConfig.TLSConfig = database, sslMode
 
-	db, err := sql.Open("mysql", dsn)
+	db, err := sql.Open("mysql", dsnConfig.FormatDSN())
 	if err != nil {
 		return err
 	}
@@ -125,10 +130,13 @@ func (cm *ConnectionManager) connectPostgres(config ConnectionConfig) error {
 		database = "postgres"
 	}
 
-	dsn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
-		config.Host, config.Port, config.Username, config.Password, database, sslMode)
+	dsn := url.URL{
+		Scheme: "postgres", Host: net.JoinHostPort(config.Host, strconv.Itoa(config.Port)),
+		User: url.UserPassword(config.Username, config.Password), Path: "/" + database,
+		RawQuery: url.Values{"sslmode": {sslMode}}.Encode(),
+	}
 
-	db, err := sql.Open("postgres", dsn)
+	db, err := sql.Open("postgres", dsn.String())
 	if err != nil {
 		return err
 	}
@@ -150,15 +158,18 @@ func (cm *ConnectionManager) connectMongoDB(config ConnectionConfig) error {
 		database = "admin"
 	}
 
-	var uri string
+	clientOptions := options.Client().SetHosts([]string{net.JoinHostPort(config.Host, strconv.Itoa(config.Port))})
 	if config.Username != "" {
-		uri = fmt.Sprintf("mongodb://%s:%s@%s:%d/%s",
-			config.Username, config.Password, config.Host, config.Port, database)
-	} else {
-		uri = fmt.Sprintf("mongodb://%s:%d/%s", config.Host, config.Port, database)
+		authSource := config.MongoAuthSource
+		if authSource == "" {
+			authSource = database
+		}
+		clientOptions.SetAuth(options.Credential{
+			Username: config.Username, Password: config.Password, PasswordSet: true, AuthSource: authSource,
+		})
 	}
 
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
+	client, err := mongo.Connect(ctx, clientOptions)
 	if err != nil {
 		return err
 	}

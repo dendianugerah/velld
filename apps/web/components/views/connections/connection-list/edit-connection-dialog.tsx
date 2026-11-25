@@ -82,6 +82,7 @@ export function EditConnectionDialog({
         username: connectionDetail.username,
         password: connectionDetail.password,
         database: connectionDetail.database_name,
+        mongo_auth_source: connectionDetail.mongo_auth_source,
         ssl: connectionDetail.ssl,
         ssh_enabled: connectionDetail.ssh_enabled,
         ssh_host: connectionDetail.ssh_host || "",
