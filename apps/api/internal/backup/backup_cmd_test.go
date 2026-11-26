@@ -3,6 +3,7 @@ package backup
 import (
 	"encoding/json"
 	"errors"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -109,4 +110,29 @@ func TestBackupAndRestorePassCredentialsOutsideArgs(t *testing.T) {
 	}
 	checkConfig(s.createMongoDumpCmd(conn, "backup.archive"))
 	checkConfig(s.createMongoRestoreCmd(conn, "backup.archive"))
+}
+
+func TestPostgresRestoreInputOnlyRewritesDumpPrologue(t *testing.T) {
+	prefix := "-- PostgreSQL database dump\n\n\\restrict test\nSET lock_timeout = 0;\n"
+	body := "SET client_encoding = 'UTF8';\nSELECT pg_catalog.set_config('search_path', '', false);\n" +
+		"COPY public.examples (label) FROM stdin;\nSET transaction_timeout = 0;\n\\.\n"
+	for _, tc := range []struct{ name, input, want string }{
+		{"newer dump", prefix + "SET transaction_timeout = 0;\n" + body,
+			prefix + "SELECT pg_catalog.set_config(name, '0', false) FROM pg_catalog.pg_settings WHERE name = 'transaction_timeout';\n" + body},
+		{"older dump", prefix + body, prefix + body},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			reader, err := postgresRestoreInput(strings.NewReader(tc.input))
+			if err != nil {
+				t.Fatal(err)
+			}
+			output, err := io.ReadAll(reader)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if string(output) != tc.want {
+				t.Fatalf("restore input = %q, want %q", output, tc.want)
+			}
+		})
+	}
 }

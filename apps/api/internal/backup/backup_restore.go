@@ -80,7 +80,10 @@ func (s *BackupService) restoreFile(ctx context.Context, conn *connection.Stored
 				return nil, fmt.Errorf("open PostgreSQL backup: %w", err)
 			}
 			defer closeInput()
-			cmd.Stdin = input
+			cmd.Stdin, err = postgresRestoreInput(input)
+			if err != nil {
+				return nil, fmt.Errorf("read PostgreSQL backup header: %w", err)
+			}
 		}
 	case "mysql", "mariadb":
 		cmd = s.createMySQLRestoreCmd(conn)

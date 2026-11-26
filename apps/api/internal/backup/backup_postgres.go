@@ -114,3 +114,26 @@ func openPostgresBackup(path string) (io.Reader, func(), error) {
 	}
 	return input, func() { _ = file.Close() }, nil
 }
+
+func postgresRestoreInput(input io.Reader) (io.Reader, error) {
+	reader := bufio.NewReader(input)
+	var header bytes.Buffer
+	for {
+		line, err := reader.ReadSlice('\n')
+		if err != nil && err != io.EOF && err != bufio.ErrBufferFull {
+			return nil, err
+		}
+		statement := strings.TrimRight(string(line), "\r\n")
+		if statement == "SET transaction_timeout = 0;" {
+			header.WriteString("SELECT pg_catalog.set_config(name, '0', false) FROM pg_catalog.pg_settings WHERE name = 'transaction_timeout';")
+			header.Write(line[len(statement):])
+			break
+		}
+		header.Write(line)
+		if err != nil || (statement != "" && !strings.HasPrefix(statement, "--") &&
+			!strings.HasPrefix(statement, "\\restrict ") && !strings.HasPrefix(statement, "SET ")) {
+			break
+		}
+	}
+	return io.MultiReader(&header, reader), nil
+}
