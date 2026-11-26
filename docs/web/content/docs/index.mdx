@@ -1,109 +1,29 @@
 ---
 title: Introduction
-description: Modern, self-hosted database backup automation
+description: Backups, schedules, and restores. All in one place.
 ---
 
-import { Callout } from 'fumadocs-ui/components/callout';
+Velld is a self-hosted, open-source tool for managing database backups. Connect your databases, schedule backups, and keep track of them from one place.
 
-# Welcome to Velld
+## Get started
 
-**Velld** is a self-hosted database backup management platform. It provides a beautiful web interface for scheduling, managing, and monitoring backups across multiple databases—helping you ensure data safety, automate routine backup jobs, and simplify disaster recovery.
+1. [Install Velld](/docs/installation) on your server.
+2. Follow the [quick start](/docs/quick-start) to connect a database and create your first backup.
+3. Read the [restore best practices](/docs/restore-best-practices) to prepare for recovery.
 
-<Callout type="info">
-  Velld is completely free, open-source, and designed to be simple to set up and use.
-</Callout>
+## Supported databases
 
----
+Velld supports PostgreSQL, MySQL, MariaDB, and MongoDB.
 
-## Supported Databases
+## How it works
 
-**PostgreSQL** - Full support for PostgreSQL 9.6+
+1. **Connect** your database and test the connection.
+2. **Back up** on demand or set a schedule and retention policy.
+3. **Monitor** backup history and receive notifications when scheduled backups fail.
+4. **Restore** using your backup files and the appropriate database tools.
 
-**MySQL / MariaDB** - Compatible with MySQL 5.7+ and MariaDB
+Credentials are encrypted, and Velld also provides a REST API for managing backups.
 
-**MongoDB** - Support for MongoDB 4.0+
+## Need help?
 
----
-
-## Getting Started
-
-Ready to start backing up your databases?
-
-1. **[Installation](/docs/installation)** - Get Velld running in under 5 minutes
-2. **[Quick Start](/docs/quick-start)** - Create your first backup
-3. **[Database Configuration](/docs/databases)** - Connect your specific database type
-
-Working from a clone? See [Local Development](/docs/installation#local-development) to install dependencies and run Velld with Bun.
-
----
-
-## How It Works
-
-**1. Connect Your Databases**
-
-Add your PostgreSQL, MySQL, or MongoDB databases with a simple form. Test connections before saving.
-
-**2. Schedule Backups**
-
-Set up automatic backups with flexible cron schedules. Choose retention policies to auto-delete old backups.
-
-**3. Monitor & Manage**
-
-Track all backups from the dashboard. Download backups and be alerted by email or webhook when scheduled backups fail.
-
-**4. Restore When Needed**
-
-Download backup files and restore them using standard database tools. Test your restores regularly.
-
----
-
-## Features at a Glance
-
-### Backup Management
-- On-demand and scheduled backups
-- Multiple databases per connection
-- Customizable retention policies
-- Automatic cleanup of old backups
-- Backup file compression
-
-### Monitoring & Notifications
-- Real-time backup status
-- Email and webhook notifications for scheduled backup failures
-- Detailed backup history
-
-### Advanced Features
-- Encrypted credential storage
-- RESTful API access
-
-### User Experience
-- Beautiful, modern UI
-- Dark mode support
-- Mobile responsive
-- Fast search and filtering
-- Pagination for large datasets
-
----
-
-## What's Next?
-
-Ready to get started? Head over to the Installation Guide to begin.
-
-You can also:
-- View the Quick Start guide to create your first backup
-- Learn about Database Setup for PostgreSQL, MySQL, or MongoDB
-- Star us on GitHub and contribute to the project
-
----
-
-## Community & Support
-
-- Documentation: Complete guides and references
-- Bug Reports: GitHub Issues
-- Feature Requests: GitHub Discussions
-- GitHub: dendianugerah/velld
-
----
-
-<Callout type="success">
-  Ready to get started? Head over to the Installation Guide to begin.
-</Callout>
+Check the [troubleshooting guide](/docs/troubleshooting) or visit [Velld on GitHub](https://github.com/dendianugerah/velld) to report an issue or contribute.

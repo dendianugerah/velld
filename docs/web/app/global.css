@@ -44,6 +44,8 @@
 }
 
 :root {
+  --color-fd-primary: oklch(0.5772 0.2324 260);
+  --color-fd-primary-foreground: #fff;
   --radius: 0.625rem;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
@@ -79,6 +81,8 @@
 }
 
 .dark {
+  --color-fd-primary: oklch(0.75 0.15 260);
+  --color-fd-primary-foreground: oklch(0.145 0 0);
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.205 0 0);
@@ -110,6 +114,13 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+}
+
+.velld-wordmark {
+  font-size: 29px;
+  font-weight: 750;
+  letter-spacing: -1.8px;
+  line-height: 1;
 }
 
 @layer base {
