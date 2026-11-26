@@ -28,16 +28,17 @@
   letter-spacing: 0.08em;
   color: var(--accent);
 }
+.intro { text-align: center; }
 .intro h2 {
-  margin: 0;
-  font-size: clamp(36px, 3.9vw, 56px);
+  margin: 0 auto;
+  font-size: clamp(32px, 3vw, 44px);
   font-weight: 650;
   letter-spacing: -0.05em;
   line-height: 1.1;
   text-wrap: balance;
 }
 .introLede {
-  margin: 16px 0 0;
+  margin: 12px auto 0;
   max-width: 560px;
   color: var(--body);
   font-size: 18px;
@@ -59,7 +60,13 @@
   justify-content: center;
   gap: 24px;
 }
-.drawing { width: 100%; }
+.drawing {
+  width: 100%;
+  padding: 24px;
+  border: 1px solid #efefef;
+  border-radius: 20px;
+  background: #fafafa;
+}
 .svg { display: block; width: 100%; height: auto; overflow: visible; }
 .progress {
   list-style: none;
@@ -114,7 +121,7 @@
 .chapterNumber { margin: 0 0 12px; color: var(--muted); }
 .chapter h3 {
   margin: 0;
-  font-size: clamp(36px, 3.4vw, 48px);
+  font-size: clamp(32px, 2.8vw, 40px);
   font-weight: 650;
   letter-spacing: -0.05em;
   line-height: 1.05;
@@ -133,7 +140,7 @@
   display: grid;
   grid-template-columns: 24px 1fr;
   gap: 12px;
-  padding: 16px 0;
+  padding: 12px 0;
   border-top: 1px solid var(--rule);
 }
 .letter { transition: background-color 150ms ease-out, color 150ms ease-out; }
@@ -161,38 +168,42 @@
   stroke-linecap: round;
   vector-effect: non-scaling-stroke;
 }
-.top, .side { fill: #fff; stroke: var(--lo); }
-.side { fill: #fbfcfb; }
-.detail { fill: none; stroke: var(--lo); }
-.base .top, .base .side { stroke: #cfd7d2; }
-.base .top { fill: #fdfefd; }
-.part[data-state="past"] :is(.top, .side, .detail) { stroke: var(--mid); }
+.top, .side { fill: #fff; stroke: #d4d4d4; }
+.side { fill: #f5f5f5; }
+.detail { fill: none; stroke: #d4d4d4; }
+.base .top, .base .side { stroke: #dcdcdc; }
+.base .top { fill: #fff; }
+.base .side { fill: #f2f2f2; }
+.part[data-state="past"] :is(.top, .side, .detail) { stroke: #a3a3a3; }
 .part[data-state="on"] :is(.top, .side, .detail) { stroke: var(--ink); }
-.label, .face {
+.part[data-state="on"] .top { fill: color-mix(in oklch, var(--accent) 7%, #fff); }
+.part[data-state="on"] .side { fill: color-mix(in oklch, var(--accent) 14%, #fff); }
+.label {
+  font-size: 12px;
+  font-weight: 500;
+  fill: #a3a3a3;
+}
+.face {
   font-family: var(--font-mono, ui-monospace, monospace);
   font-size: 11px;
-  fill: #a4ada7;
+  fill: #a3a3a3;
 }
 .part[data-state="on"] :is(.label, .face) { fill: var(--ink); }
-.part[data-state="past"] :is(.label, .face) { fill: var(--mid); }
+.part[data-state="past"] :is(.label, .face) { fill: #8a8a8a; }
 .ephemeral :is(.top, .side) { stroke-dasharray: 4 3; }
 .file[data-purge="on"] :is(.top, .side) { stroke-dasharray: 2 3; fill-opacity: 0.4; }
-.flow { fill: none; stroke: var(--lo); stroke-dasharray: 3 4; }
-.flow[data-state="past"] { stroke: var(--mid); }
+.flow { fill: none; stroke: #d4d4d4; stroke-dasharray: 3 4; }
+.flow[data-state="past"] { stroke: #a3a3a3; }
 .flow[data-state="on"] { stroke: var(--accent); stroke-width: 1.4; }
 .packet { fill: var(--accent); stroke: none; }
 .overlay { opacity: 0; }
 .overlay[data-state="on"] { opacity: 1; }
-.tag rect { fill: #fff; stroke: var(--ink); }
+.tag rect { fill: #fff; stroke: color-mix(in oklch, var(--accent) 35%, #fff); }
 .tag text {
   font-family: var(--font-mono, ui-monospace, monospace);
   font-size: 10.5px;
   fill: var(--ink);
 }
-.tag[data-tone="ok"] rect { stroke: #4a8a5d; }
-.tag[data-tone="ok"] text { fill: #34704a; }
-.tag[data-tone="warn"] rect { stroke: #b7791f; }
-.tag[data-tone="warn"] text { fill: #95600f; }
 .callout path { fill: none; stroke: var(--accent); stroke-dasharray: 2 2; }
 .callout circle { fill: #fff; stroke: var(--accent); }
 .callout .anchor { fill: var(--accent); }
@@ -201,8 +212,7 @@
 .callout[data-focus="true"] circle:not(.anchor) { fill: var(--accent); }
 .callout[data-focus="true"] text { fill: #fff; }
 .callout text {
-  font-family: var(--font-mono, ui-monospace, monospace);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
   fill: var(--accent);
 }
@@ -214,7 +224,7 @@
   .overlay[data-state="on"] { transition-delay: 150ms; }
   .flow[data-state="on"] { animation: flow 900ms linear infinite; }
   .chapterContent { transition: opacity 400ms ease-out; }
-  .chapter[data-active="false"] .chapterContent { opacity: 0.35; }
+  .chapter[data-active="false"] .chapterContent { opacity: 0.15; }
 }
 @keyframes flow { to { stroke-dashoffset: -14; } }
 
@@ -222,7 +232,7 @@
   .story { padding: 24px 0 64px; }
   .intro, .sequence { padding-inline: 20px; }
   .eyebrow { margin-bottom: 12px; font-size: 12px; }
-  .intro h2 { font-size: 32px; }
+  .intro h2 { font-size: 28px; }
   .sequence { display: block; margin-top: 16px; }
   .pinned {
     z-index: 2;
@@ -232,7 +242,7 @@
     background: #fff;
     border-bottom: 1px solid var(--rule);
   }
-  .drawing { height: min(34svh, 280px); }
+  .drawing { height: min(34svh, 280px); padding: 12px; border-radius: 14px; }
   .svg { height: 100%; }
   .progress { font-size: 12px; gap: 8px; }
   .progressLine { margin-bottom: 8px; }
