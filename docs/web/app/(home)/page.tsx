@@ -1,17 +1,14 @@
 "use client";
 
 import {
-  ArrowUpRight,
   Code2,
   Database,
-  Maximize2,
   PenTool,
   Rocket,
-  X,
 } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
-import { useRef, useState } from "react";
+import { useState } from "react";
+import { BackupStory } from "@/components/backup-story";
 import { Dither } from "@/components/ui/dither";
 import styles from "./page.module.css";
 
@@ -22,33 +19,10 @@ const activities = [
   { word: "shipping.", icon: Rocket },
   { word: "creating.", icon: PenTool },
 ];
-const screens = [
-  {
-    name: "Connections",
-    image: "/images/connections.png",
-    description: "Your databases, together in one place.",
-    alt: "Velld Connections: database connections with on-demand backup actions and scheduled backups",
-  },
-  {
-    name: "Dashboard",
-    image: "/images/dashboard.png",
-    description: "A little less checking. A little more peace of mind.",
-    alt: "Velld Dashboard: an overview of database connections, backup activity, and storage",
-  },
-  {
-    name: "History",
-    image: "/images/history.png",
-    description: "Every backup, with its history close by.",
-    alt: "Velld History: completed database backups with status, size, and restore actions",
-  },
-];
 
 export default function HomePage() {
   const [databaseIndex, setDatabaseIndex] = useState(0);
   const [activityIndex, setActivityIndex] = useState(0);
-  const [screenIndex, setScreenIndex] = useState(0);
-  const dialog = useRef<HTMLDialogElement>(null);
-  const screen = screens[screenIndex];
 
   return (
     <div className={styles.home}>
@@ -146,95 +120,9 @@ export default function HomePage() {
           </p>
         </section>
 
-        <section className={styles.preview} aria-labelledby="preview-title">
-          <div className={styles.previewToolbar}>
-            <h2 id="preview-title">A look inside</h2>
-            <div
-              className={styles.screenPicker}
-              role="group"
-              aria-label="Choose a screenshot"
-            >
-              {screens.map((item, index) => (
-                <button
-                  key={item.name}
-                  type="button"
-                  onClick={() => setScreenIndex(index)}
-                  aria-pressed={screenIndex === index}
-                  aria-controls="screen-preview"
-                >
-                  {item.name}
-                </button>
-              ))}
-            </div>
-            <button
-              type="button"
-              className={styles.expandButton}
-              aria-label={`Expand ${screen.name} screenshot`}
-              onClick={() => dialog.current?.showModal()}
-            >
-              <Maximize2 size={17} aria-hidden="true" />
-            </button>
-          </div>
-          <figure id="screen-preview" className={styles.figure}>
-            <button
-              type="button"
-              className={styles.previewButton}
-              onClick={() => dialog.current?.showModal()}
-              aria-label={`View ${screen.name} screenshot at full size`}
-            >
-              {screens.map((item, index) => (
-                <Image
-                  key={item.name}
-                  src={item.image}
-                  alt={item.alt}
-                  width={3024}
-                  height={1572}
-                  className={styles.dashboardImage}
-                  hidden={screenIndex !== index}
-                  priority={index === 0}
-                  sizes="(max-width: 700px) 94vw, (max-width: 1440px) 86vw, 1240px"
-                />
-              ))}
-              <span className={styles.previewHint} aria-hidden="true">
-                Take a closer look <ArrowUpRight size={14} />
-              </span>
-            </button>
-            <figcaption className={styles.caption} aria-live="polite">
-              {screen.description}
-            </figcaption>
-          </figure>
-        </section>
+        <BackupStory />
       </main>
 
-      <dialog
-        ref={dialog}
-        className={styles.lightbox}
-        aria-labelledby="lightbox-title"
-        onClick={(event) => {
-          if (event.target === event.currentTarget) dialog.current?.close();
-        }}
-      >
-        <div className={styles.lightboxHeader}>
-          <h2 id="lightbox-title">{screen.name}</h2>
-          <span>Preview</span>
-          <button
-            type="button"
-            onClick={() => dialog.current?.close()}
-            aria-label="Close screenshot"
-          >
-            <X size={20} aria-hidden="true" />
-          </button>
-        </div>
-        <div className={styles.lightboxImage}>
-          <Image
-            src={screen.image}
-            alt={screen.alt}
-            width={3024}
-            height={1572}
-            sizes="96vw"
-          />
-        </div>
-      </dialog>
     </div>
   );
 }

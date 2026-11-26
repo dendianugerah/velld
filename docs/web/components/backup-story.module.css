@@ -1,0 +1,227 @@
+.story {
+  position: relative;
+  width: min(88%, 1180px);
+  margin: 48px auto 0;
+  padding-bottom: 36px;
+  background: #fff;
+}
+.intro {
+  border-top: 1px solid #e5e8e7;
+  padding-top: 40px;
+}
+.eyebrow, .chapterNumber, .figureTop, .progress, .detail, .endnote {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.025em;
+}
+.eyebrow {
+  margin: 0 0 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #68746e;
+}
+.intro h2 {
+  margin: 0;
+  font-size: clamp(30px, 3.3vw, 46px);
+  font-weight: 500;
+  letter-spacing: -0.055em;
+  line-height: 1.12;
+  text-wrap: balance;
+}
+.intro > p:last-child {
+  margin: 20px 0 0;
+  color: #6b716f;
+  font-size: 16px;
+  line-height: 1.7;
+}
+.sequence {
+  display: grid;
+  grid-template-columns: 1.15fr 1fr;
+  gap: clamp(40px, 7vw, 112px);
+  margin-top: 36px;
+}
+.pinned {
+  position: sticky;
+  top: max(24px, calc((100svh - 570px) / 2));
+  height: fit-content;
+  align-self: start;
+  margin: 0;
+  padding-top: 26px;
+}
+.figureTop {
+  display: flex;
+  justify-content: space-between;
+  color: #5d6962;
+}
+.separator { color: #9ba39e; }
+.drawing {
+  --hairline-plate: #fff;
+  --hairline-hi: #273e34;
+  --hairline-edge: #64766b;
+  --hairline-mid: #8c9a91;
+  --hairline-lo: #d4dcd6;
+  --hairline-stroke: 1;
+  width: 100%;
+  position: relative;
+  aspect-ratio: 5 / 4;
+}
+.drawing svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+/* Hairline palette/classes, scoped to this illustration. The engine stays intact. */
+.drawing svg :global(path), .drawing svg :global(line), .drawing svg :global(ellipse) {
+  fill: var(--hairline-plate);
+  stroke: var(--hairline-mid);
+  stroke-width: var(--hairline-stroke);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+.drawing :global(.sil) { stroke: var(--hairline-edge); }
+.drawing :global(.lo) { stroke: var(--hairline-lo); }
+.drawing :global(.nf) { fill: none; }
+.drawing :global(.hi) { stroke: var(--hairline-hi); }
+.drawing :global(.dash) { stroke-dasharray: 2 4; }
+.figureCaption {
+  min-height: 2.8em;
+  text-align: center;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #748078;
+}
+.progress {
+  list-style: none;
+  padding: 0;
+  margin: 28px 0 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  color: #88918b;
+}
+.progress li > span:last-child { display: flex; gap: 10px; }
+.progressLine {
+  display: block;
+  height: 1px;
+  background: #e1e6e2;
+  margin-bottom: 12px;
+}
+.progress li[aria-current] { color: #273e34; }
+.progress li[aria-current] .progressLine { background: #647e6c; }
+.chapter {
+  min-height: 83svh;
+  display: flex;
+  align-items: center;
+  padding: 64px 0;
+}
+.chapterContent {
+  width: 100%;
+  border-top: 1px solid #e2e7e3;
+  padding-top: 26px;
+}
+.chapterNumber {
+  margin: 0 0 24px;
+  color: #3f5a48;
+}
+.chapterNumber span { color: #7b877f; margin-left: 10px; }
+.chapter h3 {
+  margin: 0 0 22px;
+  font-size: clamp(28px, 2.6vw, 36px);
+  font-weight: 500;
+  line-height: 1.18;
+  letter-spacing: -0.045em;
+  text-wrap: balance;
+}
+.body {
+  margin: 0;
+  color: #616b65;
+  font-size: 15px;
+  line-height: 1.9;
+  text-wrap: pretty;
+}
+.detail {
+  border-block: 1px solid #e8ece9;
+  padding: 16px 0;
+  margin: 26px 0 18px;
+  color: #486451;
+  line-height: 1.6;
+}
+.note {
+  margin: 0;
+  color: #78837b;
+  font-size: 12px;
+  line-height: 1.8;
+  text-wrap: pretty;
+}
+.endnote {
+  margin-top: 32px;
+  border-top: 1px solid #e5e8e7;
+  padding-top: 24px;
+  color: #7b847e;
+}
+.fallback {
+  position: absolute;
+  inset: 45% 10% auto;
+  color: #78837b;
+  text-align: center;
+  font-size: 13px;
+}
+@media (min-width: 760px) and (prefers-reduced-motion: no-preference) {
+  .progressLine { transition: background-color 300ms ease-out; }
+}
+@media (max-width: 759px) {
+  .story { width: 88%; margin-top: 20px; }
+  .intro { padding-top: 30px; }
+  .intro h2 { font-size: 34px; max-width: 320px; }
+  .intro > p:last-child { font-size: 14px; }
+  .desktopBreak { display: none; }
+  .sequence { display: block; margin-top: 30px; }
+  .pinned {
+    z-index: 2;
+    top: 0;
+    padding: 16px 0;
+    background: #fff;
+    border-bottom: 1px solid #e5e8e7;
+  }
+  .figureTop { font-size: 10px; }
+  .drawing { height: clamp(170px, 29svh, 250px); aspect-ratio: auto; }
+  .figureCaption { min-height: 0; font-size: 10px; }
+  .progress { margin-top: 16px; font-size: 10px; }
+  .progressLine { margin-bottom: 8px; }
+  .chapter { min-height: 78svh; padding: 56px 0 64px; }
+  .chapterContent { padding-top: 20px; }
+  .chapter h3 { font-size: 29px; }
+  .chapterNumber { margin-bottom: 20px; }
+  .body { font-size: 14px; line-height: 1.85; }
+  .detail { margin-top: 20px; font-size: 10px; }
+  .endnote { font-size: 10px; line-height: 1.8; margin-top: 8px; }
+}
+@media (max-height: 520px) and (max-width: 759px) {
+  .pinned { padding-block: 10px; }
+  .drawing { height: min(34svh, 150px); }
+  .figureCaption { display: none; }
+  .progress { margin-top: 8px; }
+}
+@media (max-height: 520px) and (min-width: 600px) and (max-width: 1100px) {
+  .story { width: 90%; }
+  .sequence {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 36px;
+  }
+  .pinned { top: 10px; padding-block: 12px; }
+  .drawing { height: 46svh; aspect-ratio: auto; }
+  .figureTop, .progress { font-size: 10px; }
+  .figureCaption { display: block; min-height: 0; font-size: 10px; }
+  .progress { margin-top: 12px; }
+  .progressLine { margin-bottom: 8px; }
+  .chapter { min-height: 110svh; padding: 36px 0; }
+  .chapterContent { padding-top: 18px; }
+  .chapter h3 { font-size: 27px; }
+  .chapterNumber { margin-bottom: 18px; }
+  .body { font-size: 13px; }
+  .detail { margin-top: 18px; font-size: 10px; }
+}
