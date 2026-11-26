@@ -17,9 +17,12 @@ interface ConnectionsTableProps {
   onDelete: (connection: Connection) => void;
   onSchedule: (connectionId: string, trigger?: HTMLElement | null) => void;
   onDiscover?: (connection: Connection) => void;
+  onUpgrade?: (connection: Connection) => void;
 }
 
-export function ConnectionsTable({ connections, onEdit, onDelete, onSchedule, onDiscover }: ConnectionsTableProps) {
+const upgradeableTypes = new Set(["postgresql", "mysql", "mariadb", "mongodb"]);
+
+export function ConnectionsTable({ connections, onEdit, onDelete, onSchedule, onDiscover, onUpgrade }: ConnectionsTableProps) {
   const { createBackup, isCreating } = useBackup();
   const [sort, setSort] = useState<"name" | "lastBackup">("name");
   const [ascending, setAscending] = useState(true);
@@ -57,6 +60,7 @@ export function ConnectionsTable({ connections, onEdit, onDelete, onSchedule, on
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={() => onSchedule(connection.id, document.getElementById(`connection-actions-${connection.id}`))}>Backup schedule</DropdownMenuItem>
               {onDiscover && <DropdownMenuItem onClick={() => onDiscover(connection)}>Select databases</DropdownMenuItem>}
+              {onUpgrade && upgradeableTypes.has(connection.type) && <DropdownMenuItem onClick={() => onUpgrade(connection)}>Upgrade container</DropdownMenuItem>}
               <DropdownMenuItem onClick={() => onEdit(connection.id)}>Edit connection</DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => onDelete(connection)} className="text-destructive focus:text-destructive">Delete connection</DropdownMenuItem>

@@ -74,3 +74,43 @@ export async function updateConnectionSettings(id: string, settings: { s3_cleanu
     body: JSON.stringify(settings),
   });
 }
+
+export interface UpgradeInfo {
+  supported: boolean;
+  container_id?: string;
+  container_name?: string;
+  current_image?: string;
+  database_type: string;
+  hint?: string;
+}
+
+export interface UpgradeResult {
+  status: "upgraded" | "rolled_back";
+  container_id: string;
+  container_name: string;
+  previous_image: string;
+  target_image: string;
+  previous_version?: string;
+  current_version?: string;
+  snapshot_backup_id: string;
+  health_check?: string;
+  rolled_back: boolean;
+  rollback_verified?: boolean;
+  error?: string;
+}
+
+export async function getConnectionUpgradeInfo(id: string, signal?: AbortSignal): Promise<UpgradeInfo> {
+  const { data } = await apiRequest<{ data: UpgradeInfo }>(`/api/connections/${encodeURIComponent(id)}/upgrade`, {
+    signal,
+  });
+  return data;
+}
+
+export async function upgradeConnectionContainer(id: string, targetImage: string, signal?: AbortSignal): Promise<UpgradeResult> {
+  const { data } = await apiRequest<{ data: UpgradeResult }>(`/api/connections/${encodeURIComponent(id)}/upgrade`, {
+    method: "POST",
+    body: JSON.stringify({ target_image: targetImage }),
+    signal,
+  });
+  return data;
+}

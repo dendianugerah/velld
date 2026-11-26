@@ -9,6 +9,7 @@ import { ConnectionsTable } from './connection-list/connections-table';
 import { BackupScheduleDialog } from './connection-list/backup-schedule-dialog';
 import { EditConnectionDialog } from './connection-list/edit-connection-dialog';
 import { DeleteConnectionDialog } from './connection-list/delete-connection-dialog';
+import { UpgradeDialog } from './connection-list/upgrade-dialog';
 import { DiscoverDatabasesModal } from './discover-databases-modal';
 import { AddConnectionDialog } from './add-connection-dialog';
 import { DockerDiscoveryDialog } from './docker-discovery-dialog';
@@ -22,6 +23,7 @@ export function ConnectionsList() {
   const [scheduleTrigger, setScheduleTrigger] = useState<HTMLElement | null>(null);
   const [editDialogConnection, setEditDialogConnection] = useState<string | null>(null);
   const [deleteDialogConnection, setDeleteDialogConnection] = useState<Connection | null>(null);
+  const [upgradeDialogConnection, setUpgradeDialogConnection] = useState<Connection | null>(null);
   const [discoverConnectionId, setDiscoverConnectionId] = useState<string | null>(null);
 
   const filteredConnections = connections?.filter(connection => 
@@ -51,6 +53,7 @@ export function ConnectionsList() {
           onDelete={setDeleteDialogConnection}
           onSchedule={(id, trigger) => { setScheduleTrigger(trigger ?? null); setScheduleDialogConnection(id); }}
           onDiscover={(connection) => setDiscoverConnectionId(connection.id)}
+          onUpgrade={setUpgradeDialogConnection}
         />
       ) : (
         <EmptyState
@@ -77,6 +80,13 @@ export function ConnectionsList() {
         connection={deleteDialogConnection}
         onClose={() => setDeleteDialogConnection(null)}
       />
+
+      {upgradeDialogConnection && (
+        <UpgradeDialog
+          connection={upgradeDialogConnection}
+          onClose={() => setUpgradeDialogConnection(null)}
+        />
+      )}
 
       {discoverConnectionId && (
         <DiscoverDatabasesModal
