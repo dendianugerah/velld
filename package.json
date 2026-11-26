@@ -1,0 +1,16 @@
+{
+  "name": "velld",
+  "private": true,
+  "workspaces": ["apps/web"],
+  "scripts": {
+    "dev": "concurrently --kill-others --names web,api --prefix-colors cyan,magenta \"bun run dev:web\" \"bun run dev:api\"",
+    "dev:web": "bun run --cwd apps/web dev",
+    "dev:api": "go -C apps/api run ./cmd/api-server",
+    "build": "bun run build:api && bun run build:web",
+    "build:web": "bun run --cwd apps/web build",
+    "build:api": "go -C apps/api build -o ./bin/api-server ./cmd/api-server"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}

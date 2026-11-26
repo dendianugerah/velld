@@ -121,21 +121,19 @@ cp .env.example .env
 docker compose up -d
 ```
 
-Without Docker - API:
+Without Docker, install [Bun](https://bun.com/), Node.js 20+, Go 1.24+, and a C compiler (needed by SQLite). Copy the environment template:
 
 ```bash
-cd apps/api
-go mod download
-go run cmd/api-server/main.go
+cp .env.example .env
 ```
 
-Without Docker - Web:
+Replace the `JWT_SECRET` and `ENCRYPTION_KEY` placeholders in `.env` with separate outputs from `openssl rand -hex 32`, and set the admin username and password you'll use to sign in. Then run both apps from the repo root:
 
 ```bash
-cd apps/web
-npm install
-npm run dev
+bun install && bun run dev
 ```
+
+The web app is at [localhost:3000](http://localhost:3000) and the API is at [localhost:8080](http://localhost:8080/health). Press Ctrl+C to stop both. To run just one app, use `bun run dev:web` or `bun run dev:api`. Use `bun run build` to build both without starting them.
 
 ## Contributing
 

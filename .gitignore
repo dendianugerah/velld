@@ -1,5 +1,9 @@
 # env file
 .env
 
+# Local development dependencies and build output
+/node_modules/
+/apps/api/bin/
+
 # macOS
 .DS_Store
