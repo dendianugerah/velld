@@ -91,6 +91,29 @@ docker compose up -d
 
 ---
 
+## Local Development
+
+To work on Velld without Docker, install [Bun](https://bun.com/), Node.js 20+, Go 1.24+, and a C compiler for SQLite. Clone the repository and prepare your local configuration:
+
+```bash
+git clone https://github.com/dendianugerah/velld.git
+cd velld
+cp .env.example .env
+```
+
+Replace the `JWT_SECRET` and `ENCRYPTION_KEY` placeholders with separate outputs from `openssl rand -hex 32`, and set the admin username and password you'll use to sign in. From the repository root, run:
+
+```bash
+bun install
+bun run dev
+```
+
+The web app runs at [localhost:3000](http://localhost:3000) and the API at [localhost:8080](http://localhost:8080/health). Use `bun run dev:web` or `bun run dev:api` to start only one. Use `bun run build` to build both, or `bun run build:web` and `bun run build:api` to build them separately.
+
+The docs site has its own dependencies. From the repository root, run `bun install --cwd docs/web`, then `bun run dev:docs` to serve the site at [localhost:3001](http://localhost:3001) or `bun run build:docs` to build it. After installing dependencies for both projects, use `bun run dev:all` to start the web app, API, and docs together.
+
+---
+
 ## Database-Specific Installation
 
 Choose only the database client you need to keep your installation lightweight:

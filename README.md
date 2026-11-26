@@ -135,6 +135,8 @@ bun install && bun run dev
 
 The web app is at [localhost:3000](http://localhost:3000) and the API is at [localhost:8080](http://localhost:8080/health). Press Ctrl+C to stop both. To run just one app, use `bun run dev:web` or `bun run dev:api`. Use `bun run build` to build both without starting them.
 
+For the docs, run `bun install --cwd docs/web` once, then `bun run dev:docs` to serve them at [localhost:3001](http://localhost:3001) or `bun run build:docs` to build them. Use `bun run dev:all` to start the web app, API, and docs together.
+
 ## Contributing
 
 Contributions are welcome! Please feel free to submit issues or pull requests.

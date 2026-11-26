@@ -4,11 +4,14 @@
   "workspaces": ["apps/web"],
   "scripts": {
     "dev": "concurrently --kill-others --names web,api --prefix-colors cyan,magenta \"bun run dev:web\" \"bun run dev:api\"",
+    "dev:all": "concurrently --kill-others --names web,api,docs --prefix-colors cyan,magenta,yellow \"bun run dev:web\" \"bun run dev:api\" \"bun run dev:docs\"",
     "dev:web": "bun run --cwd apps/web dev",
     "dev:api": "go -C apps/api run ./cmd/api-server",
+    "dev:docs": "bun run --cwd docs/web dev --port 3001",
     "build": "bun run build:api && bun run build:web",
     "build:web": "bun run --cwd apps/web build",
-    "build:api": "go -C apps/api build -o ./bin/api-server ./cmd/api-server"
+    "build:api": "go -C apps/api build -o ./bin/api-server ./cmd/api-server",
+    "build:docs": "bun run --cwd docs/web build"
   },
   "devDependencies": {
     "concurrently": "^9.2.1"
