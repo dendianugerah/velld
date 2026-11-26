@@ -489,6 +489,35 @@
 .copyStatus:not(:empty) {
   margin-top: 6px;
 }
+.promptCopy {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+.promptCopy button {
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 13px;
+  cursor: pointer;
+}
+@media (hover: hover) {
+  .promptCopy button:hover {
+    background: var(--soft-green);
+  }
+}
+.promptCopy span {
+  color: var(--green);
+  font-size: 0.75rem;
+}
+.promptCopy span[data-state="error"] {
+  color: #aa503c;
+}
 .footer {
   max-width: 1060px;
   margin: 0 auto;

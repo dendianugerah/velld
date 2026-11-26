@@ -16,8 +16,17 @@ import styles from "./page.module.css";
 
 const repository = "https://github.com/dendianugerah/velld";
 const cloneCommand = `git clone ${repository}.git`;
+const agentPrompt = `Help me set up and run Velld on my own machine or server using Docker Compose. Use the repository README and Compose files as the source of truth. Check that Docker and the Compose plugin are available.
 
-export default function HomePage() {
+1. Run ${cloneCommand}, then cd velld. If the repository is already checked out, use that checkout instead.
+2. If .env does not exist, copy .env.example to .env. Generate JWT_SECRET and ENCRYPTION_KEY separately with openssl rand -hex 32 and put the literal outputs in .env, not shell expressions. ENCRYPTION_KEY must be 64 hex characters. Set ADMIN_USERNAME_CREDENTIAL and a strong ADMIN_PASSWORD_CREDENTIAL for the initial admin account. Do not print or commit secrets, and keep existing keys when updating.
+3. Set NEXT_PUBLIC_API_URL to the API address reachable from my browser: http://localhost:8080 for a local install, or the server's reachable address on port 8080 (or its HTTPS reverse-proxy URL) for a remote install.
+4. Run docker compose up -d from the repository root and check docker compose ps. If a service fails, inspect docker compose logs. Open http://localhost:3000 locally, or the server's web address on port 3000 (or its HTTPS URL), and sign in with the configured admin credentials.
+5. To update a source install, pull the latest changes for the installed branch and run docker compose up -d --build. Keep .env and the api_data and backup_data volumes intact.
+
+Tell me the UI URL and service status without exposing secrets.`;
+
+function useClipboard(value: string) {
   const [copyState, setCopyState] = useState<"idle" | "copied" | "error">(
     "idle",
   );
@@ -29,16 +38,24 @@ export default function HomePage() {
     [],
   );
 
-  async function copyCommand() {
+  async function copy() {
     if (resetCopy.current) clearTimeout(resetCopy.current);
     try {
-      await navigator.clipboard.writeText(cloneCommand);
+      await navigator.clipboard.writeText(value);
       setCopyState("copied");
     } catch {
       setCopyState("error");
     }
     resetCopy.current = setTimeout(() => setCopyState("idle"), 2500);
   }
+
+  return { copyState, copy };
+}
+
+export default function HomePage() {
+  const { copyState, copy: copyCommand } = useClipboard(cloneCommand);
+  const { copyState: promptCopyState, copy: copyPrompt } =
+    useClipboard(agentPrompt);
 
   return (
     <div className={styles.home}>
@@ -226,6 +243,18 @@ export default function HomePage() {
                 ? "Couldn’t copy. Select the command to copy it manually."
                 : ""}
           </span>
+          <div className={styles.promptCopy}>
+            <button type="button" onClick={copyPrompt}>
+              Copy agent prompt
+            </button>
+            <span role="status" data-state={promptCopyState}>
+              {promptCopyState === "copied"
+                ? "Copied"
+                : promptCopyState === "error"
+                  ? "Couldn’t copy the prompt."
+                  : ""}
+            </span>
+          </div>
         </section>
       </main>
       <footer className={styles.footer}>
