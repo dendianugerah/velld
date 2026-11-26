@@ -93,7 +93,7 @@ export function BackupStory() {
             ))}
           </ol>
         </figure>
-        <div>
+        <div className={styles.chapters}>
           {stages.map((stage, i) => (
             <article
               key={stage.name}

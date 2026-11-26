@@ -5,6 +5,7 @@
   --ink: #161616;
   --muted: #737373;
   --line: #e8e8e8;
+  --brand: oklch(57.72% 0.2324 260);
   --ease: cubic-bezier(0.2, 0, 0, 1);
   min-height: 100dvh;
   background: var(--page);
@@ -135,21 +136,24 @@
   align-items: center;
   gap: 0.15em;
   padding: 0.015em 0.2em 0.04em 0.13em;
-  border: 1px solid #cedde7;
+  border: 1px solid color-mix(in oklch, var(--brand) 20%, #fff);
   border-radius: 0.2em;
-  background: linear-gradient(175deg, #f9fdff, #edf5fc);
+  background: linear-gradient(175deg, color-mix(in oklch, var(--brand) 2%, #fff), color-mix(in oklch, var(--brand) 8%, #fff));
   vertical-align: 0.02em;
   box-shadow:
     0 4px 0 #cddce760,
     0 9px 17px #263b4f08;
 }
 .databaseChip {
-  color: #3477ad;
+  color: var(--brand);
 }
 .buildingChip {
-  color: #42754e;
-  background: linear-gradient(175deg, #fbfff8, #edf5e7);
-  border-color: #d3dfcb;
+  color: var(--ink);
+  background: linear-gradient(175deg, #fff, #fafafa);
+  border-color: #e5e5e5;
+  box-shadow:
+    0 4px 0 #e5e5e560,
+    0 9px 17px #00000008;
 }
 .chipIcon {
   position: relative;
@@ -159,7 +163,7 @@
   width: 0.54em;
   height: 0.6em;
   border-radius: 0.14em;
-  background: linear-gradient(#75b4df, #3e87ba);
+  background: linear-gradient(color-mix(in oklch, var(--brand) 60%, #fff), var(--brand));
   color: #fff;
   box-shadow:
     inset 0 1px 2px #ffffff90,
@@ -173,11 +177,10 @@
   stroke-width: 2;
 }
 .buildingChip .chipIcon {
-  background: linear-gradient(#83b78c, #4a8a5d);
-  box-shadow:
-    inset 0 1px 2px #ffffff90,
-    inset 0 -2px 3px #234b2b50,
-    0 3px 5px #4f7f4135;
+  background: #fff;
+  color: var(--ink);
+  border: 1px solid #e5e5e5;
+  box-shadow: 0 1px 2px #0000000d;
 }
 .wordStack {
   display: inline-grid;
@@ -230,7 +233,7 @@
 .highlight {
   position: relative;
   display: inline-block;
-  color: #273b32;
+  color: var(--brand);
   font-weight: 600;
   z-index: 0;
 }
@@ -239,7 +242,7 @@
   position: absolute;
   z-index: -1;
   inset: 48% -3px 8%;
-  background: #dceccd;
+  background: color-mix(in oklch, var(--brand) 14%, #fff);
   border-radius: 45% 8% 35% 8%;
   transform: rotate(-0.7deg) scaleX(0);
   transform-origin: left;
