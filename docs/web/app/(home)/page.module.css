@@ -71,6 +71,7 @@
   font-weight: 500;
 }
 .brand {
+  display: inline-block;
   font-size: 29px;
   font-weight: 750;
   letter-spacing: -1.8px;
@@ -91,7 +92,22 @@
   color: #646b70;
 }
 .nav a:not(.brand) {
+  position: relative;
   transition: color 150ms ease-out, background-color 150ms ease-out;
+}
+.nav a:not(.brand)::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  bottom: 7px;
+  height: 1px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 180ms var(--ease);
+}
+.nav a:not(.brand):focus-visible::after {
+  transform: scaleX(1);
 }
 
 .main {
@@ -249,27 +265,35 @@
   border-radius: 28px;
 }
 .previewToolbar {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  margin-block-end: 20px;
-}
-.previewToolbar h2 {
-  margin: 0;
-  font-size: 14px;
-  font-weight: 500;
-}
-.screenPicker {
   display: flex;
   align-items: center;
+  justify-content: center;
+  margin-block-end: 20px;
+}
+.screenPicker {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  align-items: center;
   padding: 4px;
-  gap: 2px;
   border-radius: 28px;
   background: #eaeaea;
 }
+.screenPicker::before {
+  content: "";
+  position: absolute;
+  inset-block: 4px;
+  inset-inline-start: 4px;
+  width: calc((100% - 8px) / 3);
+  border-radius: 24px;
+  background: var(--page);
+  box-shadow: 0 1px 3px #00000009;
+  transform: translateX(var(--indicator-offset, 0%));
+  transition: transform 220ms var(--ease);
+  pointer-events: none;
+}
 .screenPicker button {
+  position: relative;
   padding: 10px 17px;
   border-radius: 24px;
   color: #666;
@@ -282,24 +306,12 @@
 }
 .screenPicker button[aria-pressed="true"] {
   color: var(--ink);
-  background: var(--page);
-  box-shadow: 0 1px 3px #00000009;
-}
-.expandButton {
-  justify-self: end;
-  display: grid;
-  place-items: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: #eaeaea;
-  transition: background-color 150ms ease-out;
 }
 .figure {
   margin: 0;
 }
 .previewButton {
-  display: block;
+  display: grid;
   position: relative;
   width: 100%;
   padding: 0;
@@ -308,35 +320,27 @@
   box-shadow: 0 12px 40px -16px #00000018;
 }
 .dashboardImage {
+  grid-area: 1 / 1;
   display: block;
   width: 100%;
   height: auto;
   border-radius: inherit;
   outline: 1px solid oklch(0 0 0 / 0.1);
   outline-offset: -1px;
-}
-.dashboardImage[hidden] {
-  display: none;
-}
-.previewHint {
-  position: absolute;
-  inset-inline-start: 50%;
-  inset-block-end: 22px;
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  padding: 11px 16px;
-  border-radius: 24px;
-  background: var(--ink);
-  color: #fff;
-  white-space: nowrap;
-  font-size: 12px;
   opacity: 0;
-  transform: translateX(-50%);
-  transition: opacity 150ms ease-out;
+  visibility: hidden;
+  transition: opacity 140ms ease-out, visibility 0s linear 140ms;
 }
-.previewButton:focus-visible .previewHint {
+.dashboardImage[data-active="true"] {
   opacity: 1;
+  visibility: visible;
+  transition: opacity 140ms ease-out, visibility 0s;
+}
+@media (prefers-reduced-motion: reduce) {
+  .dashboardImage,
+  .dashboardImage[data-active="true"] {
+    transition: none;
+  }
 }
 .caption {
   padding-block: 20px;
@@ -412,18 +416,18 @@
   .nav .githubLink:hover {
     color: var(--ink);
   }
+  .nav a:not(.brand):hover::after {
+    transform: scaleX(1);
+  }
   .screenPicker button:hover:not([aria-pressed="true"]) {
     color: var(--ink);
     background: #dedede;
   }
-  .expandButton:hover {
-    background: #dedede;
-  }
-  .previewButton:hover .previewHint {
-    opacity: 1;
-  }
 }
 @media (prefers-reduced-motion: no-preference) {
+  .brand {
+    transition: color 180ms ease-out, transform 180ms var(--ease);
+  }
   .wordChip {
     transition: transform 300ms var(--ease);
   }
@@ -458,9 +462,19 @@
     transform: rotate(0) scale(0.96);
   }
   @media (hover: hover) {
+    .brand:hover {
+      color: oklch(0.5772 0.2324 260);
+      transform: translateY(-2px);
+    }
     .wordChip:hover:not(:active) {
       transform: rotate(0) translateY(-2px);
     }
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .nav a:not(.brand)::after,
+  .screenPicker::before {
+    transition: none;
   }
 }
 @media (max-width: 900px) {
@@ -520,33 +534,17 @@
     border-radius: 18px;
   }
   .previewToolbar {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
     margin-block-end: 16px;
   }
-  .previewToolbar h2 {
-    width: 100%;
-    font-size: 12px;
-    padding-inline-start: 4px;
-  }
   .screenPicker {
-    gap: 0;
-    padding: 3px;
+    padding: 4px;
   }
   .screenPicker button {
     padding: 9px 12px;
     font-size: 11px;
   }
-  .expandButton {
-    width: 34px;
-    height: 34px;
-  }
   .previewButton {
     border-radius: 8px;
-  }
-  .previewHint {
-    display: none;
   }
   .caption {
     padding: 18px 8px;

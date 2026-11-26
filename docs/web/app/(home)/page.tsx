@@ -1,17 +1,15 @@
 "use client";
 
 import {
-  ArrowUpRight,
   Code2,
   Database,
-  Maximize2,
   PenTool,
   Rocket,
   X,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRef, useState } from "react";
+import { useRef, useState, type CSSProperties } from "react";
 import { Dither } from "@/components/ui/dither";
 import styles from "./page.module.css";
 
@@ -146,13 +144,13 @@ export default function HomePage() {
           </p>
         </section>
 
-        <section className={styles.preview} aria-labelledby="preview-title">
+        <section className={styles.preview} aria-label="Product screenshots">
           <div className={styles.previewToolbar}>
-            <h2 id="preview-title">A look inside</h2>
             <div
               className={styles.screenPicker}
               role="group"
               aria-label="Choose a screenshot"
+              style={{ "--indicator-offset": `${screenIndex * 100}%` } as CSSProperties}
             >
               {screens.map((item, index) => (
                 <button
@@ -166,14 +164,6 @@ export default function HomePage() {
                 </button>
               ))}
             </div>
-            <button
-              type="button"
-              className={styles.expandButton}
-              aria-label={`Expand ${screen.name} screenshot`}
-              onClick={() => dialog.current?.showModal()}
-            >
-              <Maximize2 size={17} aria-hidden="true" />
-            </button>
           </div>
           <figure id="screen-preview" className={styles.figure}>
             <button
@@ -190,14 +180,12 @@ export default function HomePage() {
                   width={3024}
                   height={1572}
                   className={styles.dashboardImage}
-                  hidden={screenIndex !== index}
+                  data-active={screenIndex === index}
+                  aria-hidden={screenIndex !== index}
                   priority={index === 0}
                   sizes="(max-width: 700px) 94vw, (max-width: 1440px) 86vw, 1240px"
                 />
               ))}
-              <span className={styles.previewHint} aria-hidden="true">
-                Take a closer look <ArrowUpRight size={14} />
-              </span>
             </button>
             <figcaption className={styles.caption} aria-live="polite">
               {screen.description}
