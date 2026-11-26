@@ -111,7 +111,10 @@
   width: min(100%, 1360px);
   margin-inline: auto;
   opacity: 0.24;
-  mask-image: linear-gradient(to right, transparent, #000 12%, #000 88%, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 12%, #000 88%, transparent), linear-gradient(#000 60%, transparent);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(to right, transparent, #000 12%, #000 88%, transparent), linear-gradient(#000 60%, transparent);
+  mask-composite: intersect;
 }
 .title {
   margin: 0;

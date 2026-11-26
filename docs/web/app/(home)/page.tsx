@@ -49,16 +49,16 @@ export default function HomePage() {
       </header>
 
       <main id="main" tabIndex={-1} className={styles.main}>
-        <Dither
-          className={styles.pageDither}
-          pattern="clouds"
-          colors="oklch(0.5772 0.2324 260)"
-          intensity={0.55}
-          speed={0.25}
-          dotSize={2}
-          interactive
-        />
         <section className={styles.hero} aria-labelledby="hero-title">
+          <Dither
+            className={styles.pageDither}
+            pattern="clouds"
+            colors="oklch(0.5772 0.2324 260)"
+            intensity={0.55}
+            speed={0.25}
+            dotSize={2}
+            interactive
+          />
           <h1 id="hero-title" className={styles.title}>
             <span className={styles.titleLine}>
               Back up{" "}
