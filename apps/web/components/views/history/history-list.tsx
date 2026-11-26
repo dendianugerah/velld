@@ -15,12 +15,14 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { RestoreDialog } from "./restore-dialog";
 import { BranchDialog } from "./branch-dialog";
+import { SchemaDiffDialog } from "./schema-diff-dialog";
 import { HistoryFilters } from "./history-filters";
 
 export function HistoryList() {
   const { backups, isLoading, error, pagination, page, setPage, downloadBackupFile, isDownloading, search, setSearch, deleteBackupById, isDeleting } = useBackup();
   const [restore, setRestore] = useState<BackupList | null>(null);
   const [branch, setBranch] = useState<BackupList | null>(null);
+  const [schemaDiff, setSchemaDiff] = useState<BackupList | null>(null);
   const [deleting, setDeleting] = useState<BackupList | null>(null);
   const [actionTrigger, setActionTrigger] = useState<HTMLElement | null>(null);
   const [dateRange, setDateRange] = useState("all");
@@ -59,6 +61,7 @@ export function HistoryList() {
                 <DropdownMenuItem disabled={backup.status !== "completed" || isDownloading} onClick={() => downloadBackupFile(backup)}>Download backup</DropdownMenuItem>
                 <DropdownMenuItem disabled={backup.status !== "completed"} onClick={() => { setActionTrigger(document.getElementById(`backup-actions-${backup.id}`)); setRestore(backup); }}>Restore database…</DropdownMenuItem>
                 {["postgresql", "mysql", "mariadb", "mongodb"].includes(backup.database_type) && <DropdownMenuItem disabled={backup.status !== "completed"} onClick={() => { setActionTrigger(document.getElementById(`backup-actions-${backup.id}`)); setBranch(backup); }}>Branch from backup…</DropdownMenuItem>}
+                {["postgresql", "mysql"].includes(backup.database_type) && <DropdownMenuItem disabled={backup.status !== "completed"} onClick={() => { setActionTrigger(document.getElementById(`backup-actions-${backup.id}`)); setSchemaDiff(backup); }}>Compare schema…</DropdownMenuItem>}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => { setActionTrigger(document.getElementById(`backup-actions-${backup.id}`)); setDeleting(backup); }}>Delete backup…</DropdownMenuItem>
               </DropdownMenuContent>
@@ -73,6 +76,7 @@ export function HistoryList() {
     </div>
     <RestoreDialog backup={restore} open={!!restore} returnFocusTo={actionTrigger} onOpenChange={open => { if (!open) setRestore(null); }} />
     {branch && <BranchDialog backup={branch} returnFocusTo={actionTrigger} onClose={() => setBranch(null)} />}
+    {schemaDiff && <SchemaDiffDialog backup={schemaDiff} returnFocusTo={actionTrigger} onClose={() => setSchemaDiff(null)} />}
     <Dialog open={!!deleting} onOpenChange={open => { if (!open && !isDeleting) setDeleting(null); }}>
       <DialogContent onCloseAutoFocus={event => { if (actionTrigger?.isConnected) { event.preventDefault(); actionTrigger.focus(); } }}><DialogHeader><DialogTitle>Delete this backup?</DialogTitle><DialogDescription>The file will be removed from local storage{deleting?.s3_object_key ? " and S3" : ""}. This cannot be undone.</DialogDescription></DialogHeader>
         <DialogFooter><Button variant="outline" onClick={() => setDeleting(null)} disabled={isDeleting}>Cancel</Button><Button variant="destructive" disabled={isDeleting} onClick={() => { if (deleting) deleteBackupById(deleting.id, { onSuccess: () => setDeleting(null) }); }}>{isDeleting ? "Deleting…" : "Delete backup"}</Button></DialogFooter>

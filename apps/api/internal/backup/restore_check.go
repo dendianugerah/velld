@@ -347,13 +347,20 @@ func randomPassword() string {
 func openSQLTarget(conn *connection.StoredConnection) (*sql.DB, error) {
 	address := net.JoinHostPort(conn.Host, strconv.Itoa(conn.Port))
 	if conn.Type == "postgresql" {
+		sslMode := "disable"
+		if conn.SSL {
+			sslMode = "require"
+		}
 		dsn := (&url.URL{Scheme: "postgres", User: url.UserPassword(conn.Username, conn.Password),
-			Host: address, Path: "/" + conn.DatabaseName, RawQuery: "sslmode=disable"}).String()
+			Host: address, Path: "/" + conn.DatabaseName, RawPath: "/" + url.PathEscape(conn.DatabaseName), RawQuery: "sslmode=" + sslMode}).String()
 		return sql.Open("postgres", dsn)
 	}
 	config := mysql.NewConfig()
 	config.User, config.Passwd, config.DBName = conn.Username, conn.Password, conn.DatabaseName
 	config.Net, config.Addr, config.AllowNativePasswords = "tcp", address, true
+	if conn.SSL {
+		config.TLSConfig = "true"
+	}
 	config.Logger = mysql.Logger(log.New(io.Discard, "", 0))
 	connector, err := mysql.NewConnector(config)
 	if err != nil {

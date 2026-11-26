@@ -84,6 +84,19 @@ export async function createBackupBranch(backupId: string, signal: AbortSignal):
   return response.data;
 }
 
+export async function compareBackupSchema(
+  backupId: string,
+  target: { target_backup_id: string } | { target_live: true },
+  signal: AbortSignal,
+): Promise<string> {
+  const response = await apiRequest<{ data: { migration_sql: string } }>(`/api/backups/${encodeURIComponent(backupId)}/schema-diff`, {
+    method: 'POST',
+    body: JSON.stringify(target),
+    signal,
+  });
+  return response.data.migration_sql;
+}
+
 export async function deleteBackup(backupId: string): Promise<void> {
   return apiRequest(`/api/backups/${backupId}`, {
     method: 'DELETE',
