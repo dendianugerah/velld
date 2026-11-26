@@ -70,6 +70,12 @@ With the same Docker access, Velld restores every completed backup into a throwa
 
 Velld reads the database image's standard initialization environment variables. If credentials were changed later, or supplied via Docker secrets instead of environment variables, add the connection manually. Only enable this on a trusted Velld installation: giving the API access to the Docker socket grants privileged access to the host even with a read-only bind mount.
 
+### Branch from a backup
+
+With Docker access enabled, choose **Branch from backup…** on any completed PostgreSQL, MySQL/MariaDB, or MongoDB backup in History. Velld restores the backup into a separate container and gives you a database-scoped connection string only after masking succeeds. The port binds to the Docker host's loopback address, so connect on that host or forward the port over SSH. Velld's API removes the container after 24 hours.
+
+Masking uses column and field names to find common email, name, and phone fields, including nested MongoDB fields. It does not inspect unrelated fields or free text, so review the branch before sharing its data. If recognized fields cannot be safely updated, Velld removes the failed branch instead of issuing credentials.
+
 ## Screenshots
 
 <table>

@@ -91,6 +91,7 @@ func main() {
 		cryptoService,
 	)
 	go backupService.ResumeRestoreChecks()
+	go backupService.CleanExpiredBackupBranches()
 
 	// Create connHandler after backupService is available
 	connHandler := connection.NewConnectionHandler(connService, backupService)
@@ -124,6 +125,7 @@ func main() {
 	protected.HandleFunc("/backups/{id}", backupHandler.GetBackup).Methods("GET", "OPTIONS")
 	protected.HandleFunc("/backups/{id}", backupHandler.DeleteBackup).Methods("DELETE", "OPTIONS")
 	protected.HandleFunc("/backups/{id}/download", backupHandler.DownloadBackup).Methods("GET", "OPTIONS")
+	protected.HandleFunc("/backups/{id}/branch", backupHandler.CreateBackupBranch).Methods("POST", "OPTIONS")
 	protected.HandleFunc("/backups/restore", backupHandler.RestoreBackup).Methods("POST", "OPTIONS")
 	protected.HandleFunc("/backups/{connection_id}/schedule/disable", backupHandler.DisableBackupSchedule).Methods("POST", "OPTIONS")
 	protected.HandleFunc("/backups/{connection_id}/schedule", backupHandler.UpdateBackupSchedule).Methods("PUT", "OPTIONS")

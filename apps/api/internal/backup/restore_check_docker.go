@@ -12,6 +12,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const restoreCheckLabel = "velld.restore-check"
@@ -111,9 +112,10 @@ func (d *dockerEngine) ensureImage(ctx context.Context, image string) error {
 }
 
 type throwawayContainer struct {
-	id   string
-	host string
-	port int
+	id            string
+	host          string
+	port          int
+	publishedPort int
 }
 
 type containerInspect struct {
@@ -143,21 +145,26 @@ func (d *dockerEngine) selfNetwork(ctx context.Context) string {
 	return ""
 }
 
-func (d *dockerEngine) start(ctx context.Context, image string, containerPort int, env []string) (*throwawayContainer, error) {
+func (d *dockerEngine) start(ctx context.Context, image string, containerPort int, env []string, branch bool) (*throwawayContainer, error) {
 	if err := d.ensureImage(ctx, image); err != nil {
 		return nil, err
 	}
 	network := d.selfNetwork(ctx)
 	port := strconv.Itoa(containerPort) + "/tcp"
 	hostConfig := map[string]any{"AutoRemove": false}
+	label := restoreCheckLabel
+	if branch {
+		label = backupBranchLabel
+	}
 	if network != "" {
 		hostConfig["NetworkMode"] = network
-	} else {
+	}
+	if network == "" || branch {
 		hostConfig["PortBindings"] = map[string]any{port: []map[string]string{{"HostIp": "127.0.0.1", "HostPort": ""}}}
 	}
 	var created struct{ Id string }
 	if _, err := d.do(ctx, http.MethodPost, "/containers/create", map[string]any{
-		"Image": image, "Env": env, "Labels": map[string]string{restoreCheckLabel: "true"},
+		"Image": image, "Env": env, "Labels": map[string]string{label: "true"},
 		"ExposedPorts": map[string]any{port: map[string]any{}}, "HostConfig": hostConfig,
 	}, &created); err != nil {
 		return nil, err
@@ -172,15 +179,17 @@ func (d *dockerEngine) start(ctx context.Context, image string, containerPort in
 		d.remove(created.Id)
 		return nil, err
 	}
+	if bindings := details.NetworkSettings.Ports[port]; len(bindings) > 0 {
+		container.publishedPort, _ = strconv.Atoi(bindings[0].HostPort)
+	}
 	if network != "" {
 		container.host, container.port = details.NetworkSettings.Networks[network].IPAddress, containerPort
-	} else if bindings := details.NetworkSettings.Ports[port]; len(bindings) > 0 {
-		container.host = "127.0.0.1"
-		container.port, _ = strconv.Atoi(bindings[0].HostPort)
+	} else {
+		container.host, container.port = "127.0.0.1", container.publishedPort
 	}
-	if container.host == "" || container.port == 0 {
+	if container.host == "" || container.port == 0 || (branch && container.publishedPort == 0) {
 		d.remove(created.Id)
-		return nil, fmt.Errorf("could not find an address for the restore check container")
+		return nil, fmt.Errorf("could not find an address for the throwaway database container")
 	}
 	return container, nil
 }
@@ -189,17 +198,26 @@ func (d *dockerEngine) remove(id string) {
 	ctx, cancel := context.WithTimeout(context.Background(), restoreCheckCleanupTimeout)
 	defer cancel()
 	if _, err := d.do(ctx, http.MethodDelete, "/containers/"+id+"?force=true&v=true", nil, nil); err != nil {
-		fmt.Printf("Warning: failed to remove restore check container %s: %v\n", id, err)
+		fmt.Printf("Warning: failed to remove throwaway database container %s: %v\n", id, err)
 	}
 }
 
 func (d *dockerEngine) removeLeftovers(ctx context.Context) {
-	filters, _ := json.Marshal(map[string][]string{"label": {restoreCheckLabel}})
-	var containers []struct{ Id string }
+	d.removeContainersBefore(ctx, restoreCheckLabel, time.Now())
+}
+
+func (d *dockerEngine) removeContainersBefore(ctx context.Context, label string, cutoff time.Time) {
+	filters, _ := json.Marshal(map[string][]string{"label": {label}})
+	var containers []struct {
+		Id      string
+		Created int64
+	}
 	if _, err := d.do(ctx, http.MethodGet, "/containers/json?all=true&filters="+url.QueryEscape(string(filters)), nil, &containers); err != nil {
 		return
 	}
 	for _, container := range containers {
-		d.remove(container.Id)
+		if container.Created <= cutoff.Unix() {
+			d.remove(container.Id)
+		}
 	}
 }

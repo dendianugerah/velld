@@ -1,6 +1,7 @@
 package backup
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -50,11 +51,11 @@ func (s *BackupService) RestoreBackup(backupID string, connectionID string) erro
 		}()
 	}
 
-	_, err = s.restoreFile(conn, filePath)
+	_, err = s.restoreFile(context.Background(), conn, filePath)
 	return err
 }
 
-func (s *BackupService) restoreFile(conn *connection.StoredConnection, filePath string) ([]byte, error) {
+func (s *BackupService) restoreFile(ctx context.Context, conn *connection.StoredConnection, filePath string) ([]byte, error) {
 	if err := s.verifyRestoreTools(conn.Type); err != nil {
 		return nil, err
 	}
@@ -106,7 +107,9 @@ func (s *BackupService) restoreFile(conn *connection.StoredConnection, filePath 
 		return nil, fmt.Errorf("restore tool not found for %s. Please ensure %s is installed", conn.Type, restoreTools[conn.Type])
 	}
 
-	output, err := cmd.CombinedOutput()
+	restore := exec.CommandContext(ctx, cmd.Path, cmd.Args[1:]...)
+	restore.Stdin, restore.Env = cmd.Stdin, cmd.Env
+	output, err := restore.CombinedOutput()
 	return output, s.validateRestoreOutput(conn.Type, conn.DatabaseName, output, err)
 }
 

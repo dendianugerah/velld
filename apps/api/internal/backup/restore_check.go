@@ -159,33 +159,40 @@ func (s *BackupService) runRestoreCheck(backup *Backup, conn *connection.StoredC
 	}
 
 	target := restoreCheckTargetFor(conn.Type, dump.serverVersion, backupDatabaseName(backup, conn))
-	container, err := s.restoreChecks.docker.start(ctx, target.image, target.port, target.env)
+	container, err := s.restoreChecks.docker.start(ctx, target.image, target.port, target.env, false)
 	if err != nil {
 		return VerificationFailed, fmt.Sprintf("Could not start %s restore check container: %v", target.image, err)
 	}
 	defer s.restoreChecks.docker.remove(container.id)
 	target.conn.Host, target.conn.Port = container.host, container.port
+	summary, err := s.restoreIntoTarget(ctx, &target, filePath, dump)
+	if err != nil {
+		return VerificationFailed, err.Error()
+	}
+	return VerificationPassed, fmt.Sprintf("Restored %s into %s", summary, target.image)
+}
 
+func (s *BackupService) restoreIntoTarget(ctx context.Context, target *restoreCheckTarget, filePath string, dump dumpSummary) (string, error) {
 	readyCtx, readyCancel := context.WithTimeout(ctx, restoreCheckReadyTimeout)
 	defer readyCancel()
 	if err := waitForRestoreTarget(readyCtx, &target.conn); err != nil {
-		return VerificationFailed, fmt.Sprintf("%s restore check container did not become ready: %v", target.image, err)
+		return "", fmt.Errorf("%s restore check container did not become ready: %w", target.image, err)
 	}
 
 	if err := createReferencedRoles(ctx, &target.conn, dump.roles); err != nil {
-		return VerificationFailed, fmt.Sprintf("Could not prepare %s for the restore: %v", target.image, err)
+		return "", fmt.Errorf("Could not prepare %s for the restore: %w", target.image, err)
 	}
 
-	output, err := s.restoreFile(&target.conn, filePath)
+	output, err := s.restoreFile(ctx, &target.conn, filePath)
 	if err != nil {
-		return VerificationFailed, fmt.Sprintf("Restore into %s failed: %v", target.image, err)
+		return "", fmt.Errorf("Restore into %s failed: %w", target.image, err)
 	}
 
 	summary, err := confirmRestoredData(ctx, &target.conn, dump, output)
 	if err != nil {
-		return VerificationFailed, fmt.Sprintf("Restore into %s finished but the data does not match the backup: %v", target.image, err)
+		return "", fmt.Errorf("Restore into %s finished but the data does not match the backup: %w", target.image, err)
 	}
-	return VerificationPassed, fmt.Sprintf("Restored %s into %s", summary, target.image)
+	return summary, nil
 }
 
 func backupDatabaseName(backup *Backup, conn *connection.StoredConnection) string {
@@ -356,9 +363,15 @@ func openSQLTarget(conn *connection.StoredConnection) (*sql.DB, error) {
 }
 
 func openMongoTarget(ctx context.Context, conn *connection.StoredConnection) (*mongo.Client, error) {
-	return mongo.Connect(ctx, options.Client().
+	opts := options.Client().
 		SetHosts([]string{net.JoinHostPort(conn.Host, strconv.Itoa(conn.Port))}).
-		SetDirect(true).SetServerSelectionTimeout(5*time.Second))
+		SetDirect(true).SetServerSelectionTimeout(5 * time.Second)
+	if conn.Username != "" {
+		opts.SetAuth(options.Credential{
+			Username: conn.Username, Password: conn.Password, AuthSource: conn.MongoAuthSource,
+		})
+	}
+	return mongo.Connect(ctx, opts)
 }
 
 func waitForRestoreTarget(ctx context.Context, conn *connection.StoredConnection) error {
