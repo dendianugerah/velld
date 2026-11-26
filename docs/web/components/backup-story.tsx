@@ -1,59 +1,54 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { BackupFigure } from "./backup-figure";
+import { BackupFigure, parts, partsIn } from "./backup-figure";
 import styles from "./backup-story.module.css";
 
 // Follows apps/api/internal/backup: backup_cmd.go, backup_postgres.go,
 // backup_service.go, s3_storage.go and restore_check.go.
-const stages = [
+const steps = [
   {
-    name: "Connect",
-    lede: "Before any data moves, Velld opens a route to the database and hands the dump tool its password.",
-    items: [
-      { name: "SSH tunnel", text: "Optional. The dump tool connects to a local port that forwards to the database host." },
-      { name: "Password in the environment", text: "Passed as PGPASSWORD or MYSQL_PWD, or in a temporary MongoDB config file. Never on the command line." },
-      { name: "Version check", text: "For PostgreSQL, pg_dump must match or exceed the server’s major version, or the backup stops." },
-    ],
+    label: "Connect",
+    line: "Velld reaches your database without exposing the password.",
+    facts: ["SSH tunnel, if you set one", "Password via env, never in args", "pg_dump version checked first"],
   },
   {
-    name: "Dump",
-    lede: "The database’s own tool reads the data. Velld decides where the output goes.",
-    items: [
-      { name: "Native tool", text: "pg_dump, mysqldump or mongodump runs as a separate process, one database at a time." },
-      { name: "Streamed through gzip", text: "PostgreSQL output is compressed on its way to disk. If the dump fails, the partial file is deleted." },
-      { name: "One file per database", text: "backups/<connection>/<db>_<time>_<id> as .sql.gz, .sql or .archive. Its size is recorded when it finishes." },
-    ],
+    label: "Dump",
+    line: "Your database’s own tool makes the backup.",
+    facts: ["pg_dump, mysqldump or mongodump", "Gzipped while it streams", "One file per database"],
   },
   {
-    name: "Upload",
-    lede: "With S3 storage turned on, the finished file is copied to your bucket.",
-    items: [
-      { name: "Object key", text: "<prefix>/<connection>/<file>, on AWS S3 or any S3-compatible endpoint." },
-      { name: "Failure is a warning", text: "A failed upload is logged. The local backup still counts as completed." },
-      { name: "Local purge", text: "Optional. The local file is deleted only after the upload succeeds." },
-    ],
+    label: "Upload",
+    line: "A copy goes to your S3 bucket, if enabled.",
+    facts: ["Any S3-compatible storage", "Failed upload: local file kept", "Purge only after success"],
   },
   {
-    name: "Verify",
-    lede: "In the background, Velld restores the file somewhere safe to prove it works. If the local copy was purged, it is fetched from S3 first.",
-    items: [
-      { name: "Throwaway container", text: "A fresh database of the same engine, started through Docker and removed afterwards." },
-      { name: "Restore and count", text: "The file is restored, then the tables and rows are checked against what the dump contains." },
-      { name: "Recorded result", text: "Passed, failed, or skipped when Docker isn’t reachable. A failure sends a notification." },
-    ],
+    label: "Verify",
+    line: "Velld test-restores it in a throwaway database.",
+    facts: ["Optional, runs in Docker", "Tables and rows checked", "Passed, failed or skipped"],
   },
 ];
+
+function Card({ active, still = false }: { active: number; still?: boolean }) {
+  return (
+    <div className={styles.card}>
+      <div className={styles.drawing}>
+        <BackupFigure active={active} labels={!still} />
+      </div>
+      <ul className={styles.legend} aria-label="Parts in this step">
+        {partsIn(active).map((key) => <li key={key}>{parts[key].name}</li>)}
+      </ul>
+    </div>
+  );
+}
 
 export function BackupStory() {
   const [active, setActive] = useState(0);
   const sections = useRef<(HTMLElement | null)[]>([]);
 
   useEffect(() => {
-    // The chapter nearest the reading line drives the figure, in either direction.
-    // On phones that line sits below the pinned figure.
     const update = () => {
-      const reading = window.innerHeight * (window.innerWidth < 760 ? 0.68 : 0.5);
+      const reading = window.innerHeight * 0.5;
       let closest = Infinity;
       let index = 0;
       sections.current.forEach((section, i) => {
@@ -76,48 +71,38 @@ export function BackupStory() {
   return (
     <section className={styles.story} aria-labelledby="backup-story-title">
       <header className={styles.intro}>
-        <p className={styles.eyebrow}>Under the hood</p>
-        <h2 id="backup-story-title">What happens when Velld backs up a database.</h2>
+        <h2 id="backup-story-title">What actually happens in a backup.</h2>
+        <p>
+          No custom format, no black box. Velld runs{" "}
+          <span className={styles.highlight}>your database’s own dump tool</span>{" "}
+          and takes care of the file it produces.
+        </p>
       </header>
       <div className={styles.sequence}>
-        <figure className={styles.pinned} aria-label="Diagram of a Velld backup: the database host, an SSH tunnel, the dump tool, gzip, the backups folder, an S3 bucket and a throwaway restore container">
-          <div className={styles.drawing}>
-            <BackupFigure active={active} />
-          </div>
+        <figure className={styles.pinned} aria-label="Diagram of a Velld backup: database, SSH tunnel, dump tool, gzip, backups folder, S3 bucket and a throwaway restore database">
+          <Card active={active} />
           <ol className={styles.progress} aria-label="Backup steps">
-            {stages.map((stage, i) => (
-              <li key={stage.name} aria-current={active === i ? "step" : undefined}>
-                <span className={styles.progressLine} />
-                0{i + 1}&nbsp;&nbsp;{stage.name}
-              </li>
+            {steps.map((step, i) => (
+              <li key={step.label} aria-current={active === i ? "step" : undefined}>{step.label}</li>
             ))}
           </ol>
         </figure>
         <div>
-          {stages.map((stage, i) => (
+          {steps.map((step, i) => (
             <article
-              key={stage.name}
+              key={step.label}
               ref={(element) => { sections.current[i] = element; }}
-              className={styles.chapter}
+              className={styles.step}
               data-active={active === i}
-              aria-labelledby={"backup-stage-" + i}
+              aria-labelledby={"backup-step-" + i}
             >
-              <div className={styles.chapterContent}>
-                <p className={styles.chapterNumber}>0{i + 1}</p>
-                <h3 id={"backup-stage-" + i}>{stage.name}</h3>
-                <p className={styles.lede}>{stage.lede}</p>
-                <ul className={styles.items}>
-                  {stage.items.map((item, j) => (
-                    <li key={item.name}>
-                      <span className={styles.letter} aria-hidden="true">{"ABC"[j]}</span>
-                      <div>
-                        <strong>{item.name}</strong>
-                        <p>{item.text}</p>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+              <div className={styles.inlineCard}><Card active={i} still /></div>
+              <p className={styles.stepLabel}>0{i + 1}</p>
+              <h3 id={"backup-step-" + i}>{step.label}</h3>
+              <p className={styles.body}>{step.line}</p>
+              <ul className={styles.facts}>
+                {step.facts.map((fact) => <li key={fact}>{fact}</li>)}
+              </ul>
             </article>
           ))}
         </div>
