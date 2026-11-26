@@ -10,6 +10,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { typeLabels } from "@/types/base";
 import { useBackup } from "@/hooks/use-backup";
 import type { Connection } from "@/types/connection";
+import { PointInTimeRecoveryDialog } from "./point-in-time-recovery-dialog";
 
 interface ConnectionsTableProps {
   connections: Connection[];
@@ -26,6 +27,7 @@ export function ConnectionsTable({ connections, onEdit, onDelete, onSchedule, on
   const { createBackup, isCreating } = useBackup();
   const [sort, setSort] = useState<"name" | "lastBackup">("name");
   const [ascending, setAscending] = useState(true);
+  const [recovery, setRecovery] = useState<Connection | null>(null);
   const sorted = [...connections].sort((a, b) => {
     const result = sort === "name" ? a.name.localeCompare(b.name) : (Date.parse(a.last_backup_time || "") || 0) - (Date.parse(b.last_backup_time || "") || 0);
     return ascending ? result : -result;
@@ -61,6 +63,7 @@ export function ConnectionsTable({ connections, onEdit, onDelete, onSchedule, on
               <DropdownMenuItem onClick={() => onSchedule(connection.id, document.getElementById(`connection-actions-${connection.id}`))}>Backup schedule</DropdownMenuItem>
               {onDiscover && <DropdownMenuItem onClick={() => onDiscover(connection)}>Select databases</DropdownMenuItem>}
               {onUpgrade && upgradeableTypes.has(connection.type) && <DropdownMenuItem onClick={() => onUpgrade(connection)}>Upgrade container</DropdownMenuItem>}
+              {["postgresql", "mysql"].includes(connection.type) && <DropdownMenuItem onClick={() => setRecovery(connection)}>Point-in-time recovery…</DropdownMenuItem>}
               <DropdownMenuItem onClick={() => onEdit(connection.id)}>Edit connection</DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => onDelete(connection)} className="text-destructive focus:text-destructive">Delete connection</DropdownMenuItem>
@@ -69,5 +72,6 @@ export function ConnectionsTable({ connections, onEdit, onDelete, onSchedule, on
         </div>
       </div>;
     })}
+    {recovery && <PointInTimeRecoveryDialog connection={recovery} onClose={() => setRecovery(null)} />}
   </div>;
 }

@@ -146,6 +146,10 @@ func (d *dockerEngine) selfNetwork(ctx context.Context) string {
 }
 
 func (d *dockerEngine) start(ctx context.Context, image string, containerPort int, env []string, branch bool) (*throwawayContainer, error) {
+	return d.startConfigured(ctx, image, containerPort, env, branch, nil)
+}
+
+func (d *dockerEngine) startConfigured(ctx context.Context, image string, containerPort int, env []string, branch bool, extra map[string]any) (*throwawayContainer, error) {
 	if err := d.ensureImage(ctx, image); err != nil {
 		return nil, err
 	}
@@ -163,10 +167,14 @@ func (d *dockerEngine) start(ctx context.Context, image string, containerPort in
 		hostConfig["PortBindings"] = map[string]any{port: []map[string]string{{"HostIp": "127.0.0.1", "HostPort": ""}}}
 	}
 	var created struct{ Id string }
-	if _, err := d.do(ctx, http.MethodPost, "/containers/create", map[string]any{
+	spec := map[string]any{
 		"Image": image, "Env": env, "Labels": map[string]string{label: "true"},
 		"ExposedPorts": map[string]any{port: map[string]any{}}, "HostConfig": hostConfig,
-	}, &created); err != nil {
+	}
+	for key, value := range extra {
+		spec[key] = value
+	}
+	if _, err := d.do(ctx, http.MethodPost, "/containers/create", spec, &created); err != nil {
 		return nil, err
 	}
 	container := &throwawayContainer{id: created.Id}

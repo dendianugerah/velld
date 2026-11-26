@@ -55,6 +55,40 @@ DROP DATABASE myapp_production;
 
 ## Troubleshooting
 
+### Restore to a timestamp
+
+In **Connections → Actions → Point-in-time recovery**, create a recovery
+baseline before the writes you might need to recover. Enter a timestamp to
+restore an **unmasked** copy. Velld never overwrites the source. The copy
+listens on the Docker host’s loopback address and expires after 24 hours.
+Mount `/var/run/docker.sock` on the API to use this feature.
+
+- **PostgreSQL 13+:** Use a primary with no custom tablespaces, allow physical
+  replication for the connection’s login, and install a compatible
+  `pg_basebackup` client. Set `archive_mode=on` and configure `archive_command`
+  to publish completed segments atomically to a private per-source directory.
+  Mount that archive read-only on the API, set `VELLD_PITR_WAL_DIR` to the
+  parent directory, and name the archive subdirectory with the Velld connection
+  ID. Keep the WAL from the baseline through the target; PostgreSQL must see
+  enough WAL to reach the requested time. Use a new baseline after changing
+  timelines. The baseline contains the entire cluster and requires a compatible
+  PostgreSQL recovery image; Velld issues a login for the configured database.
+- **MySQL 8:** Use InnoDB and uncompressed row-format binlogs. The login needs
+  dump access (including the privileges needed for `--master-data`) and
+  replication access to read the binlogs. Velld uses MariaDB's dump and SQL
+  clients and Oracle's `mysqlbinlog` (included in the MySQL API images).
+  Apply schema changes with the
+  configured database selected and avoid cross-database statements: replay is
+  filtered to that database. Keep binlogs on the source until copied with
+  **Archive new logs**. A restore after the last archived timestamp tries to
+  fetch newer logs; older covered timestamps can be restored offline. A
+  timestamp excludes events at or after that second. Recreate the baseline
+  after failover or a binlog reset.
+
+Recovery baselines and copied MySQL binlogs are stored locally, separately from
+regular dumps and S3 retention. Remove an unused baseline from the dialog to
+free that space. Manage PostgreSQL archive retention on the source.
+
 ### "Target database must be empty"
 
 Create a new database:

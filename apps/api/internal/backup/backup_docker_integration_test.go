@@ -32,6 +32,11 @@ const dockerTestHost = "127.0.0.1"
 
 func startDockerDatabase(t *testing.T, image string, containerPort string, env ...string) (string, int) {
 	t.Helper()
+	return startDockerDatabaseWithOptions(t, image, containerPort, env, nil, nil)
+}
+
+func startDockerDatabaseWithOptions(t *testing.T, image, containerPort string, env, options, command []string) (string, int) {
+	t.Helper()
 	name := "velld-test-" + uuid.NewString()
 	t.Cleanup(func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
@@ -47,7 +52,8 @@ func startDockerDatabase(t *testing.T, image string, containerPort string, env .
 	for _, entry := range env {
 		args = append(args, "--env", entry)
 	}
-	output, err := exec.CommandContext(ctx, "docker", append(args, image)...).CombinedOutput()
+	args = append(append(append(args, options...), image), command...)
+	output, err := exec.CommandContext(ctx, "docker", args...).CombinedOutput()
 	if err != nil {
 		t.Fatalf("start %s: %v: %s", image, err, output)
 	}

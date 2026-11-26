@@ -119,6 +119,7 @@ func main() {
 
 	backupHandler := backup.NewBackupHandler(backupService)
 
+	protected.HandleFunc("/connections/{id}/pitr", backupHandler.PointInTimeRecovery).Methods("GET", "POST", "DELETE", "OPTIONS")
 	protected.HandleFunc("/backups/schedule", backupHandler.ScheduleBackup).Methods("POST", "OPTIONS")
 	protected.HandleFunc("/backups", backupHandler.CreateBackup).Methods("POST", "OPTIONS")
 	protected.HandleFunc("/backups", backupHandler.ListBackups).Methods("GET", "OPTIONS")

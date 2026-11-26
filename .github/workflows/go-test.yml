@@ -27,6 +27,9 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y postgresql-client-16 mariadb-client
+          container=$(docker create mysql:8.0-debian)
+          docker cp "$container:/usr/bin/mysqlbinlog" "$RUNNER_TEMP/mysqlbinlog"
+          docker rm "$container"
           curl -fsSL https://fastdl.mongodb.org/tools/db/mongodb-database-tools-ubuntu2404-x86_64-100.14.0.tgz |
             tar -xz -C "$RUNNER_TEMP" --strip-components=2 --wildcards '*/bin/mongodump' '*/bin/mongorestore'
           echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
