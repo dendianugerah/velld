@@ -47,7 +47,9 @@ const stages = [
 
 export function BackupStory() {
   const [active, setActive] = useState(0);
+  const [focus, setFocus] = useState<number | null>(null);
   const sections = useRef<(HTMLElement | null)[]>([]);
+  const bars = useRef<(HTMLElement | null)[]>([]);
 
   useEffect(() => {
     // The chapter nearest the reading line drives the figure, in either direction.
@@ -59,6 +61,8 @@ export function BackupStory() {
       sections.current.forEach((section, i) => {
         if (!section) return;
         const bounds = section.getBoundingClientRect();
+        const fill = Math.min(1, Math.max(0, (reading - bounds.top) / bounds.height));
+        bars.current[i]?.style.setProperty("--fill", String(fill));
         const distance = Math.abs(bounds.top + bounds.height / 2 - reading);
         if (distance < closest) { closest = distance; index = i; }
       });
@@ -73,22 +77,32 @@ export function BackupStory() {
     };
   }, []);
 
+
+  const goTo = (i: number) => {
+    const smooth = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    sections.current[i]?.scrollIntoView({ behavior: smooth ? "smooth" : "auto", block: "center" });
+  };
+
   return (
     <section className={styles.story} aria-labelledby="backup-story-title">
       <header className={styles.intro}>
         <p className={styles.eyebrow}>Under the hood</p>
         <h2 id="backup-story-title">What happens when Velld backs up a database.</h2>
+        <p className={styles.introLede}>One backup, step by step, straight from the source code.</p>
       </header>
       <div className={styles.sequence}>
         <figure className={styles.pinned} aria-label="Diagram of a Velld backup: the database host, an SSH tunnel, the dump tool, gzip, the backups folder, an S3 bucket and a throwaway restore container">
           <div className={styles.drawing}>
-            <BackupFigure active={active} />
+            <BackupFigure active={active} focus={focus} />
           </div>
           <ol className={styles.progress} aria-label="Backup steps">
             {stages.map((stage, i) => (
-              <li key={stage.name} aria-current={active === i ? "step" : undefined}>
-                <span className={styles.progressLine} />
-                0{i + 1}&nbsp;&nbsp;{stage.name}
+              <li key={stage.name} aria-current={active === i ? "step" : undefined} data-done={i < active}>
+                <button type="button" onClick={() => goTo(i)}>
+                  <span className={styles.progressLine} ref={(element) => { bars.current[i] = element; }} />
+                  <span className={styles.progressNumber}>0{i + 1}</span>
+                  {stage.name}
+                </button>
               </li>
             ))}
           </ol>
@@ -103,12 +117,12 @@ export function BackupStory() {
               aria-labelledby={"backup-stage-" + i}
             >
               <div className={styles.chapterContent}>
-                <p className={styles.chapterNumber}>0{i + 1}</p>
+                <p className={styles.chapterNumber}>0{i + 1} / 0{stages.length}</p>
                 <h3 id={"backup-stage-" + i}>{stage.name}</h3>
                 <p className={styles.lede}>{stage.lede}</p>
-                <ul className={styles.items}>
+                <ul className={styles.items} onMouseLeave={() => setFocus(null)}>
                   {stage.items.map((item, j) => (
-                    <li key={item.name}>
+                    <li key={item.name} onMouseEnter={() => active === i && setFocus(j)}>
                       <span className={styles.letter} aria-hidden="true">{"ABC"[j]}</span>
                       <div>
                         <strong>{item.name}</strong>
@@ -125,4 +139,3 @@ export function BackupStory() {
     </section>
   );
 }
-
