@@ -121,7 +121,7 @@ cp .env.example .env
 docker compose up -d
 ```
 
-Without Docker, install [Bun](https://bun.com/), Node.js 20+, Go 1.24+, and a C compiler (needed by SQLite). Copy the environment template:
+Without Docker, install [Bun](https://bun.com/), Node.js 20+, Go 1.25+, and a C compiler (needed by SQLite). Copy the environment template:
 
 ```bash
 cp .env.example .env

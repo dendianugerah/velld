@@ -13,6 +13,10 @@
     "build:api": "go -C apps/api build -o ./bin/api-server ./cmd/api-server",
     "build:docs": "bun run --cwd docs/web build"
   },
+  "overrides": {
+    "postcss": "^8.5.23",
+    "sharp": "^0.35.5"
+  },
   "devDependencies": {
     "concurrently": "^9.2.1"
   }
