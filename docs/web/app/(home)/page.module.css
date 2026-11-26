@@ -71,7 +71,6 @@
   font-weight: 500;
 }
 .brand {
-  display: inline-block;
   font-size: 29px;
   font-weight: 750;
   letter-spacing: -1.8px;
@@ -241,170 +240,9 @@
   transform: rotate(-0.7deg);
 }
 
-.preview {
-  width: 92%;
-  max-width: 1280px;
-  margin: 0 auto 48px;
-  padding: 24px 24px 0;
-  background: rgb(245 245 245 / 96%);
-  border-radius: 28px;
-}
-.previewToolbar {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-block-end: 20px;
-}
-.screenPicker {
-  position: relative;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  align-items: center;
-  padding: 4px;
-  border-radius: 28px;
-  background: #eaeaea;
-}
-.screenPicker::before {
-  content: "";
-  position: absolute;
-  inset-block: 4px;
-  inset-inline-start: 4px;
-  width: calc((100% - 8px) / 3);
-  border-radius: 24px;
-  background: var(--page);
-  box-shadow: 0 1px 3px #00000009;
-  transform: translateX(var(--indicator-offset, 0%));
-  transition: transform 220ms var(--ease);
-  pointer-events: none;
-}
-.screenPicker button {
-  position: relative;
-  padding: 10px 17px;
-  border-radius: 24px;
-  color: #666;
-  font-size: 12px;
-  font-weight: 500;
-  transition:
-    background-color 150ms ease-out,
-    color 150ms ease-out,
-    box-shadow 150ms ease-out;
-}
-.screenPicker button[aria-pressed="true"] {
-  color: var(--ink);
-}
-.figure {
-  margin: 0;
-}
-.previewButton {
-  display: grid;
-  position: relative;
-  width: 100%;
-  padding: 0;
-  background: var(--page);
-  border-radius: 14px;
-  box-shadow: 0 12px 40px -16px #00000018;
-}
-.dashboardImage {
-  grid-area: 1 / 1;
-  display: block;
-  width: 100%;
-  height: auto;
-  border-radius: inherit;
-  outline: 1px solid oklch(0 0 0 / 0.1);
-  outline-offset: -1px;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 140ms ease-out, visibility 0s linear 140ms;
-}
-.dashboardImage[data-active="true"] {
-  opacity: 1;
-  visibility: visible;
-  transition: opacity 140ms ease-out, visibility 0s;
-}
-@media (prefers-reduced-motion: reduce) {
-  .dashboardImage,
-  .dashboardImage[data-active="true"] {
-    transition: none;
-  }
-}
-.caption {
-  padding-block: 20px;
-  color: #666;
-  text-align: center;
-  font-size: 13px;
-  line-height: 1.5;
-}
-
-.lightbox {
-  position: fixed;
-  inset: 0;
-  margin: auto;
-  width: 96vw;
-  max-width: 1800px;
-  max-height: 94dvh;
-  padding: 0;
-  border: 1px solid var(--line);
-  border-radius: 18px;
-  background: var(--page);
-  color: var(--ink);
-  box-shadow: 0 24px 80px #00000026;
-  overscroll-behavior: contain;
-}
-.lightbox::backdrop {
-  background: #00000065;
-}
-:global(body):has(.lightbox[open]) {
-  overflow: hidden;
-}
-.lightboxHeader {
-  position: sticky;
-  inset-block-start: 0;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 20px;
-  border-block-end: 1px solid var(--line);
-  background: var(--page);
-}
-.lightboxHeader h2 {
-  font-size: 15px;
-  font-weight: 600;
-}
-.lightboxHeader > span {
-  font-size: 12px;
-  color: var(--muted);
-}
-.lightboxHeader button {
-  display: grid;
-  place-items: center;
-  width: 36px;
-  height: 36px;
-  margin-inline-start: auto;
-  border-radius: 50%;
-  background: var(--surface);
-}
-.lightboxImage {
-  overflow: auto;
-  overscroll-behavior: contain;
-}
-.lightboxImage img {
-  width: 100%;
-  min-width: 900px;
-  height: auto;
-}
-
 @media (hover: hover) {
-  .nav .docsLink:hover {
-    color: var(--ink);
-  }
-  .nav .githubLink:hover {
-    color: var(--ink);
-  }
-  .screenPicker button:hover:not([aria-pressed="true"]) {
-    color: var(--ink);
-    background: #dedede;
-  }
+  .nav .docsLink:hover,
+  .nav .githubLink:hover { color: var(--ink); }
 }
 @media (prefers-reduced-motion: no-preference) {
   .wordChip {
@@ -446,17 +284,9 @@
     }
   }
 }
-@media (prefers-reduced-motion: reduce) {
-  .screenPicker::before {
-    transition: none;
-  }
-}
 @media (max-width: 900px) {
   .hero {
     padding-block: 88px 64px;
-  }
-  .preview {
-    padding: 20px 24px 0;
   }
 }
 @media (max-width: 600px) {
@@ -500,36 +330,5 @@
     margin-block-start: 24px;
     font-size: 16px;
     letter-spacing: -0.015em;
-  }
-  .preview {
-    width: 92%;
-    margin-bottom: 32px;
-    padding: 16px 16px 0;
-    border-radius: 18px;
-  }
-  .previewToolbar {
-    margin-block-end: 16px;
-  }
-  .screenPicker {
-    padding: 4px;
-  }
-  .screenPicker button {
-    padding: 9px 12px;
-    font-size: 11px;
-  }
-  .previewButton {
-    border-radius: 8px;
-  }
-  .caption {
-    padding: 18px 8px;
-    font-size: 11px;
-  }
-  .lightbox {
-    border-radius: 12px;
-  }
-}
-@media (max-width: 360px) {
-  .screenPicker button {
-    padding-inline: 10px;
   }
 }
