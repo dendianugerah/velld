@@ -53,12 +53,12 @@ function Tag({ at, text, tone }: { at: V; text: string; tone?: "ok" | "warn" }) 
   );
 }
 
-function Callout({ letter, anchor, at }: { letter: string; anchor: V; at: V }) {
+function Callout({ letter, anchor, at, focused }: { letter: string; anchor: V; at: V; focused: boolean }) {
   const dx = anchor[0] - at[0];
   const dy = anchor[1] - at[1];
   const length = Math.hypot(dx, dy) || 1;
   return (
-    <g className={styles.callout}>
+    <g className={styles.callout} data-focus={focused}>
       <path d={line([at[0] + (dx / length) * 11, at[1] + (dy / length) * 11], anchor)} />
       <circle className={styles.anchor} cx={anchor[0]} cy={anchor[1]} r={2.4} />
       <circle cx={at[0]} cy={at[1]} r={11} />
@@ -126,7 +126,7 @@ function useReducedMotion() {
   return reduced;
 }
 
-export function BackupFigure({ active }: { active: number }) {
+export function BackupFigure({ active, focus = null }: { active: number; focus?: number | null }) {
   const reduced = useReducedMotion();
   const state = (name: string) => {
     const stages = usage[name];
@@ -223,7 +223,7 @@ export function BackupFigure({ active }: { active: number }) {
 
       {figureCallouts.map((set, stage) => (
         <g key={stage} className={styles.overlay} data-state={at(stage)}>
-          {set.map((c, i) => <Callout key={i} letter={"ABC"[i]} anchor={c.anchor} at={c.at} />)}
+          {set.map((c, i) => <Callout key={i} letter={"ABC"[i]} anchor={c.anchor} at={c.at} focused={active === stage && focus === i} />)}
         </g>
       ))}
 

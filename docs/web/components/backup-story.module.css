@@ -36,6 +36,14 @@
   line-height: 1.1;
   text-wrap: balance;
 }
+.introLede {
+  margin: 16px 0 0;
+  max-width: 560px;
+  color: var(--body);
+  font-size: 18px;
+  line-height: 1.55;
+  letter-spacing: -0.01em;
+}
 .sequence {
   display: grid;
   grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
@@ -63,9 +71,40 @@
   color: #a3a3a3;
   font-weight: 500;
 }
-.progressLine { display: block; height: 2px; margin-bottom: 12px; border-radius: 1px; background: var(--rule); }
+.progress button {
+  all: unset;
+  display: block;
+  width: 100%;
+  padding-bottom: 4px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+.progress button:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+.progressLine {
+  position: relative;
+  display: block;
+  height: 2px;
+  margin-bottom: 12px;
+  border-radius: 1px;
+  overflow: hidden;
+  background: var(--rule);
+}
+.progressLine::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--accent);
+  transform: scaleX(var(--fill, 0));
+  transform-origin: left;
+}
+.progressNumber { margin-right: 8px; font-variant-numeric: tabular-nums; }
+.progress li[data-done="true"] { color: var(--muted); }
 .progress li[aria-current] { color: var(--accent); font-weight: 600; }
-.progress li[aria-current] .progressLine { background: var(--accent); }
+@media (hover: hover) {
+  .progress button:hover { color: var(--ink); }
+  .progress li[aria-current] button:hover { color: var(--accent); }
+}
+.chapters { padding-block: 18svh; }
 .chapter {
   min-height: 64svh;
   display: flex;
@@ -96,6 +135,10 @@
   gap: 12px;
   padding: 16px 0;
   border-top: 1px solid var(--rule);
+}
+.letter { transition: background-color 150ms ease-out, color 150ms ease-out; }
+@media (hover: hover) {
+  .chapter[data-active="true"] .items li:hover .letter { background: var(--accent); color: #fff; }
 }
 .items strong { display: block; font-size: 16px; font-weight: 600; line-height: 1.4; color: var(--ink); }
 .items p { margin: 4px 0 0; color: var(--muted); font-size: 15px; line-height: 1.5; text-wrap: pretty; overflow-wrap: anywhere; }
@@ -153,6 +196,10 @@
 .callout path { fill: none; stroke: var(--accent); stroke-dasharray: 2 2; }
 .callout circle { fill: #fff; stroke: var(--accent); }
 .callout .anchor { fill: var(--accent); }
+.callout circle:not(.anchor) { transition: fill 150ms ease-out; }
+.callout text { transition: fill 150ms ease-out; }
+.callout[data-focus="true"] circle:not(.anchor) { fill: var(--accent); }
+.callout[data-focus="true"] text { fill: #fff; }
 .callout text {
   font-family: var(--font-mono, ui-monospace, monospace);
   font-size: 10px;
@@ -192,7 +239,9 @@
   .label, .face, .tag { display: none; }
   .callout text { font-size: 15px; }
   .callout circle:not(.anchor) { r: 14px; }
-  .chapters { padding-bottom: 24svh; }
+  .chapters { padding: 0 0 24svh; }
+  .introLede { margin-top: 12px; font-size: 16px; }
+  .progressNumber { display: none; }
   .chapter { min-height: 0; display: block; padding: 32px 0; }
   .chapter + .chapter { border-top: 1px solid var(--rule); }
   .chapterNumber { font-size: 12px; margin-bottom: 8px; }
@@ -217,6 +266,7 @@
   .drawing { height: auto; }
   .label, .face, .tag { display: none; }
   .progress { display: grid; font-size: 12px; }
+  .chapters { padding: 7svh 0; }
   .chapter { min-height: 85svh; display: flex; align-items: center; padding: 0; border: 0; }
   .chapterNumber { font-size: 12px; margin-bottom: 8px; }
   .chapter h3 { font-size: 28px; }
