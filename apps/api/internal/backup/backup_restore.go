@@ -50,13 +50,18 @@ func (s *BackupService) RestoreBackup(backupID string, connectionID string) erro
 		}()
 	}
 
+	_, err = s.restoreFile(conn, filePath)
+	return err
+}
+
+func (s *BackupService) restoreFile(conn *connection.StoredConnection, filePath string) ([]byte, error) {
 	if err := s.verifyRestoreTools(conn.Type); err != nil {
-		return err
+		return nil, err
 	}
 
 	tunnel, effectiveHost, effectivePort, err := s.setupSSHTunnelIfNeeded(conn)
 	if err != nil {
-		return fmt.Errorf("failed to setup SSH tunnel: %v", err)
+		return nil, fmt.Errorf("failed to setup SSH tunnel: %v", err)
 	}
 	if tunnel != nil {
 		defer tunnel.Stop()
@@ -71,7 +76,7 @@ func (s *BackupService) RestoreBackup(backupID string, connectionID string) erro
 		if cmd != nil {
 			input, closeInput, err := openPostgresBackup(filePath)
 			if err != nil {
-				return fmt.Errorf("open PostgreSQL backup: %w", err)
+				return nil, fmt.Errorf("open PostgreSQL backup: %w", err)
 			}
 			defer closeInput()
 			cmd.Stdin = input
@@ -81,7 +86,7 @@ func (s *BackupService) RestoreBackup(backupID string, connectionID string) erro
 		if cmd != nil {
 			file, err := os.Open(filePath)
 			if err != nil {
-				return fmt.Errorf("open MySQL backup: %w", err)
+				return nil, fmt.Errorf("open MySQL backup: %w", err)
 			}
 			defer file.Close()
 			cmd.Stdin = file
@@ -90,19 +95,19 @@ func (s *BackupService) RestoreBackup(backupID string, connectionID string) erro
 		var cleanup func()
 		cmd, cleanup, err = s.createMongoRestoreCmd(conn, filePath)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		defer cleanup()
 	default:
-		return fmt.Errorf("unsupported database type for restore: %s", conn.Type)
+		return nil, fmt.Errorf("unsupported database type for restore: %s", conn.Type)
 	}
 
 	if cmd == nil {
-		return fmt.Errorf("restore tool not found for %s. Please ensure %s is installed", conn.Type, restoreTools[conn.Type])
+		return nil, fmt.Errorf("restore tool not found for %s. Please ensure %s is installed", conn.Type, restoreTools[conn.Type])
 	}
 
 	output, err := cmd.CombinedOutput()
-	return s.validateRestoreOutput(conn.Type, conn.DatabaseName, output, err)
+	return output, s.validateRestoreOutput(conn.Type, conn.DatabaseName, output, err)
 }
 
 func (s *BackupService) validateRestoreOutput(dbType, dbName string, output []byte, cmdErr error) error {

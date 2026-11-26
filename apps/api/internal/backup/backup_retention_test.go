@@ -38,6 +38,7 @@ func newTestBackupService(t *testing.T) *BackupService {
 	}
 	s := NewBackupService(connection.NewConnectionRepository(db, crypto), t.TempDir(),
 		NewBackupRepository(db), settings.NewSettingsService(settings.NewSettingsRepository(db), crypto), crypto)
+	s.restoreChecks.automatic = false
 	t.Cleanup(func() { <-s.cronManager.Stop().Done() })
 	return s
 }

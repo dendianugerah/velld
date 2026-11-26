@@ -90,6 +90,7 @@ func main() {
 		settingsService,
 		cryptoService,
 	)
+	go backupService.ResumeRestoreChecks()
 
 	// Create connHandler after backupService is available
 	connHandler := connection.NewConnectionHandler(connService, backupService)

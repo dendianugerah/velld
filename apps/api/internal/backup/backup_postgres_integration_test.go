@@ -78,6 +78,9 @@ func TestPostgresBackupRestoreIntegration(t *testing.T) {
 	if !strings.HasSuffix(backup.Path, ".sql.gz") || backup.Size == 0 {
 		t.Fatalf("expected compressed backup file, got %s (%d bytes)", backup.Path, backup.Size)
 	}
+	if os.Getenv("VELLD_TEST_RESTORE_CHECK") != "false" {
+		assertRestoreCheck(t, s, backup.ID.String(), VerificationPassed, "1 tables and 3 rows into postgres:")
+	}
 
 	plain, closeInput, err := openPostgresBackup(backup.Path)
 	if err != nil {

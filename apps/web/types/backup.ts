@@ -15,6 +15,9 @@ export interface Backup {
   completed_time: string;
   created_at: string;
   updated_at: string;
+  verification_status?: "pending" | "passed" | "failed" | "skipped" | null;
+  verification_message?: string | null;
+  verified_at?: string | null;
 }
 
 export type BackupList = Backup;

@@ -24,6 +24,7 @@ type BackupService struct {
 	cronEntries     map[string]cron.EntryID // map[scheduleID]entryID
 	settingsService *settings.SettingsService
 	cryptoService   *common.EncryptionService
+	restoreChecks   *restoreCheckRunner
 }
 
 func NewBackupService(
@@ -46,6 +47,7 @@ func NewBackupService(
 		cryptoService:   cryptoService,
 		cronManager:     cronManager,
 		cronEntries:     make(map[string]cron.EntryID),
+		restoreChecks:   newRestoreCheckRunner(),
 	}
 
 	// Recover existing schedules before starting the cron manager
@@ -179,6 +181,7 @@ func (s *BackupService) createMultiDatabaseBackup(conn *connection.StoredConnect
 			continue
 		}
 
+		s.queueRestoreCheck(backup)
 		successfulBackups = append(successfulBackups, backup)
 	}
 
@@ -264,6 +267,7 @@ func (s *BackupService) createSingleDatabaseBackup(conn *connection.StoredConnec
 	if err := s.backupRepo.CreateBackup(backup); err != nil {
 		return nil, fmt.Errorf("failed to save backup: %v", err)
 	}
+	s.queueRestoreCheck(backup)
 
 	return backup, nil
 }

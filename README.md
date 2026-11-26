@@ -64,6 +64,10 @@ docker compose -f docker-compose.yml -f docker-compose.discovery.yml up -d
 
 Use the first filename that matches your installation (for example, `docker-compose.prebuilt.yml` when using the published images). Then log in as the configured admin and open **Connections → Discover Docker**. Velld finds running PostgreSQL, MySQL/MariaDB, and MongoDB containers on a shared Docker network or a reachable published port. **Add & schedule** adds a connection and enables daily backups at midnight (API server time), with 30 days of retention; you can change that schedule from Connections.
 
+### Restore checks
+
+With the same Docker access, Velld restores every completed backup into a throwaway container of the same database (PostgreSQL, MySQL/MariaDB, or MongoDB, matching the source server version when the dump records it), confirms the restored tables, rows, or documents match the backup, then removes the container. Backup history shows **Restore verified** or **Restore check failed**, and failures send the same webhook and email alerts as failed backups. Without Docker access the check is recorded as **Restore not checked**. Set `RESTORE_CHECK_ENABLED=false` to turn it off.
+
 Velld reads the database image's standard initialization environment variables. If credentials were changed later, or supplied via Docker secrets instead of environment variables, add the connection manually. Only enable this on a trusted Velld installation: giving the API access to the Docker socket grants privileged access to the host even with a read-only bind mount.
 
 ## Screenshots

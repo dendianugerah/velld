@@ -13,7 +13,20 @@ import (
 	"github.com/google/uuid"
 )
 
+const (
+	notificationBackupFailed       = "backup_failed"
+	notificationRestoreCheckFailed = "restore_check_failed"
+)
+
 func (s *BackupService) createFailureNotification(connID string, backupErr error) error {
+	return s.sendFailureNotification(connID, "", notificationBackupFailed, backupErr)
+}
+
+func (s *BackupService) createRestoreCheckFailureNotification(connID, databaseName string, checkErr error) error {
+	return s.sendFailureNotification(connID, databaseName, notificationRestoreCheckFailed, checkErr)
+}
+
+func (s *BackupService) sendFailureNotification(connID, databaseName, event string, backupErr error) error {
 
 	conn, err := s.connStorage.GetConnection(connID)
 	if err != nil {
@@ -42,9 +55,13 @@ func (s *BackupService) createFailureNotification(connID string, backupErr error
 		return fmt.Errorf("no settings found for user: %s", conn.UserID)
 	}
 
+	if databaseName == "" {
+		databaseName = conn.DatabaseName
+	}
 	metadata := map[string]interface{}{
+		"event":         event,
 		"connection_id": connID,
-		"database_name": conn.DatabaseName,
+		"database_name": databaseName,
 		"database_type": conn.Type,
 		"error":         backupErr.Error(),
 		"timestamp":     time.Now().Format(time.RFC3339),
@@ -79,6 +96,9 @@ func (s *BackupService) sendWebhookNotification(webhookURL string, data map[stri
 	errorMsg, _ := data["error"].(string)
 	timestamp, _ := data["timestamp"].(string)
 
+	if data["event"] == notificationRestoreCheckFailed {
+		errorMsg = "restore check failed: " + errorMsg
+	}
 	data["text"] = fmt.Sprintf("[%s] - %s: %s", timestamp, databaseName, errorMsg)
 
 	body, _ := json.Marshal(data)
@@ -123,6 +143,11 @@ func (s *BackupService) sendEmailNotification(email string, userSettings *settin
 		To:      email,
 		Subject: "Velld - Backup Failed",
 		Body:    fmt.Sprintf("Backup failed for database '%s'. Error: %v", data["database_name"], data["error"]),
+	}
+	if data["event"] == notificationRestoreCheckFailed {
+		msg.Subject = "Velld - Backup Restore Check Failed"
+		msg.Body = fmt.Sprintf("A backup of database '%s' could not be restored into a test database. Error: %v",
+			data["database_name"], data["error"])
 	}
 
 	if err := mail.SendEmail(smtpConfig, msg); err != nil {

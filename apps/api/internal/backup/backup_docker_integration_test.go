@@ -310,4 +310,10 @@ func backupAndRestore(t *testing.T, s *BackupService, source, target connection.
 	if err := s.RestoreBackup(artifact.ID.String(), target.ID); err != nil {
 		t.Fatalf("restore %s backup: %v", source.Type, err)
 	}
+	assertRestoreCheck(t, s, artifact.ID.String(), VerificationPassed, wantRestoreCheck[source.Type])
+}
+
+var wantRestoreCheck = map[string]string{
+	"mysql":   "1 tables into mysql:8.0",
+	"mongodb": "1 collections and 2 documents into mongo:7.0",
 }

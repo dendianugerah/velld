@@ -9,7 +9,7 @@ import { typeLabels, DatabaseType } from "@/types/base";
 import type { BackupList } from "@/types/backup";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { BackupStatus } from "@/components/ui/backup-status";
+import { BackupStatus, RestoreCheckStatus } from "@/components/ui/backup-status";
 import { CustomPagination } from "@/components/ui/custom-pagination";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -47,7 +47,7 @@ export function HistoryList() {
             <p className="break-words text-[12px] font-medium">{backup.database_name || typeLabels[backup.database_type as DatabaseType] || backup.database_type}<span className="ms-2 text-[10px] font-normal text-muted-foreground">{backup.s3_object_key ? "S3" : "Local"}</span></p>
             <p className="mt-1 break-all font-mono text-[10px] leading-relaxed text-muted-foreground">{filename}</p>
           </div>
-          <BackupStatus status={backup.status} />
+          <div className="flex flex-wrap gap-1"><BackupStatus status={backup.status} /><RestoreCheckStatus status={backup.verification_status} message={backup.verification_message} /></div>
           <p className="text-xs text-muted-foreground">{formatSize(backup.size)}<span className="ml-2 md:hidden">· {formatDistanceToNow(parseISO(backup.created_at), { addSuffix: true })}</span></p>
           <p className="hidden text-xs text-muted-foreground md:block">{formatDistanceToNow(parseISO(backup.created_at), { addSuffix: true })}</p>
           <div className="justify-self-end">

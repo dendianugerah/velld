@@ -33,6 +33,14 @@ type Backup struct {
 	CompletedTime *time.Time `json:"completed_time"`
 	CreatedAt     time.Time  `json:"created_at"`
 	UpdatedAt     time.Time  `json:"updated_at"`
+	BackupVerification
+}
+
+// BackupVerification is the outcome of restoring a backup into a throwaway container.
+type BackupVerification struct {
+	VerificationStatus  *string `json:"verification_status"`
+	VerificationMessage *string `json:"verification_message"`
+	VerifiedAt          *string `json:"verified_at"`
 }
 
 // BackupList represents a backup in list view with additional info
@@ -50,6 +58,7 @@ type BackupList struct {
 	CompletedTime string    `json:"completed_time"`
 	CreatedAt     string    `json:"created_at"`
 	UpdatedAt     string    `json:"updated_at"`
+	BackupVerification
 }
 
 // BackupRequest represents a request to create a backup

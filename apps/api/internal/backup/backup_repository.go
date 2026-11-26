@@ -235,6 +235,34 @@ func (r *BackupRepository) UpdateBackupStatus(id string, status string) error {
 	return err
 }
 
+func (r *BackupRepository) UpdateBackupVerification(id, status, message string) error {
+	now := time.Now().Format(time.RFC3339)
+	var verifiedAt *string
+	if status != VerificationPending {
+		verifiedAt = &now
+	}
+	_, err := r.db.Exec(`UPDATE backups SET verification_status = $1, verification_message = $2,
+		verified_at = $3, updated_at = $4 WHERE id = $5`, status, message, verifiedAt, now, id)
+	return err
+}
+
+func (r *BackupRepository) backupIDsWithVerificationStatus(status string) ([]string, error) {
+	rows, err := r.db.Query("SELECT id FROM backups WHERE verification_status = $1 ORDER BY created_at", status)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var ids []string
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		ids = append(ids, id)
+	}
+	return ids, rows.Err()
+}
+
 func (r *BackupRepository) getBackupsOutsideRetention(connectionID string, cutoffTime *time.Time, count int) ([]*Backup, error) {
 	rows, err := r.db.Query(`
 		WITH ranked AS (
@@ -286,12 +314,14 @@ func (r *BackupRepository) GetBackup(id string) (*Backup, error) {
 	backup := &Backup{}
 	err := r.db.QueryRow(`
 		SELECT id, connection_id, schedule_id, status, path, s3_object_key, size,
-			   started_time, completed_time, created_at, updated_at 
+			   started_time, completed_time, created_at, updated_at,
+			   verification_status, verification_message, verified_at
 		FROM backups WHERE id = $1`, id).
 		Scan(&backup.ID, &backup.ConnectionID, &backup.ScheduleID,
 			&backup.Status, &backup.Path, &backup.S3ObjectKey, &backup.Size,
 			&startedTimeStr, &completedTimeStr,
-			&createdAtStr, &updatedAtStr)
+			&createdAtStr, &updatedAtStr,
+			&backup.VerificationStatus, &backup.VerificationMessage, &backup.VerifiedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -354,7 +384,7 @@ func (r *BackupRepository) GetAllBackupsWithPagination(opts BackupListOptions) (
 		SELECT 
 			b.id, b.connection_id, c.type, b.schedule_id, b.status, b.path, b.s3_object_key, b.size,
 			b.started_time, b.completed_time, b.created_at, b.updated_at,
-			c.database_name
+			c.database_name, b.verification_status, b.verification_message, b.verified_at
 		FROM backups b
 		INNER JOIN connections c ON b.connection_id = c.id
 		%s
@@ -384,6 +414,7 @@ func (r *BackupRepository) GetAllBackupsWithPagination(opts BackupListOptions) (
 			&startedTimeStr, &completedTimeStr,
 			&createdAtStr, &updatedAtStr,
 			&backup.DatabaseName,
+			&backup.VerificationStatus, &backup.VerificationMessage, &backup.VerifiedAt,
 		)
 		if err != nil {
 			return nil, 0, err
