@@ -12,14 +12,10 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { useRef, useState } from "react";
+import { Dither } from "@/components/ui/dither";
 import styles from "./page.module.css";
 
 const repository = "https://github.com/dendianugerah/velld";
-const databases = [
-  { name: "PostgreSQL", image: "/images/postgresql.svg" },
-  { name: "MySQL", image: "/images/mysql.svg" },
-  { name: "MongoDB", image: "/images/mongodb.svg" },
-];
 const databaseWords = ["databases.", "Postgres.", "MySQL.", "MongoDB."];
 const activities = [
   { word: "building.", icon: Code2 },
@@ -73,12 +69,21 @@ export default function HomePage() {
             rel="noopener noreferrer"
             className={styles.githubLink}
           >
-            GitHub <ArrowUpRight size={16} aria-hidden="true" />
+            GitHub
           </a>
         </nav>
       </header>
 
-      <main id="main" tabIndex={-1}>
+      <main id="main" tabIndex={-1} className={styles.main}>
+        <Dither
+          className={styles.pageDither}
+          pattern="clouds"
+          colors="oklch(0.5772 0.2324 260)"
+          intensity={0.55}
+          speed={0.25}
+          dotSize={2}
+          interactive
+        />
         <section className={styles.hero} aria-labelledby="hero-title">
           <h1 id="hero-title" className={styles.title}>
             <span className={styles.titleLine}>
@@ -90,7 +95,6 @@ export default function HomePage() {
                   setDatabaseIndex((index) => (index + 1) % databaseWords.length)
                 }
                 aria-label={`${databaseWords[databaseIndex]} Swap database`}
-                aria-describedby="hero-hint"
               >
                 <span className={styles.chipIcon} aria-hidden="true">
                   <Database />
@@ -101,6 +105,12 @@ export default function HomePage() {
                       {word}
                     </span>
                   ))}
+                </span>
+                <span className={styles.clickHint} aria-hidden="true">
+                  <svg viewBox="0 0 42 30" fill="none">
+                    <path d="M3 4c13 1 23 7 27 19m-8-4 9 5 3-10" />
+                  </svg>
+                  click me
                 </span>
               </button>
             </span>
@@ -113,7 +123,6 @@ export default function HomePage() {
                   setActivityIndex((index) => (index + 1) % activities.length)
                 }
                 aria-label={`${activities[activityIndex].word} Swap activity`}
-                aria-describedby="hero-hint"
               >
                 <span className={styles.chipIcon} aria-hidden="true">
                   {activities.map(({ word, icon: Icon }, index) => (
@@ -130,31 +139,11 @@ export default function HomePage() {
               </button>
             </span>
           </h1>
-          <p id="hero-hint" className={styles.heroHint}>
-            Tap a highlighted word to swap it.
-            <svg
-              width="43"
-              height="36"
-              viewBox="0 0 43 36"
-              fill="none"
-              aria-hidden="true"
-            >
-              <path d="M3 32C22 32 34 23 35 6M25 14L35 5L40 17" />
-            </svg>
-          </p>
           <p className={styles.subtitle}>
             Backups, schedules, and restores. All in one place.
             <br />
-            Open source. On your own server.
+            <span className={styles.highlight}>Open source. On your own server.</span>
           </p>
-          <ul className={styles.compatibility} aria-label="Supported databases">
-            {databases.map((item) => (
-              <li key={item.name}>
-                <Image src={item.image} alt="" width={18} height={18} />
-                {item.name}
-              </li>
-            ))}
-          </ul>
         </section>
 
         <section className={styles.preview} aria-labelledby="preview-title">
@@ -216,28 +205,6 @@ export default function HomePage() {
           </figure>
         </section>
       </main>
-
-      <footer className={styles.footer}>
-        <div className={styles.footerIdentity}>
-          <Link href="/" className={styles.brand}>
-            velld
-          </Link>
-          <span>Self-hosted. Open source. Yours.</span>
-        </div>
-        <nav aria-label="Footer navigation">
-          <Link href="/docs">Docs</Link>
-          <a href={repository} target="_blank" rel="noopener noreferrer">
-            GitHub <ArrowUpRight size={13} aria-hidden="true" />
-          </a>
-          <a
-            href={`${repository}/blob/main/LICENSE`}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            MIT License
-          </a>
-        </nav>
-      </footer>
 
       <dialog
         ref={dialog}
