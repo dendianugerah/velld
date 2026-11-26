@@ -92,22 +92,7 @@
   color: #646b70;
 }
 .nav a:not(.brand) {
-  position: relative;
   transition: color 150ms ease-out, background-color 150ms ease-out;
-}
-.nav a:not(.brand)::after {
-  content: "";
-  position: absolute;
-  inset-inline: 0;
-  bottom: 7px;
-  height: 1px;
-  background: currentColor;
-  transform: scaleX(0);
-  transform-origin: left;
-  transition: transform 180ms var(--ease);
-}
-.nav a:not(.brand):focus-visible::after {
-  transform: scaleX(1);
 }
 
 .main {
@@ -416,18 +401,12 @@
   .nav .githubLink:hover {
     color: var(--ink);
   }
-  .nav a:not(.brand):hover::after {
-    transform: scaleX(1);
-  }
   .screenPicker button:hover:not([aria-pressed="true"]) {
     color: var(--ink);
     background: #dedede;
   }
 }
 @media (prefers-reduced-motion: no-preference) {
-  .brand {
-    transition: color 180ms ease-out, transform 180ms var(--ease);
-  }
   .wordChip {
     transition: transform 300ms var(--ease);
   }
@@ -462,17 +441,12 @@
     transform: rotate(0) scale(0.96);
   }
   @media (hover: hover) {
-    .brand:hover {
-      color: oklch(0.5772 0.2324 260);
-      transform: translateY(-2px);
-    }
     .wordChip:hover:not(:active) {
       transform: rotate(0) translateY(-2px);
     }
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .nav a:not(.brand)::after,
   .screenPicker::before {
     transition: none;
   }
