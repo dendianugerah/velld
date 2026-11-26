@@ -1,61 +1,44 @@
 "use client";
 
-import {
-  ArrowRight,
-  Check,
-  Code2,
-  Copy,
-  Database,
-  Github,
-  LockKeyhole,
-} from "lucide-react";
+import { ArrowUpRight, Code2, Maximize2, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import styles from "./page.module.css";
 
 const repository = "https://github.com/dendianugerah/velld";
-const cloneCommand = `git clone ${repository}.git`;
-const agentPrompt = `Help me set up and run Velld on my own machine or server using Docker Compose. Use the repository README and Compose files as the source of truth. Check that Docker and the Compose plugin are available.
-
-1. Run ${cloneCommand}, then cd velld. If the repository is already checked out, use that checkout instead.
-2. If .env does not exist, copy .env.example to .env. Generate JWT_SECRET and ENCRYPTION_KEY separately with openssl rand -hex 32 and put the literal outputs in .env, not shell expressions. ENCRYPTION_KEY must be 64 hex characters. Set ADMIN_USERNAME_CREDENTIAL and a strong ADMIN_PASSWORD_CREDENTIAL for the initial admin account. Do not print or commit secrets, and keep existing keys when updating.
-3. Set NEXT_PUBLIC_API_URL to the API address reachable from my browser: http://localhost:8080 for a local install, or the server's reachable address on port 8080 (or its HTTPS reverse-proxy URL) for a remote install.
-4. Run docker compose up -d from the repository root and check docker compose ps. If a service fails, inspect docker compose logs. Open http://localhost:3000 locally, or the server's web address on port 3000 (or its HTTPS URL), and sign in with the configured admin credentials.
-5. To update a source install, pull the latest changes for the installed branch and run docker compose up -d --build. Keep .env and the api_data and backup_data volumes intact.
-
-Tell me the UI URL and service status without exposing secrets.`;
-
-function useClipboard(value: string) {
-  const [copyState, setCopyState] = useState<"idle" | "copied" | "error">(
-    "idle",
-  );
-  const resetCopy = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(
-    () => () => {
-      if (resetCopy.current) clearTimeout(resetCopy.current);
-    },
-    [],
-  );
-
-  async function copy() {
-    if (resetCopy.current) clearTimeout(resetCopy.current);
-    try {
-      await navigator.clipboard.writeText(value);
-      setCopyState("copied");
-    } catch {
-      setCopyState("error");
-    }
-    resetCopy.current = setTimeout(() => setCopyState("idle"), 2500);
-  }
-
-  return { copyState, copy };
-}
+const databases = [
+  { name: "PostgreSQL", image: "/images/postgresql.svg" },
+  { name: "MySQL", image: "/images/mysql.svg" },
+  { name: "MongoDB", image: "/images/mongodb.svg" },
+];
+const screens = [
+  {
+    name: "Connections",
+    image: "/images/connections.png",
+    description: "Your databases, together in one place.",
+    alt: "Velld Connections: database connections with on-demand backup actions and scheduled backups",
+  },
+  {
+    name: "Dashboard",
+    image: "/images/dashboard.png",
+    description: "A little less checking. A little more peace of mind.",
+    alt: "Velld Dashboard: an overview of database connections, backup activity, and storage",
+  },
+  {
+    name: "History",
+    image: "/images/history.png",
+    description: "Every backup, with its history close by.",
+    alt: "Velld History: completed database backups with status, size, and restore actions",
+  },
+];
 
 export default function HomePage() {
-  const { copyState, copy: copyCommand } = useClipboard(cloneCommand);
-  const { copyState: promptCopyState, copy: copyPrompt } =
-    useClipboard(agentPrompt);
+  const [databaseIndex, setDatabaseIndex] = useState(0);
+  const [screenIndex, setScreenIndex] = useState(0);
+  const dialog = useRef<HTMLDialogElement>(null);
+  const database = databases[databaseIndex];
+  const screen = screens[screenIndex];
 
   return (
     <div className={styles.home}>
@@ -65,206 +48,152 @@ export default function HomePage() {
       <header className={styles.header}>
         <nav className={styles.nav} aria-label="Main navigation">
           <Link href="/" className={styles.brand} aria-label="Velld home">
-            <span>velld</span>
+            velld
           </Link>
-          <div className={styles.navLinks}>
-            <a href="#installation">Install</a>
-            <Link href="/docs">Docs</Link>
-            <a
-              href={repository}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={styles.navGithub}
-            >
-              <Github size={15} aria-hidden="true" /> GitHub{" "}
-              <span aria-hidden="true">↗</span>
-            </a>
-          </div>
+          <Link href="/docs" className={styles.docsLink}>
+            Documentation
+          </Link>
+          <a
+            href={repository}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={styles.githubLink}
+          >
+            GitHub <ArrowUpRight size={16} aria-hidden="true" />
+          </a>
         </nav>
       </header>
 
-      <main id="main">
+      <main id="main" tabIndex={-1}>
         <section className={styles.hero} aria-labelledby="hero-title">
-          <span className={styles.openSource}>
-            <span className={styles.statusDot} /> Self-hosted. Open source.
-          </span>
           <h1 id="hero-title" className={styles.title}>
             <span className={styles.titleLine}>
               Back up{" "}
-              <span className={`${styles.wordChip} ${styles.databaseChip}`}>
-                <span className={styles.chipIcon}>
-                  <Database aria-hidden="true" />
-                </span>
-                databases.
-              </span>
+              <button
+                type="button"
+                className={styles.databaseTile}
+                onClick={() =>
+                  setDatabaseIndex((index) => (index + 1) % databases.length)
+                }
+                aria-label={`Showing ${database.name}. Show next database`}
+                title="Click to meet your databases"
+              >
+                {databases.map((item, index) => (
+                  <Image
+                    key={item.name}
+                    src={item.image}
+                    alt=""
+                    width={54}
+                    height={54}
+                    className={styles.databaseIcon}
+                    data-active={index === databaseIndex}
+                    aria-hidden="true"
+                    priority
+                  />
+                ))}
+              </button>{" "}
+              databases.
             </span>
             <span className={styles.titleLine}>
               Get back to{" "}
-              <span className={`${styles.wordChip} ${styles.buildingChip}`}>
-                <span className={styles.chipIcon}>
-                  <Code2 aria-hidden="true" />
-                </span>
-                building.
-              </span>
+              <span className={styles.codeTile} aria-hidden="true">
+                <Code2 strokeWidth={1.6} />
+              </span>{" "}
+              building.
             </span>
           </h1>
           <p className={styles.subtitle}>
-            Your databases, tucked in safely.
-            <br className={styles.mobileBreak} /> Velld takes care of backups,
-            <br className={styles.desktopBreak} /> schedules, and restores. All
-            on your own server.
+            Backups, schedules, and restores. All in one place.
+            <br />
+            Open source. On your own server.
           </p>
-          <div className={styles.compatibility}>
-            <span>Works with</span>
-            <ul aria-label="Supported databases" role="list">
-              <li>
-                <span
-                  className={`${styles.databaseMark} ${styles.postgres}`}
-                  aria-hidden="true"
-                />
-                PostgreSQL
+          <ul className={styles.compatibility} aria-label="Supported databases">
+            {databases.map((item, index) => (
+              <li key={item.name}>
+                <button
+                  type="button"
+                  aria-pressed={index === databaseIndex}
+                  onClick={() => setDatabaseIndex(index)}
+                >
+                  <Image src={item.image} alt="" width={18} height={18} />
+                  {item.name}
+                </button>
               </li>
-              <li>
-                <span
-                  className={`${styles.databaseMark} ${styles.mysql}`}
-                  aria-hidden="true"
-                />
-                MySQL
-              </li>
-              <li>
-                <span
-                  className={`${styles.databaseMark} ${styles.mongo}`}
-                  aria-hidden="true"
-                />
-                MongoDB
-              </li>
-            </ul>
-          </div>
+            ))}
+          </ul>
         </section>
 
-        <section
-          id="preview"
-          className={styles.preview}
-          aria-labelledby="preview-title"
-        >
-          <div className={styles.window}>
-            <div className={styles.windowBar} aria-hidden="true">
-              <div className={styles.windowDots}>
-                <i />
-                <i />
-                <i />
-              </div>
-              <span>
-                <LockKeyhole size={11} /> your-server / velld
-              </span>
-              <span className={styles.windowLabel}>CONNECTIONS</span>
-            </div>
-            <h2 id="preview-title" className={styles.srOnly}>
-              One dashboard for your database backups
-            </h2>
-            <a
-              href="/images/connections.png"
-              target="_blank"
-              rel="noopener noreferrer"
-              className={styles.previewLink}
-              aria-label="Open the Connections screenshot at full size in a new tab"
+        <section className={styles.preview} aria-labelledby="preview-title">
+          <div className={styles.previewToolbar}>
+            <h2 id="preview-title">A look inside</h2>
+            <div
+              className={styles.screenPicker}
+              role="group"
+              aria-label="Choose a screenshot"
             >
-              <Image
-                src="/images/connections.png"
-                alt="Velld connections view with PostgreSQL databases, on-demand backup actions, and scheduled backups"
-                width={3024}
-                height={1572}
-                className={styles.dashboardImage}
-                priority
-                sizes="(max-width: 1100px) 94vw, 1060px"
-              />
-              <span className={styles.previewHint} aria-hidden="true">
-                View full size ↗
-              </span>
-            </a>
-          </div>
-        </section>
-
-        <section
-          id="installation"
-          className={styles.setup}
-          aria-labelledby="setup-title"
-        >
-          <div className={styles.installHeader}>
-            <h2 id="setup-title">Install Velld</h2>
-            <Link href="/docs/installation">
-              Installation guide <ArrowRight size={14} aria-hidden="true" />
-            </Link>
-          </div>
-          <div className={styles.command}>
-            <code>
-              git clone <wbr />
-              <span>https://github.com/</span>
-              <wbr />
-              <span>dendianugerah/</span>
-              <wbr />
-              <span>velld.git</span>
-            </code>
+              {screens.map((item, index) => (
+                <button
+                  key={item.name}
+                  type="button"
+                  onClick={() => setScreenIndex(index)}
+                  aria-pressed={screenIndex === index}
+                  aria-controls="screen-preview"
+                >
+                  {item.name}
+                </button>
+              ))}
+            </div>
             <button
               type="button"
-              onClick={copyCommand}
-              aria-label={
-                copyState === "copied" ? "Command copied" : "Copy clone command"
-              }
-              aria-describedby={
-                copyState === "error" ? "clone-copy-status" : undefined
-              }
-              title={copyState === "copied" ? "Copied!" : "Copy clone command"}
-              data-copy-state={copyState}
+              className={styles.expandButton}
+              aria-label={`Expand ${screen.name} screenshot`}
+              onClick={() => dialog.current?.showModal()}
             >
-              <Copy
-                size={15}
-                className={styles.copyGlyph}
-                data-visible={copyState !== "copied"}
-                aria-hidden="true"
-              />
-              <Check
-                size={15}
-                className={styles.copyGlyph}
-                data-visible={copyState === "copied"}
-                aria-hidden="true"
-              />
+              <Maximize2 size={17} aria-hidden="true" />
             </button>
           </div>
-          <span
-            id="clone-copy-status"
-            className={styles.copyStatus}
-            role="status"
-            data-state={copyState}
-          >
-            {copyState === "copied"
-              ? "Copied to clipboard"
-              : copyState === "error"
-                ? "Couldn’t copy. Select the command to copy it manually."
-                : ""}
-          </span>
-          <div className={styles.promptCopy}>
-            <button type="button" onClick={copyPrompt}>
-              Copy agent prompt
+          <figure id="screen-preview" className={styles.figure}>
+            <button
+              type="button"
+              className={styles.previewButton}
+              onClick={() => dialog.current?.showModal()}
+              aria-label={`View ${screen.name} screenshot at full size`}
+            >
+              {screens.map((item, index) => (
+                <Image
+                  key={item.name}
+                  src={item.image}
+                  alt={item.alt}
+                  width={3024}
+                  height={1572}
+                  className={styles.dashboardImage}
+                  hidden={screenIndex !== index}
+                  priority={index === 0}
+                  sizes="(max-width: 700px) 94vw, (max-width: 1440px) 86vw, 1240px"
+                />
+              ))}
+              <span className={styles.previewHint} aria-hidden="true">
+                Take a closer look <ArrowUpRight size={14} />
+              </span>
             </button>
-            <span role="status" data-state={promptCopyState}>
-              {promptCopyState === "copied"
-                ? "Copied"
-                : promptCopyState === "error"
-                  ? "Couldn’t copy the prompt."
-                  : ""}
-            </span>
-          </div>
+            <figcaption className={styles.caption} aria-live="polite">
+              {screen.description}
+            </figcaption>
+          </figure>
         </section>
       </main>
+
       <footer className={styles.footer}>
-        <Link href="/" className={styles.brand}>
-          <span>velld</span>
-        </Link>
-        <div>
-          <Link href="/docs">Documentation</Link>
+        <div className={styles.footerIdentity}>
+          <Link href="/" className={styles.brand}>
+            velld
+          </Link>
+          <span>Self-hosted. Open source. Yours.</span>
+        </div>
+        <nav aria-label="Footer navigation">
+          <Link href="/docs">Docs</Link>
           <a href={repository} target="_blank" rel="noopener noreferrer">
-            GitHub <span aria-hidden="true">↗</span>
+            GitHub <ArrowUpRight size={13} aria-hidden="true" />
           </a>
           <a
             href={`${repository}/blob/main/LICENSE`}
@@ -273,8 +202,38 @@ export default function HomePage() {
           >
             MIT License
           </a>
-        </div>
+        </nav>
       </footer>
+
+      <dialog
+        ref={dialog}
+        className={styles.lightbox}
+        aria-labelledby="lightbox-title"
+        onClick={(event) => {
+          if (event.target === event.currentTarget) dialog.current?.close();
+        }}
+      >
+        <div className={styles.lightboxHeader}>
+          <h2 id="lightbox-title">{screen.name}</h2>
+          <span>Preview</span>
+          <button
+            type="button"
+            onClick={() => dialog.current?.close()}
+            aria-label="Close screenshot"
+          >
+            <X size={20} aria-hidden="true" />
+          </button>
+        </div>
+        <div className={styles.lightboxImage}>
+          <Image
+            src={screen.image}
+            alt={screen.alt}
+            width={3024}
+            height={1572}
+            sizes="96vw"
+          />
+        </div>
+      </dialog>
     </div>
   );
 }
