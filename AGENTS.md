@@ -4,7 +4,7 @@
 
 - `apps/api/` — Go REST API (gorilla/mux, SQLite via goose migrations)
 - `apps/web/` — Next.js 15 frontend (App Router, shadcn/ui, Tailwind)
-- `apps/docs/web/` — Fumadocs documentation site
+- `docs/web/` — Fumadocs documentation site
 - `docker-compose.yml` — Full stack (builds both apps)
 - `docker-compose.prebuilt.yml` — Pre-built images from GHCR
 
@@ -16,13 +16,21 @@ go run cmd/api-server/main.go
 ```
 Runs on `:8080`. Loads `.env` from repo root AND `apps/api/.env` (via `godotenv.Load`).
 
-**Web** (`apps/web/`):
+**Web and API** (repo root):
 ```bash
-npm run dev    # uses --turbopack
-npm run build
-npm run lint
+bun install
+bun run dev    # use dev:web or dev:api for one app
+bun run build
+bun run --cwd apps/web lint
 ```
-Runs on `:3000`. Reads `NEXT_PUBLIC_API_URL` from root `.env` via `dotenv.config`.
+Web runs on `:3000` with Turbopack and reads `NEXT_PUBLIC_API_URL` from root `.env` via `dotenv.config`.
+
+**Docs** (`docs/web/`):
+```bash
+bun install
+bun run dev --port 3001
+bun run build
+```
 
 **Both with Docker**:
 ```bash
@@ -42,7 +50,7 @@ docker compose up --build
 - Migrations live in `internal/database/migrations/` (goose, auto-runs on startup)
 - Secrets are loaded once via `sync.Once` — no hot-reload
 - API has **no tests** (no `_test.go` files found)
-- Web has **no tests** and **no typecheck script** (only `npm run lint`)
+- Web has **no tests** and **no typecheck script** (only `bun run lint` in `apps/web/`)
 - CI only runs Docker build/push — no lint or test checks
 
 ## Docker / Build Quirks
@@ -50,7 +58,7 @@ docker compose up --build
 - API Dockerfile: multi-stage with CGO enabled (`CGO_ENABLED=1`) for `go-sqlite3`
 - API Dockerfile copies `./internal/database` separately (for embedded migrations)
 - Web Dockerfile expects `output: "standalone"` in `next.config.ts`
-- Root `docker-compose.yml` builds from context `./apps/api` and `./apps/web`
+- Root `docker-compose.yml` builds the API from `./apps/api` and the web from the repository root
 - Multiple API Dockerfiles exist: `Dockerfile` (all DBs ~120MB), `Dockerfile.postgres` (~70MB), `Dockerfile.mysql` (~65MB), `Dockerfile.mongo` (~80MB)
 
 ## Web Stack

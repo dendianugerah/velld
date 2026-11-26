@@ -153,8 +153,8 @@ Choose only the database client you need to keep your installation lightweight:
 
       web:
         build:
-          context: ./apps/web
-          dockerfile: Dockerfile
+          context: .
+          dockerfile: apps/web/Dockerfile
         ports:
           - "3000:3000"
         environment:
@@ -236,8 +236,8 @@ Choose only the database client you need to keep your installation lightweight:
 
       web:
         build:
-          context: ./apps/web
-          dockerfile: Dockerfile
+          context: .
+          dockerfile: apps/web/Dockerfile
         ports:
           - "3000:3000"
         environment:
@@ -319,8 +319,8 @@ Choose only the database client you need to keep your installation lightweight:
 
       web:
         build:
-          context: ./apps/web
-          dockerfile: Dockerfile
+          context: .
+          dockerfile: apps/web/Dockerfile
         ports:
           - "3000:3000"
         environment:

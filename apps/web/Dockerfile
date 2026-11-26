@@ -1,23 +1,27 @@
-FROM node:20-alpine AS builder
+FROM oven/bun:1.4.5-slim AS builder
 
 WORKDIR /app
 
-COPY package.json package-lock.json ./
-RUN npm ci
+COPY package.json bun.lock bunfig.toml ./
+COPY apps/web/package.json ./apps/web/package.json
+RUN bun install --frozen-lockfile
 
-COPY . .
-RUN npm run build
+COPY apps/web ./apps/web
+RUN bun run --bun build:web
 
-FROM node:20-alpine AS runner
+FROM oven/bun:1.4.5-slim AS runner
 
 WORKDIR /app
 
 ENV NODE_ENV production
+ENV HOSTNAME=0.0.0.0
 
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
-COPY --from=builder /app/public ./public
+COPY --from=builder /app/apps/web/.next/standalone ./
+COPY --from=builder /app/apps/web/.next/static ./apps/web/.next/static
+COPY --from=builder /app/apps/web/public ./apps/web/public
+
+WORKDIR /app/apps/web
 
 EXPOSE 3000
 
-CMD ["node", "server.js"]
+CMD ["bun", "server.js"]
