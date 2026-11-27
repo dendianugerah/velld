@@ -25,7 +25,7 @@ func (r *SettingsRepository) GetUserSettings(userID uuid.UUID) (*UserSettings, e
                webhook_url, email, smtp_host, smtp_port, smtp_username, 
                smtp_password, s3_enabled, s3_endpoint, s3_region, s3_bucket,
                s3_access_key, s3_secret_key, s3_use_ssl, s3_path_prefix, s3_purge_local,
-               created_at, updated_at
+               s3_provider, r2_account_id, created_at, updated_at
         FROM user_settings
         WHERE user_id = $1`, userID).Scan(
 		&settings.ID, &settings.UserID,
@@ -34,18 +34,19 @@ func (r *SettingsRepository) GetUserSettings(userID uuid.UUID) (*UserSettings, e
 		&settings.SMTPUsername, &settings.SMTPPassword,
 		&settings.S3Enabled, &settings.S3Endpoint, &settings.S3Region, &settings.S3Bucket,
 		&settings.S3AccessKey, &settings.S3SecretKey, &settings.S3UseSSL, &settings.S3PathPrefix,
-		&settings.S3PurgeLocal,
+		&settings.S3PurgeLocal, &settings.S3Provider, &settings.R2AccountID,
 		&createdAtStr, &updatedAtStr)
 
 	if err == sql.ErrNoRows {
 		// Create default settings if none exist
 		now := time.Now()
 		settings = &UserSettings{
-			ID:        uuid.New(),
-			UserID:    userID,
-			S3UseSSL:  true,
-			CreatedAt: now,
-			UpdatedAt: now,
+			ID:         uuid.New(),
+			UserID:     userID,
+			S3UseSSL:   true,
+			S3Provider: "s3",
+			CreatedAt:  now,
+			UpdatedAt:  now,
 		}
 		return settings, r.CreateUserSettings(settings)
 	}
@@ -97,15 +98,16 @@ func (r *SettingsRepository) UpdateUserSettings(settings *UserSettings) error {
             smtp_username = $7, smtp_password = $8, s3_enabled = $9,
             s3_endpoint = $10, s3_region = $11, s3_bucket = $12,
             s3_access_key = $13, s3_secret_key = $14, s3_use_ssl = $15,
-            s3_path_prefix = $16, s3_purge_local = $17, updated_at = $18
-        WHERE user_id = $19`,
+            s3_path_prefix = $16, s3_purge_local = $17, updated_at = $18,
+            s3_provider = $19, r2_account_id = $20
+        WHERE user_id = $21`,
 		settings.NotifyEmail, settings.NotifyWebhook,
 		settings.WebhookURL, settings.Email, settings.SMTPHost, settings.SMTPPort,
 		settings.SMTPUsername, settings.SMTPPassword,
 		settings.S3Enabled, settings.S3Endpoint, settings.S3Region, settings.S3Bucket,
 		settings.S3AccessKey, settings.S3SecretKey, settings.S3UseSSL, settings.S3PathPrefix,
 		settings.S3PurgeLocal,
-		settings.UpdatedAt, settings.UserID)
+		settings.UpdatedAt, settings.S3Provider, settings.R2AccountID, settings.UserID)
 	return err
 }
 

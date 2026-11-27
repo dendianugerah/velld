@@ -1,8 +1,10 @@
 package settings
 
 import (
+	"fmt"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/dendianugerah/velld/internal/common"
 	"github.com/google/uuid"
@@ -119,9 +121,37 @@ func (s *SettingsService) UpdateUserSettings(userID uuid.UUID, req *UpdateSettin
 		settings.SMTPPassword = &encryptedPass
 	}
 
-	// Update S3 settings
+	if err := s.applyStorageSettings(settings, req); err != nil {
+		return nil, err
+	}
+
+	if err := s.repo.UpdateUserSettings(settings); err != nil {
+		return nil, err
+	}
+
+	// Remove sensitive data before returning
+	settings.SMTPPassword = nil
+	settings.S3SecretKey = nil
+	return settings, nil
+}
+
+func (s *SettingsService) applyStorageSettings(settings *UserSettings, req *UpdateSettingsRequest) error {
 	if req.S3Enabled != nil {
 		settings.S3Enabled = *req.S3Enabled
+	}
+	if req.S3Provider != nil {
+		if *req.S3Provider != "s3" && *req.S3Provider != "r2" {
+			return fmt.Errorf("%w: choose S3 or Cloudflare R2", errInvalidStorageSettings)
+		}
+		settings.S3Provider = *req.S3Provider
+	}
+	if req.R2AccountID != nil {
+		accountID := strings.TrimSpace(*req.R2AccountID)
+		settings.R2AccountID = &accountID
+	}
+	if (req.S3Provider != nil || req.R2AccountID != nil) && settings.S3Provider == "r2" &&
+		(settings.R2AccountID == nil || !r2AccountIDPattern.MatchString(*settings.R2AccountID)) {
+		return fmt.Errorf("%w: enter a 32-character hexadecimal Cloudflare account ID", errInvalidStorageSettings)
 	}
 	if req.S3Endpoint != nil {
 		settings.S3Endpoint = req.S3Endpoint
@@ -139,7 +169,7 @@ func (s *SettingsService) UpdateUserSettings(userID uuid.UUID, req *UpdateSettin
 		// Encrypt S3 secret key before storing
 		encryptedKey, err := s.cryptoService.Encrypt(*req.S3SecretKey)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		settings.S3SecretKey = &encryptedKey
 	}
@@ -153,12 +183,5 @@ func (s *SettingsService) UpdateUserSettings(userID uuid.UUID, req *UpdateSettin
 		settings.S3PurgeLocal = *req.S3PurgeLocal
 	}
 
-	if err := s.repo.UpdateUserSettings(settings); err != nil {
-		return nil, err
-	}
-
-	// Remove sensitive data before returning
-	settings.SMTPPassword = nil
-	settings.S3SecretKey = nil
-	return settings, nil
+	return nil
 }

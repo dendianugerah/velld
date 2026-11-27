@@ -19,6 +19,8 @@ type UserSettings struct {
 	SMTPPassword  *string   `json:"smtp_password,omitempty"`
 	// S3-compatible storage settings
 	S3Enabled     bool            `json:"s3_enabled"`
+	S3Provider    string          `json:"s3_provider"`
+	R2AccountID   *string         `json:"r2_account_id,omitempty"`
 	S3Endpoint    *string         `json:"s3_endpoint,omitempty"`
 	S3Region      *string         `json:"s3_region,omitempty"`
 	S3Bucket      *string         `json:"s3_bucket,omitempty"`
@@ -43,6 +45,8 @@ type UpdateSettingsRequest struct {
 	SMTPPassword  *string `json:"smtp_password,omitempty"`
 	// S3-compatible storage settings
 	S3Enabled    *bool   `json:"s3_enabled,omitempty"`
+	S3Provider   *string `json:"s3_provider,omitempty"`
+	R2AccountID  *string `json:"r2_account_id,omitempty"`
 	S3Endpoint   *string `json:"s3_endpoint,omitempty"`
 	S3Region     *string `json:"s3_region,omitempty"`
 	S3Bucket     *string `json:"s3_bucket,omitempty"`

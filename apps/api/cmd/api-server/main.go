@@ -142,6 +142,7 @@ func main() {
 
 	protected.HandleFunc("/settings", settingsHandler.GetSettings).Methods("GET", "OPTIONS")
 	protected.HandleFunc("/settings", settingsHandler.UpdateSettings).Methods("PUT", "OPTIONS")
+	protected.HandleFunc("/settings/storage/test", settingsHandler.TestStorage).Methods("POST", "OPTIONS")
 
 	log.Println("Server starting on :8080")
 	if err := http.ListenAndServe(":8080", r); err != nil {

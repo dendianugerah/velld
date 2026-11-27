@@ -339,37 +339,12 @@ func (s *BackupService) DeleteBackup(backupID string, userID uuid.UUID) error {
 	// Delete from S3 if an object key exists
 	if backup.S3ObjectKey != nil && *backup.S3ObjectKey != "" {
 		userSettings, err := s.settingsService.GetUserSettingsInternal(userID)
-		if err == nil && userSettings != nil && userSettings.S3Enabled &&
-			userSettings.S3Endpoint != nil && *userSettings.S3Endpoint != "" &&
-			userSettings.S3Bucket != nil && *userSettings.S3Bucket != "" &&
-			userSettings.S3AccessKey != nil && *userSettings.S3AccessKey != "" &&
-			userSettings.S3SecretKey != nil && *userSettings.S3SecretKey != "" {
-
-			secretKey, err := s.cryptoService.Decrypt(*userSettings.S3SecretKey)
+		if err == nil && userSettings.S3Enabled {
+			ctx := context.Background()
+			s3Storage, err := s.settingsService.OpenStorage(ctx, userSettings)
 			if err == nil {
-				region := "us-east-1"
-				if userSettings.S3Region != nil && *userSettings.S3Region != "" {
-					region = *userSettings.S3Region
-				}
-				pathPrefix := ""
-				if userSettings.S3PathPrefix != nil {
-					pathPrefix = *userSettings.S3PathPrefix
-				}
-				s3Config := S3Config{
-					Endpoint:   *userSettings.S3Endpoint,
-					Region:     region,
-					Bucket:     *userSettings.S3Bucket,
-					AccessKey:  *userSettings.S3AccessKey,
-					SecretKey:  secretKey,
-					UseSSL:     userSettings.S3UseSSL,
-					PathPrefix: pathPrefix,
-				}
-				s3Storage, err := NewS3Storage(s3Config)
-				if err == nil {
-					ctx := context.Background()
-					if err := s3Storage.DeleteFile(ctx, *backup.S3ObjectKey); err != nil {
-						fmt.Printf("Warning: failed to delete S3 object %s: %v\n", *backup.S3ObjectKey, err)
-					}
+				if err := s3Storage.DeleteFile(ctx, *backup.S3ObjectKey); err != nil {
+					fmt.Printf("Warning: failed to delete S3 object %s: %v\n", *backup.S3ObjectKey, err)
 				}
 			}
 		}
@@ -411,51 +386,12 @@ func (s *BackupService) uploadToS3IfEnabled(backup *Backup, userID uuid.UUID, co
 		return nil
 	}
 
-	if userSettings.S3Endpoint == nil || *userSettings.S3Endpoint == "" {
-		return fmt.Errorf("S3 endpoint not configured")
-	}
-	if userSettings.S3Bucket == nil || *userSettings.S3Bucket == "" {
-		return fmt.Errorf("S3 bucket not configured")
-	}
-	if userSettings.S3AccessKey == nil || *userSettings.S3AccessKey == "" {
-		return fmt.Errorf("S3 access key not configured")
-	}
-	if userSettings.S3SecretKey == nil || *userSettings.S3SecretKey == "" {
-		return fmt.Errorf("S3 secret key not configured")
-	}
-
-	secretKey, err := s.cryptoService.Decrypt(*userSettings.S3SecretKey)
-	if err != nil {
-		return fmt.Errorf("failed to decrypt S3 secret key: %w", err)
-	}
-
-	// (default to us-east-1 if not set)
-	region := "us-east-1"
-	if userSettings.S3Region != nil && *userSettings.S3Region != "" {
-		region = *userSettings.S3Region
-	}
-
-	pathPrefix := ""
-	if userSettings.S3PathPrefix != nil {
-		pathPrefix = *userSettings.S3PathPrefix
-	}
-
-	s3Config := S3Config{
-		Endpoint:   *userSettings.S3Endpoint,
-		Region:     region,
-		Bucket:     *userSettings.S3Bucket,
-		AccessKey:  *userSettings.S3AccessKey,
-		SecretKey:  secretKey,
-		UseSSL:     userSettings.S3UseSSL,
-		PathPrefix: pathPrefix,
-	}
-
-	s3Storage, err := NewS3Storage(s3Config)
+	ctx := context.Background()
+	s3Storage, err := s.settingsService.OpenStorage(ctx, userSettings)
 	if err != nil {
 		return fmt.Errorf("failed to create S3 storage client: %w", err)
 	}
 
-	ctx := context.Background()
 	// Use sanitized connection name as subfolder
 	sanitizedConnectionName := common.SanitizeConnectionName(connectionName)
 	objectKey, err := s3Storage.UploadFileWithPath(ctx, backup.Path, sanitizedConnectionName)
@@ -503,48 +439,8 @@ func (s *BackupService) ensureBackupFileAvailable(backup *Backup, userID uuid.UU
 		return "", false, fmt.Errorf("backup file not found locally and S3 is not enabled")
 	}
 
-	// Validate S3 configuration
-	if userSettings.S3Endpoint == nil || *userSettings.S3Endpoint == "" {
-		return "", false, fmt.Errorf("S3 endpoint not configured")
-	}
-	if userSettings.S3Bucket == nil || *userSettings.S3Bucket == "" {
-		return "", false, fmt.Errorf("S3 bucket not configured")
-	}
-	if userSettings.S3AccessKey == nil || *userSettings.S3AccessKey == "" {
-		return "", false, fmt.Errorf("S3 access key not configured")
-	}
-	if userSettings.S3SecretKey == nil || *userSettings.S3SecretKey == "" {
-		return "", false, fmt.Errorf("S3 secret key not configured")
-	}
-
-	// Decrypt S3 secret key
-	secretKey, err := s.cryptoService.Decrypt(*userSettings.S3SecretKey)
-	if err != nil {
-		return "", false, fmt.Errorf("failed to decrypt S3 secret key: %w", err)
-	}
-
-	// Configure S3 client
-	region := "us-east-1"
-	if userSettings.S3Region != nil && *userSettings.S3Region != "" {
-		region = *userSettings.S3Region
-	}
-
-	pathPrefix := ""
-	if userSettings.S3PathPrefix != nil {
-		pathPrefix = *userSettings.S3PathPrefix
-	}
-
-	s3Config := S3Config{
-		Endpoint:   *userSettings.S3Endpoint,
-		Region:     region,
-		Bucket:     *userSettings.S3Bucket,
-		AccessKey:  *userSettings.S3AccessKey,
-		SecretKey:  secretKey,
-		UseSSL:     userSettings.S3UseSSL,
-		PathPrefix: pathPrefix,
-	}
-
-	s3Storage, err := NewS3Storage(s3Config)
+	ctx := context.Background()
+	s3Storage, err := s.settingsService.OpenStorage(ctx, userSettings)
 	if err != nil {
 		return "", false, fmt.Errorf("failed to create S3 storage client: %w", err)
 	}
@@ -558,7 +454,6 @@ func (s *BackupService) ensureBackupFileAvailable(backup *Backup, userID uuid.UU
 	tempFilePath := filepath.Join(tempDir, filepath.Base(backup.Path))
 
 	// Download from S3
-	ctx := context.Background()
 	if err := s3Storage.DownloadFile(ctx, *backup.S3ObjectKey, tempFilePath); err != nil {
 		return "", false, fmt.Errorf("failed to download backup from S3: %w", err)
 	}
@@ -593,50 +488,16 @@ func (s *BackupService) CleanupS3BackupsForConnection(connectionID string) error
 		return fmt.Errorf("failed to get user settings: %w", err)
 	}
 
-	// Check if S3 is enabled and configured
-	if !userSettings.S3Enabled ||
-		userSettings.S3Endpoint == nil || *userSettings.S3Endpoint == "" ||
-		userSettings.S3Bucket == nil || *userSettings.S3Bucket == "" ||
-		userSettings.S3AccessKey == nil || *userSettings.S3AccessKey == "" ||
-		userSettings.S3SecretKey == nil || *userSettings.S3SecretKey == "" {
-		// S3 not configured, nothing to clean
-		return nil
-	}
-
-	// Decrypt S3 secret key
-	secretKey, err := s.cryptoService.Decrypt(*userSettings.S3SecretKey)
-	if err != nil {
-		return fmt.Errorf("failed to decrypt S3 secret key: %w", err)
-	}
-
-	// Configure S3 client
-	region := "us-east-1"
-	if userSettings.S3Region != nil && *userSettings.S3Region != "" {
-		region = *userSettings.S3Region
-	}
-
-	pathPrefix := ""
-	if userSettings.S3PathPrefix != nil {
-		pathPrefix = *userSettings.S3PathPrefix
-	}
-
-	s3Config := S3Config{
-		Endpoint:   *userSettings.S3Endpoint,
-		Region:     region,
-		Bucket:     *userSettings.S3Bucket,
-		AccessKey:  *userSettings.S3AccessKey,
-		SecretKey:  secretKey,
-		UseSSL:     userSettings.S3UseSSL,
-		PathPrefix: pathPrefix,
-	}
-
-	s3Storage, err := NewS3Storage(s3Config)
+	ctx := context.Background()
+	s3Storage, err := s.settingsService.OpenConfiguredStorage(ctx, userSettings)
 	if err != nil {
 		return fmt.Errorf("failed to create S3 storage client: %w", err)
 	}
+	if s3Storage == nil {
+		return nil
+	}
 
 	// Delete S3 objects for all backups
-	ctx := context.Background()
 	deletedCount := 0
 	for _, backup := range backups {
 		if backup.S3ObjectKey != nil && *backup.S3ObjectKey != "" {
@@ -678,45 +539,13 @@ func (s *BackupService) RenameS3FolderForConnection(connectionID string, oldName
 		return fmt.Errorf("failed to get user settings: %w", err)
 	}
 
-	// Check if S3 is enabled and configured
-	if !userSettings.S3Enabled ||
-		userSettings.S3Endpoint == nil || *userSettings.S3Endpoint == "" ||
-		userSettings.S3Bucket == nil || *userSettings.S3Bucket == "" ||
-		userSettings.S3AccessKey == nil || *userSettings.S3AccessKey == "" ||
-		userSettings.S3SecretKey == nil || *userSettings.S3SecretKey == "" {
-		return nil // S3 not configured, nothing to rename
-	}
-
-	// Decrypt S3 secret key
-	secretKey, err := s.cryptoService.Decrypt(*userSettings.S3SecretKey)
-	if err != nil {
-		return fmt.Errorf("failed to decrypt S3 secret key: %w", err)
-	}
-
-	// Configure S3 client
-	region := "us-east-1"
-	if userSettings.S3Region != nil && *userSettings.S3Region != "" {
-		region = *userSettings.S3Region
-	}
-
-	pathPrefix := ""
-	if userSettings.S3PathPrefix != nil {
-		pathPrefix = *userSettings.S3PathPrefix
-	}
-
-	s3Config := S3Config{
-		Endpoint:   *userSettings.S3Endpoint,
-		Region:     region,
-		Bucket:     *userSettings.S3Bucket,
-		AccessKey:  *userSettings.S3AccessKey,
-		SecretKey:  secretKey,
-		UseSSL:     userSettings.S3UseSSL,
-		PathPrefix: pathPrefix,
-	}
-
-	s3Storage, err := NewS3Storage(s3Config)
+	ctx := context.Background()
+	s3Storage, err := s.settingsService.OpenConfiguredStorage(ctx, userSettings)
 	if err != nil {
 		return fmt.Errorf("failed to create S3 storage client: %w", err)
+	}
+	if s3Storage == nil {
+		return nil
 	}
 
 	// Sanitize old and new folder names
@@ -728,7 +557,6 @@ func (s *BackupService) RenameS3FolderForConnection(connectionID string, oldName
 	}
 
 	// Rename S3 objects
-	ctx := context.Background()
 	renamedCount := 0
 	for _, backup := range backups {
 		if backup.S3ObjectKey == nil || *backup.S3ObjectKey == "" {
