@@ -26,30 +26,30 @@ export default function HomePage() {
 
   return (
     <div className={styles.home}>
-      <a href="#main" className={styles.skipLink}>
+      <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:start-3 focus:top-3 focus:z-20 focus:rounded-lg focus:bg-white focus:p-3">
         Skip to content
       </a>
-      <header className={styles.header}>
-        <nav className={styles.nav} aria-label="Main navigation">
-          <Link href="/" className={styles.brand} aria-label="Velld home">
+      <header className="mx-auto w-[min(92%,1280px)]">
+        <nav className="flex min-h-[80px] items-center gap-8 text-[13px] font-medium max-[600px]:min-h-[72px] max-[600px]:gap-5 max-[600px]:text-xs" aria-label="Main navigation">
+          <Link href="/" className="text-[29px] leading-none font-[750] tracking-[-1.8px] max-[600px]:text-[27px]" aria-label="Velld home">
             velld
           </Link>
-          <Link href="/docs" className={styles.docsLink}>
+          <Link href="/docs" className="ms-auto py-3 text-[#50565a] transition-colors duration-150 hover:text-[#161616]">
             Documentation
           </Link>
           <a
             href={repository}
             target="_blank"
             rel="noopener noreferrer"
-            className={styles.githubLink}
+            className="inline-flex items-center gap-[7px] py-3 text-[#646b70] transition-colors duration-150 hover:text-[#161616]"
           >
             GitHub
           </a>
         </nav>
       </header>
 
-      <main id="main" tabIndex={-1} className={styles.main}>
-        <section className={styles.hero} aria-labelledby="hero-title">
+      <main id="main" tabIndex={-1} className="relative isolate">
+        <section className="relative isolate mx-auto flex min-h-[calc(100dvh-80px)] max-w-[1360px] flex-col justify-center px-6 pt-[clamp(88px,8vw,112px)] pb-[72px] text-center max-[900px]:pt-[88px] max-[900px]:pb-16 max-[759px]:min-h-0 max-[600px]:px-4 max-[600px]:pt-20 max-[600px]:pb-14" aria-labelledby="hero-title">
           <Dither
             className={styles.pageDither}
             pattern="clouds"
@@ -59,8 +59,8 @@ export default function HomePage() {
             dotSize={2}
             interactive
           />
-          <h1 id="hero-title" className={styles.title}>
-            <span className={styles.titleLine}>
+          <h1 id="hero-title" className="m-0 text-[clamp(42px,7.4vw,100px)] leading-[1.26] font-[650] tracking-[-0.06em] max-[600px]:text-[clamp(24px,8vw,48px)]">
+            <span className="block">
               Back up{" "}
               <button
                 type="button"
@@ -88,7 +88,7 @@ export default function HomePage() {
                 </span>
               </button>
             </span>
-            <span className={styles.titleLine}>
+            <span className="mt-2 block">
               Get back to{" "}
               <button
                 type="button"
@@ -113,7 +113,7 @@ export default function HomePage() {
               </button>
             </span>
           </h1>
-          <p className={styles.subtitle}>
+          <p className="mx-auto mt-7 max-w-[640px] text-[clamp(17px,1.45vw,20px)] leading-[1.7] font-[450] tracking-[-0.015em] text-[#40484c] text-pretty max-[600px]:mt-6 max-[600px]:text-base">
             Backups, schedules, and restores. All in one place.
             <br />
             <span className={styles.highlight}>Open source. On your own server.</span>

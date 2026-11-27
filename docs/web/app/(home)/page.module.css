@@ -41,76 +41,6 @@
 .home main:focus {
   outline: none;
 }
-.skipLink:not(:focus) {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-.skipLink:focus {
-  position: fixed;
-  inset-block-start: 12px;
-  inset-inline-start: 12px;
-  z-index: 20;
-  background: var(--page);
-  padding: 12px;
-  border-radius: 8px;
-}
-
-.header {
-  width: min(92%, 1280px);
-  margin-inline: auto;
-}
-.nav {
-  min-height: 80px;
-  display: flex;
-  align-items: center;
-  gap: 32px;
-  font-size: 13px;
-  font-weight: 500;
-}
-.brand {
-  font-size: 29px;
-  font-weight: 750;
-  letter-spacing: -1.8px;
-  line-height: 1;
-}
-.docsLink,
-.githubLink {
-  padding-block: 12px;
-}
-.docsLink {
-  margin-inline-start: auto;
-  color: #50565a;
-}
-.githubLink {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  color: #646b70;
-}
-.nav a:not(.brand) {
-  transition: color 150ms ease-out, background-color 150ms ease-out;
-}
-
-.main {
-  position: relative;
-  isolation: isolate;
-}
-.hero {
-  position: relative;
-  isolation: isolate;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  min-height: calc(100dvh - 80px);
-  max-width: 1360px;
-  margin-inline: auto;
-  padding: clamp(88px, 8vw, 112px) 24px 72px;
-  text-align: center;
-}
 .pageDither {
   z-index: -1;
   width: min(100%, 1360px);
@@ -120,19 +50,6 @@
   -webkit-mask-composite: source-in;
   mask-image: linear-gradient(to right, transparent, #000 12%, #000 88%, transparent), linear-gradient(#000 60%, transparent);
   mask-composite: intersect;
-}
-.title {
-  margin: 0;
-  font-size: clamp(42px, 7.4vw, 100px);
-  line-height: 1.26;
-  font-weight: 650;
-  letter-spacing: -0.06em;
-}
-.titleLine {
-  display: block;
-}
-.titleLine + .titleLine {
-  margin-block-start: 8px;
 }
 .wordChip {
   position: relative;
@@ -224,16 +141,6 @@
   stroke-linejoin: round;
   transform: scaleX(-1) rotate(-8deg);
 }
-.subtitle {
-  margin: 28px auto 0;
-  max-width: 640px;
-  color: #40484c;
-  font-size: clamp(17px, 1.45vw, 20px);
-  font-weight: 450;
-  line-height: 1.7;
-  letter-spacing: -0.015em;
-  text-wrap: pretty;
-}
 .highlight {
   position: relative;
   display: inline-block;
@@ -251,10 +158,6 @@
   transform: rotate(-0.7deg);
 }
 
-@media (hover: hover) {
-  .nav .docsLink:hover,
-  .nav .githubLink:hover { color: var(--ink); }
-}
 @media (prefers-reduced-motion: no-preference) {
   .wordChip {
     transition: transform 300ms var(--ease);
@@ -295,29 +198,7 @@
     }
   }
 }
-@media (max-width: 900px) {
-  .hero {
-    padding-block: 88px 64px;
-  }
-}
-@media (max-width: 759px) {
-  .hero { min-height: 0; }
-}
 @media (max-width: 600px) {
-  .header {
-    width: 92%;
-  }
-  .nav {
-    min-height: 72px;
-    gap: 20px;
-    font-size: 12px;
-  }
-  .brand {
-    font-size: 27px;
-  }
-  .hero {
-    padding: 80px 16px 56px;
-  }
   .clickHint {
     left: auto;
     right: -5px;
@@ -328,21 +209,9 @@
     width: 25px;
     height: 19px;
   }
-  .title {
-    font-size: clamp(24px, 8vw, 48px);
-    letter-spacing: -0.06em;
-  }
-  .titleLine + .titleLine {
-    margin-block-start: 8px;
-  }
   .wordChip::after {
     content: "";
     position: absolute;
     inset: -6px 0;
-  }
-  .subtitle {
-    margin-block-start: 24px;
-    font-size: 16px;
-    letter-spacing: -0.015em;
   }
 }
