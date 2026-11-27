@@ -404,7 +404,7 @@ func (r *BackupRepository) GetAllBackupsWithPagination(opts BackupListOptions) (
 		FROM backups b
 		INNER JOIN connections c ON b.connection_id = c.id
 		%s
-		ORDER BY b.created_at DESC, b.id DESC
+		ORDER BY julianday(b.created_at) DESC, b.id DESC
 		LIMIT $%d OFFSET $%d
 	`, whereClause, argCount, argCount+1)
 

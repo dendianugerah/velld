@@ -153,3 +153,27 @@ func TestBackupDetailOwnershipAndHistoryHTTP(t *testing.T) {
 		}
 	}
 }
+
+func TestBackupHistorySortsMixedTimestampFormats(t *testing.T) {
+	s := newTestBackupService(t)
+	conn := saveTestConnection(t, s, connection.StoredConnection{Type: "postgresql", DatabaseName: "ledger"})
+	// SQLite defaults and the Go driver use spaces, while older/imported records
+	// may use RFC3339. Raw text sorting puts every T-separated date first.
+	for _, created := range []string{
+		"2026-11-27T17:00:00Z",
+		"2026-11-27 18:41:36.869882603+00:00",
+		"2026-11-27 18:00:00",
+		"2026-11-27T20:00:00+04:00",
+	} {
+		if _, err := s.backupRepo.db.Exec(`INSERT INTO backups (id, connection_id, status, path, size, created_at, updated_at) VALUES (?, ?, 'completed', 'ledger.sql', 12, ?, ?)`, uuid.NewString(), conn.ID, created, created); err != nil {
+			t.Fatal(err)
+		}
+	}
+	want := []string{"2026-11-27 18:41:36.869882603+00:00", "2026-11-27 18:00:00", "2026-11-27T17:00:00Z", "2026-11-27T20:00:00+04:00"}
+	for offset, created := range want {
+		rows, total, err := s.GetAllBackupsWithPagination(BackupListOptions{UserID: conn.UserID, Limit: 1, Offset: offset})
+		if err != nil || total != len(want) || len(rows) != 1 || rows[0].CreatedAt != created {
+			t.Fatalf("offset %d: rows=%+v total=%d err=%v, want %s", offset, rows, total, err, created)
+		}
+	}
+}
