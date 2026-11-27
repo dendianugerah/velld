@@ -94,8 +94,8 @@ const usage: Record<string, number[]> = {
 export const figureCallouts: { anchor: V; at: V }[][] = [
   [
     { anchor: P(75, 268, 48), at: [-250, 70] },
-    { anchor: [-160, 8], at: [-232, -10] },
-    { anchor: [12, 57], at: [70, 20] },
+    { anchor: P(60, 170, 72), at: [-232, -10] },
+    { anchor: P(60, 200, 32), at: [70, 20] },
   ],
   [
     { anchor: P(60, 170, 52), at: [-140, -6] },
@@ -159,7 +159,6 @@ export function BackupFigure({ active, focus = null }: { active: number; focus?:
         <g className={styles.file} data-purge={active === 2 ? "on" : "off"}>
           <Box x={170} y={35} z={32} w={46} d={40} h={4} />
         </g>
-        <text className={styles.label} x={P(226, 25, 20)[0] + 10} y={P(226, 25, 20)[1] + 2}>backups/&lt;connection&gt;/</text>
       </g>
 
       <g className={styles.part} data-state={state("gzip")}>

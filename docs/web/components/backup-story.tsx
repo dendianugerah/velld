@@ -50,12 +50,19 @@ export function BackupStory() {
   const [focus, setFocus] = useState<number | null>(null);
   const sections = useRef<(HTMLElement | null)[]>([]);
   const bars = useRef<(HTMLElement | null)[]>([]);
+  const pinned = useRef<HTMLElement>(null);
+
+  const readingLine = () => {
+    if (window.innerWidth >= 760 || window.innerHeight <= 520) return window.innerHeight * 0.5;
+    const height = pinned.current?.offsetHeight ?? 0;
+    return height + (window.innerHeight - height) / 2;
+  };
 
   useEffect(() => {
     // The chapter nearest the reading line drives the figure, in either direction.
     // On phones that line sits below the pinned figure.
     const update = () => {
-      const reading = window.innerHeight * (window.innerWidth < 760 ? 0.68 : 0.5);
+      const reading = readingLine();
       let closest = Infinity;
       let index = 0;
       sections.current.forEach((section, i) => {
@@ -82,7 +89,7 @@ export function BackupStory() {
     const section = sections.current[i];
     if (!section) return;
     const smooth = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const reading = window.innerHeight * (window.innerWidth < 760 ? 0.68 : 0.5);
+    const reading = readingLine();
     const bounds = section.getBoundingClientRect();
     window.scrollTo({
       top: window.scrollY + bounds.top + bounds.height / 2 - reading,
@@ -91,14 +98,19 @@ export function BackupStory() {
   };
 
   return (
-    <section className={styles.story} aria-labelledby="backup-story-title">
-      <header className={styles.intro}>
+    <section className={styles.story} aria-label="What happens when Velld backs up a database">
+      <header className={`${styles.intro} ${styles.desktopIntro}`}>
         <p className={styles.eyebrow}>Under the hood</p>
         <h2 id="backup-story-title">What happens when Velld backs up a database.</h2>
         <p className={styles.introLede}>One backup, step by step, straight from the source code.</p>
       </header>
       <div className={styles.sequence}>
-        <figure className={styles.pinned} aria-label="Diagram of a Velld backup: the database, connection, backup tool, local storage, optional S3 storage and restore verification">
+        <figure ref={pinned} className={styles.pinned} aria-label="Diagram of a Velld backup: the database, connection, backup tool, local storage, optional S3 storage and restore verification">
+          <div className={`${styles.intro} ${styles.mobileIntro}`}>
+            <p className={styles.eyebrow}>Under the hood</p>
+            <h2 className={styles.mobileTitle}>What happens when Velld backs up a database.</h2>
+            <p className={styles.introLede}>One backup, step by step, straight from the source code.</p>
+          </div>
           <div className={styles.drawing}>
             <BackupFigure active={active} focus={focus} />
           </div>

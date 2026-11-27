@@ -300,6 +300,9 @@
     padding-block: 88px 64px;
   }
 }
+@media (max-width: 759px) {
+  .hero { min-height: 0; }
+}
 @media (max-width: 600px) {
   .header {
     width: 92%;
@@ -313,7 +316,6 @@
     font-size: 27px;
   }
   .hero {
-    min-height: calc(100dvh - 72px);
     padding: 80px 16px 56px;
   }
   .clickHint {
