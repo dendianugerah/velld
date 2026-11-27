@@ -10,6 +10,8 @@ import { Switch } from "@cloudflare/kumo/components/switch";
 import { Loader2, Cloud } from "lucide-react";
 import { useSettings } from "@/hooks/use-settings";
 import { useToast } from "@/hooks/use-toast";
+import { testStorageConnection } from "@/lib/api/settings";
+import type { StorageProvider } from "@/types/settings";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const S3_PROVIDERS = [
@@ -29,6 +31,8 @@ export function S3StorageSettings() {
 
   const [formData, setFormData] = useState({
     s3_enabled: false,
+    s3_provider: "s3" as StorageProvider,
+    r2_account_id: "",
     s3_endpoint: "",
     s3_region: "",
     s3_bucket: "",
@@ -38,12 +42,18 @@ export function S3StorageSettings() {
     s3_path_prefix: "",
     s3_purge_local: false,
   });
+  const [isTesting, setIsTesting] = useState(false);
+  const [testResult, setTestResult] = useState<{ form: typeof formData; error?: string }>();
+  const isR2 = formData.s3_provider === "r2";
+  const canSubmit = formData.s3_bucket.trim() && (isR2 ? formData.r2_account_id.trim() : formData.s3_endpoint.trim());
 
   // Sync form data when settings load
   useEffect(() => {
     if (settings) {
       setFormData({
         s3_enabled: settings.s3_enabled || false,
+        s3_provider: settings.s3_provider ?? "s3",
+        r2_account_id: settings.r2_account_id || "",
         s3_endpoint: settings.s3_endpoint || "",
         s3_region: settings.s3_region || "",
         s3_bucket: settings.s3_bucket || "",
@@ -56,7 +66,7 @@ export function S3StorageSettings() {
     }
   }, [settings]);
 
-  const handleProviderChange = (provider: string) => {
+  const handlePresetChange = (provider: string) => {
     const providerConfig = S3_PROVIDERS.find(p => p.value === provider);
     if (providerConfig && provider !== "custom") {
       setFormData(prev => ({
@@ -68,16 +78,27 @@ export function S3StorageSettings() {
     }
   };
 
+  const storageRequest = () => ({
+    ...formData,
+    s3_secret_key: formData.s3_secret_key || undefined,
+  });
+
+  const handleTest = async () => {
+    setIsTesting(true);
+    setTestResult(undefined);
+    try {
+      await testStorageConnection(storageRequest());
+      setTestResult({ form: formData });
+    } catch (error) {
+      setTestResult({ form: formData, error: error instanceof Error ? error.message : "Unable to test the storage connection." });
+    } finally {
+      setIsTesting(false);
+    }
+  };
+
   const handleSave = async () => {
     try {
-      // Only send secret key if it was changed (not empty)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const dataToSave: Record<string, any> = { ...formData };
-      if (!dataToSave.s3_secret_key) {
-        delete dataToSave.s3_secret_key;
-      }
-      
-      await updateSettings(dataToSave);
+      await updateSettings(storageRequest());
       
       // Clear the secret key field after successful save for security
       setFormData(prev => ({ ...prev, s3_secret_key: "" }));
@@ -96,7 +117,7 @@ export function S3StorageSettings() {
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
             <Cloud className="w-5 h-5" />
-            S3 Object Storage
+            Backup storage
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -122,7 +143,7 @@ export function S3StorageSettings() {
         <div className="flex items-center justify-between gap-4">
           <div className="space-y-1">
             <Label htmlFor="s3-enabled" className="text-sm font-medium">
-              S3 object storage
+              Object storage
             </Label>
             <p className="text-sm text-muted-foreground">
               Automatically upload backups to S3-compatible storage. This switch saves immediately.
@@ -131,8 +152,8 @@ export function S3StorageSettings() {
           <div className="flex items-center gap-2">
             <Switch
               id="s3-enabled"
-              aria-label="S3 object storage"
-              disabled={isUpdating}
+              aria-label="Object storage"
+              disabled={isUpdating || isTesting}
               checked={formData.s3_enabled}
               onCheckedChange={async (checked) => {
                 const previousState = formData.s3_enabled;
@@ -142,7 +163,7 @@ export function S3StorageSettings() {
                   await updateSettings({ s3_enabled: checked });
                   toast({
                     title: "Success",
-                    description: `S3 storage ${checked ? 'enabled' : 'disabled'}`,
+                    description: `Object storage ${checked ? 'enabled' : 'disabled'}`,
                   });
                 } catch {
                   // Revert the toggle on error
@@ -150,7 +171,7 @@ export function S3StorageSettings() {
                   toast({
                     variant: "destructive",
                     title: "Error",
-                    description: "Failed to update S3 storage status",
+                    description: "Failed to update storage status",
                   });
                 }
               }}
@@ -161,8 +182,31 @@ export function S3StorageSettings() {
         {formData.s3_enabled && (
           <>
             <SettingsFieldGroup>
+            <SettingsField id="storage-provider" label="Storage provider">
+              <Select value={formData.s3_provider} onValueChange={(provider: StorageProvider) => setFormData({ ...formData, s3_provider: provider })}>
+                <SelectTrigger id="storage-provider">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="s3">S3-compatible</SelectItem>
+                  <SelectItem value="r2">Cloudflare R2</SelectItem>
+                </SelectContent>
+              </Select>
+            </SettingsField>
+            {isR2 ? (
+              <SettingsField id="r2-account-id" label="Cloudflare Account ID" hint="Find this in your Cloudflare R2 dashboard. Velld uses it to connect over HTTPS to your R2 bucket.">
+                <Input
+                  id="r2-account-id"
+                  aria-describedby="r2-account-id-hint"
+                  placeholder="32-character account ID"
+                  value={formData.r2_account_id}
+                  onChange={(e) => setFormData({ ...formData, r2_account_id: e.target.value })}
+                />
+              </SettingsField>
+            ) : (
+            <>
             <SettingsField id="provider" label="Provider preset" hint="Select a provider to fill in its endpoint and region.">
-              <Select onValueChange={handleProviderChange}>
+              <Select onValueChange={handlePresetChange}>
                 <SelectTrigger id="provider" aria-describedby="provider-hint">
                   <SelectValue placeholder="Select a provider or use custom" />
                 </SelectTrigger>
@@ -199,6 +243,8 @@ export function S3StorageSettings() {
                 />
               </SettingsField>
             </SettingsFieldRow>
+            </>
+            )}
 
             {/* Bucket Name */}
             <SettingsField id="s3-bucket" label="Bucket name">
@@ -217,7 +263,7 @@ export function S3StorageSettings() {
                 <Input
                   id="s3-access-key"
                   aria-label="Access Key ID"
-                  placeholder="AKIAIOSFODNN7EXAMPLE"
+                  placeholder={isR2 ? undefined : "AKIAIOSFODNN7EXAMPLE"}
                   value={formData.s3_access_key}
                   onChange={(e) => setFormData({ ...formData, s3_access_key: e.target.value })}
                 />
@@ -228,7 +274,7 @@ export function S3StorageSettings() {
                   id="s3-secret-key"
                   aria-label="Secret Access Key"
                   type="password"
-                  placeholder="wJalrXUtnFEMI/K7MDENG..."
+                  placeholder="Leave blank to use the saved key"
                   value={formData.s3_secret_key}
                   onChange={(e) => setFormData({ ...formData, s3_secret_key: e.target.value })}
                 />
@@ -247,7 +293,7 @@ export function S3StorageSettings() {
             </SettingsField>
             </SettingsFieldGroup>
 
-            {/* SSL/TLS */}
+            {!isR2 && (
             <div className="flex items-center justify-between gap-4 border-t pt-5">
               <div className="space-y-0.5">
                 <Label htmlFor="s3-use-ssl" className="text-sm font-medium">
@@ -264,6 +310,7 @@ export function S3StorageSettings() {
                 onCheckedChange={(checked) => setFormData({ ...formData, s3_use_ssl: checked })}
               />
             </div>
+            )}
 
             {/* Purge Local Backup */}
             <div className="flex items-center justify-between gap-4 border-t pt-5">
@@ -272,7 +319,7 @@ export function S3StorageSettings() {
                   Purge Local Backup After Upload
                 </Label>
                 <p className="text-sm text-muted-foreground">
-                  Automatically delete local backup files after successful S3 upload to save disk space
+                  Automatically delete local backup files after a successful upload to save disk space.
                 </p>
               </div>
               <Switch
@@ -287,7 +334,7 @@ export function S3StorageSettings() {
             <div className="flex gap-2">
               <Button
                 onClick={handleSave}
-                disabled={isUpdating || !formData.s3_endpoint || !formData.s3_bucket}
+                disabled={isUpdating || isTesting || !canSubmit}
               >
                 {isUpdating ? (
                   <>
@@ -298,7 +345,19 @@ export function S3StorageSettings() {
                   "Save Settings"
                 )}
               </Button>
+              <Button
+                variant="secondary"
+                onClick={handleTest}
+                disabled={isUpdating || isTesting || !canSubmit}
+              >
+                {isTesting ? "Testing…" : "Test connection"}
+              </Button>
             </div>
+            {testResult?.form === formData && (
+              <p role={testResult.error ? "alert" : "status"} className={testResult.error ? "text-sm text-destructive" : "text-sm text-muted-foreground"}>
+                {testResult.error ? `Connection failed: ${testResult.error}` : "Connection successful. Velld wrote, read, and deleted a test object."}
+              </p>
+            )}
           </>
         )}
       </CardContent>

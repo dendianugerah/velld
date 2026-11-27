@@ -1,5 +1,7 @@
 import { Base } from "./base";
 
+export type StorageProvider = "s3" | "r2";
+
 export interface UserSettings {
   id: string;
   user_id: string;
@@ -13,6 +15,8 @@ export interface UserSettings {
   smtp_password?: string;
   // S3 Storage settings
   s3_enabled: boolean;
+  s3_provider: StorageProvider;
+  r2_account_id?: string;
   s3_endpoint?: string;
   s3_region?: string;
   s3_bucket?: string;
