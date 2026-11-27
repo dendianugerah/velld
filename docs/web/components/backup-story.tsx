@@ -11,36 +11,36 @@ const stages = [
     name: "Connect",
     lede: "Velld reaches the database without exposing the password.",
     items: [
-      { name: "SSH tunnel", text: "Optional. Connects through a local port." },
-      { name: "Password via env", text: "PGPASSWORD, MYSQL_PWD or a temp Mongo config. Never in args." },
-      { name: "Version check", text: "pg_dump must be at least the server’s version." },
+      { name: "SSH tunnel", text: "Connect securely through SSH when needed." },
+      { name: "Protected credentials", text: "Your password stays out of command arguments." },
+      { name: "Compatibility", text: "Backup tool compatibility is checked when needed." },
     ],
   },
   {
     name: "Dump",
     lede: "Your database’s own tool makes the backup file.",
     items: [
-      { name: "Native tool", text: "pg_dump, mysqldump or mongodump, one database at a time." },
-      { name: "gzip while streaming", text: "PostgreSQL only. A failed dump leaves no partial file." },
-      { name: "One file per database", text: "backups/<connection>/<db>_<time>_<id>.sql.gz" },
+      { name: "Native tool", text: "Your database’s own tool creates the backup." },
+      { name: "Backup processing", text: "The output is prepared as a backup file." },
+      { name: "Stored locally", text: "Each database backup is saved on your server." },
     ],
   },
   {
     name: "Upload",
     lede: "If enabled, a copy goes to your S3 bucket.",
     items: [
-      { name: "Object key", text: "<prefix>/<connection>/<file>, on any S3-compatible storage." },
-      { name: "Failure is a warning", text: "The local backup stays completed." },
-      { name: "Local purge", text: "Optional, only after a successful upload." },
+      { name: "Your storage", text: "Send a copy to your S3-compatible storage." },
+      { name: "Local backup", text: "An upload failure won’t remove your local backup." },
+      { name: "Optional cleanup", text: "Remove the local file after a successful upload, if enabled." },
     ],
   },
   {
     name: "Verify",
     lede: "If enabled, Velld test-restores the file.",
     items: [
-      { name: "Throwaway container", text: "Same engine, in Docker, removed afterwards." },
-      { name: "Tables and rows", text: "Checked against what the dump contains." },
-      { name: "Result", text: "Passed, failed, or skipped without Docker." },
+      { name: "Temporary container", text: "The backup is restored in an isolated container." },
+      { name: "Restore check", text: "Velld checks the restored data." },
+      { name: "Result", text: "See whether verification passed, failed, or was skipped." },
     ],
   },
 ];
@@ -79,8 +79,15 @@ export function BackupStory() {
 
 
   const goTo = (i: number) => {
+    const section = sections.current[i];
+    if (!section) return;
     const smooth = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    sections.current[i]?.scrollIntoView({ behavior: smooth ? "smooth" : "auto", block: "center" });
+    const reading = window.innerHeight * (window.innerWidth < 760 ? 0.68 : 0.5);
+    const bounds = section.getBoundingClientRect();
+    window.scrollTo({
+      top: window.scrollY + bounds.top + bounds.height / 2 - reading,
+      behavior: smooth ? "smooth" : "auto",
+    });
   };
 
   return (
@@ -91,7 +98,7 @@ export function BackupStory() {
         <p className={styles.introLede}>One backup, step by step, straight from the source code.</p>
       </header>
       <div className={styles.sequence}>
-        <figure className={styles.pinned} aria-label="Diagram of a Velld backup: the database host, an SSH tunnel, the dump tool, gzip, the backups folder, an S3 bucket and a throwaway restore container">
+        <figure className={styles.pinned} aria-label="Diagram of a Velld backup: the database, connection, backup tool, local storage, optional S3 storage and restore verification">
           <div className={styles.drawing}>
             <BackupFigure active={active} focus={focus} />
           </div>

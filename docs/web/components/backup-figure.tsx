@@ -164,7 +164,7 @@ export function BackupFigure({ active, focus = null }: { active: number; focus?:
 
       <g className={styles.part} data-state={state("gzip")}>
         <Box x={110} y={90} z={12} w={40} d={40} h={26} />
-        <text className={styles.face} x={P(130, 130, 22)[0]} y={P(130, 130, 22)[1] + 4} textAnchor="middle">gzip</text>
+          <text className={styles.face} x={P(130, 130, 22)[0]} y={P(130, 130, 22)[1] + 4} textAnchor="middle">process</text>
       </g>
 
       <g className={styles.part} data-state={state("tool")}>
@@ -203,15 +203,15 @@ export function BackupFigure({ active, focus = null }: { active: number; focus?:
         <g className={styles.card}>
           <Box x={42} y={158} z={70} w={36} d={24} h={2} />
         </g>
-        <Tag at={[P(60, 170, 104)[0], P(60, 170, 104)[1] - 12]} text="PGPASSWORD=••••" />
-        <Tag at={[P(75, 365, 66)[0], P(75, 365, 66)[1] - 30]} text="server 16" />
-        <Tag at={[P(60, 170, 52)[0] + 160, P(60, 170, 52)[1] - 6]} text="pg_dump 17 ≥ 16" tone="ok" />
+        <Tag at={[P(60, 170, 104)[0], P(60, 170, 104)[1] - 12]} text="credentials protected" />
+        <Tag at={[P(75, 365, 66)[0], P(75, 365, 66)[1] - 30]} text="database" />
+        <Tag at={[P(60, 170, 52)[0] + 160, P(60, 170, 52)[1] - 6]} text="compatible tool" tone="ok" />
         <Tag at={[P(75, 268, 41)[0] + 20, P(75, 268, 41)[1] + 34]} text="127.0.0.1:<port>" />
       </g>
       <g className={styles.overlay} data-state={at(1)}>
-        <Tag at={[P(226, 85, 0)[0] + 40, P(226, 85, 0)[1] + 34]} text="app_20261126_211400_<id>.sql.gz" />
-        <Tag at={[P(60, 170, 52)[0] - 10, P(60, 170, 52)[1] - 34]} text="pg_dump · mysqldump · mongodump" />
-        <Tag at={[P(130, 110, 38)[0] + 10, P(130, 110, 38)[1] - 30]} text="stdout → gzip" />
+        <Tag at={[P(226, 85, 0)[0] + 40, P(226, 85, 0)[1] + 34]} text="backup file" />
+        <Tag at={[P(60, 170, 52)[0] - 10, P(60, 170, 52)[1] - 34]} text="native backup tool" />
+        <Tag at={[P(130, 110, 38)[0] + 10, P(130, 110, 38)[1] - 30]} text="prepare backup" />
       </g>
       <g className={styles.overlay} data-state={at(2)}>
         <Tag at={[P(192, -80, 196)[0] - 120, P(192, -80, 196)[1] + 8]} text="<prefix>/<connection>/<file>" />
@@ -237,4 +237,3 @@ export function BackupFigure({ active, focus = null }: { active: number; focus?:
     </svg>
   );
 }
-

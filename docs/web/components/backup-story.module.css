@@ -223,8 +223,6 @@
   .overlay { transition: opacity 350ms ease-out; }
   .overlay[data-state="on"] { transition-delay: 150ms; }
   .flow[data-state="on"] { animation: flow 900ms linear infinite; }
-  .chapterContent { transition: opacity 400ms ease-out; }
-  .chapter[data-active="false"] .chapterContent { opacity: 0.15; }
 }
 @keyframes flow { to { stroke-dashoffset: -14; } }
 
@@ -264,7 +262,6 @@
 @media (max-height: 520px) and (max-width: 759px) {
   .drawing { height: 30svh; }
   .progress { display: none; }
-  .lede { display: none; }
   .chapter h3 { font-size: 28px; }
   .items li { padding: 8px 0; }
   .items p { font-size: 13px; line-height: 1.45; }
