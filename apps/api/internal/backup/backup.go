@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"time"
 
 	"github.com/dendianugerah/velld/internal/common"
 	"github.com/dendianugerah/velld/internal/common/response"
@@ -45,7 +46,12 @@ func (h *BackupHandler) GetBackup(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	backupID := vars["id"]
 
-	backup, err := h.backupService.GetBackup(backupID)
+	userID, err := common.GetUserIDFromContext(r.Context())
+	if err != nil {
+		response.SendError(w, http.StatusUnauthorized, "Authentication required")
+		return
+	}
+	backups, _, err := h.backupService.GetAllBackupsWithPagination(BackupListOptions{UserID: userID, BackupID: backupID, Limit: 1})
 	if err != nil {
 		if err == sql.ErrNoRows {
 			response.SendError(w, http.StatusNotFound, "Backup not found")
@@ -54,8 +60,12 @@ func (h *BackupHandler) GetBackup(w http.ResponseWriter, r *http.Request) {
 		response.SendError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
+	if len(backups) == 0 {
+		response.SendError(w, http.StatusNotFound, "Backup not found")
+		return
+	}
 
-	response.SendSuccess(w, "Backup retrieved successfully", backup)
+	response.SendSuccess(w, "Backup retrieved successfully", backups[0])
 }
 
 func (h *BackupHandler) DeleteBackup(w http.ResponseWriter, r *http.Request) {
@@ -105,13 +115,30 @@ func (h *BackupHandler) ListBackups(w http.ResponseWriter, r *http.Request) {
 	}
 
 	search := r.URL.Query().Get("search")
+	if limit > 100 {
+		limit = 100
+	}
 	offset := (page - 1) * limit
 
 	opts := BackupListOptions{
-		UserID: userID,
-		Limit:  limit,
-		Offset: offset,
-		Search: search,
+		UserID:       userID,
+		Limit:        limit,
+		Offset:       offset,
+		Search:       search,
+		Status:       r.URL.Query().Get("status"),
+		DatabaseType: r.URL.Query().Get("engine"),
+		Verification: r.URL.Query().Get("verification"),
+		ConnectionID: r.URL.Query().Get("connection_id"),
+	}
+	dateRange := r.URL.Query().Get("date")
+	if dateRange != "" && dateRange != "all" {
+		days, ok := map[string]int{"24hours": 1, "7days": 7, "30days": 30}[dateRange]
+		if !ok {
+			response.SendError(w, http.StatusBadRequest, "Invalid date filter")
+			return
+		}
+		from := time.Now().UTC().Add(-time.Duration(days) * 24 * time.Hour)
+		opts.DateFrom = &from
 	}
 
 	backups, total, err := h.backupService.GetAllBackupsWithPagination(opts)

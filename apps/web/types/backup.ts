@@ -3,6 +3,7 @@ import { Base } from './base';
 export interface Backup {
   id: string;
   connection_id: string;
+  connection_name?: string;
   database_type: string;
   database_name: string;
   schedule_id?: string;

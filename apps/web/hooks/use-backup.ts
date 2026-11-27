@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { getBackups, saveBackup, scheduleBackup, disableBackupSchedule, updateSchedule, downloadBackup, restoreBackup, deleteBackup } from "@/lib/api/backups";
+import { getBackups, saveBackup, scheduleBackup, disableBackupSchedule, updateSchedule, downloadBackup, restoreBackup, deleteBackup, type GetBackupsParams } from "@/lib/api/backups";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from 'react';
 
@@ -9,7 +9,7 @@ export interface ScheduleBackupParams {
   retention_days: number;
 }
 
-export function useBackup() {
+export function useBackup(options?: GetBackupsParams, enabled = true) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -17,9 +17,11 @@ export function useBackup() {
   const [limit] = useState(10);
   const [search, setSearch] = useState('');
 
-  const { data, isLoading, error } = useQuery({
-    queryKey: ['backups', { page, limit, search }],
-    queryFn: () => getBackups({ page, limit, search }),
+  const params = { page, limit, search, ...options };
+  const { data, isLoading, error, refetch, isFetching, isPlaceholderData } = useQuery({
+    queryKey: ['backups', params],
+    queryFn: () => getBackups(params),
+    enabled,
     placeholderData: (previousData) => previousData,
     refetchInterval: 30000,
     refetchIntervalInBackground: false,
@@ -194,6 +196,9 @@ export function useBackup() {
     pagination: data?.pagination,
     isLoading,
     error,
+    refetch,
+    isFetching,
+    isPlaceholderData,
     page,
     setPage,
     search,

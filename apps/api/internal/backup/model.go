@@ -45,19 +45,20 @@ type BackupVerification struct {
 
 // BackupList represents a backup in list view with additional info
 type BackupList struct {
-	ID            uuid.UUID `json:"id"`
-	ConnectionID  string    `json:"connection_id"`
-	DatabaseType  string    `json:"database_type"`
-	DatabaseName  string    `json:"database_name"`
-	ScheduleID    *string   `json:"schedule_id"`
-	Status        string    `json:"status"`
-	Path          string    `json:"path"`
-	S3ObjectKey   *string   `json:"s3_object_key"`
-	Size          int64     `json:"size"`
-	StartedTime   string    `json:"started_time"`
-	CompletedTime string    `json:"completed_time"`
-	CreatedAt     string    `json:"created_at"`
-	UpdatedAt     string    `json:"updated_at"`
+	ID             uuid.UUID `json:"id"`
+	ConnectionName string    `json:"connection_name"`
+	ConnectionID   string    `json:"connection_id"`
+	DatabaseType   string    `json:"database_type"`
+	DatabaseName   string    `json:"database_name"`
+	ScheduleID     *string   `json:"schedule_id"`
+	Status         string    `json:"status"`
+	Path           string    `json:"path"`
+	S3ObjectKey    *string   `json:"s3_object_key"`
+	Size           int64     `json:"size"`
+	StartedTime    string    `json:"started_time"`
+	CompletedTime  string    `json:"completed_time"`
+	CreatedAt      string    `json:"created_at"`
+	UpdatedAt      string    `json:"updated_at"`
 	BackupVerification
 }
 
@@ -92,10 +93,16 @@ type BackupListRequest struct {
 
 // BackupListOptions represents options for listing backups
 type BackupListOptions struct {
-	UserID uuid.UUID
-	Limit  int
-	Offset int
-	Search string
+	UserID       uuid.UUID
+	Limit        int
+	Offset       int
+	Search       string
+	Status       string
+	DatabaseType string
+	DateFrom     *time.Time
+	Verification string
+	BackupID     string
+	ConnectionID string
 }
 
 type UpdateScheduleRequest struct {

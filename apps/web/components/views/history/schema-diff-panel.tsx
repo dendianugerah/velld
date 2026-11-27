@@ -3,11 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { compareBackupSchema, getBackups } from "@/lib/api/backups";
 import type { BackupList } from "@/types/backup";
 
-export function SchemaDiffDialog({ backup, returnFocusTo, onClose }: { backup: BackupList; returnFocusTo: HTMLElement | null; onClose: () => void }) {
+export function SchemaDiffPanel({ backup }: { backup: BackupList }) {
   const [mode, setMode] = useState("live");
   const [page, setPage] = useState(1);
   const [target, setTarget] = useState("");
@@ -17,9 +16,9 @@ export function SchemaDiffDialog({ backup, returnFocusTo, onClose }: { backup: B
   const [copyStatus, setCopyStatus] = useState("");
   const request = useRef<AbortController | null>(null);
   const output = useRef<HTMLTextAreaElement>(null);
-  const { data, isPending, isError } = useQuery({
-    queryKey: ["backups", { page, limit: 25 }],
-    queryFn: () => getBackups({ page, limit: 25 }),
+  const { data, isPending, isError, refetch } = useQuery({
+    queryKey: ["backups", { page, limit: 25, status: "completed", engine: backup.database_type }],
+    queryFn: () => getBackups({ page, limit: 25, status: "completed", engine: backup.database_type }),
     enabled: mode === "backup",
   });
   const candidates = (data?.data ?? []).filter(item => item.id !== backup.id &&
@@ -68,14 +67,21 @@ export function SchemaDiffDialog({ backup, returnFocusTo, onClose }: { backup: B
   }
 
   const selectClass = "w-full rounded-md border bg-background px-2 py-1.5 text-sm";
-  return <Dialog open onOpenChange={open => { if (!open) onClose(); }}>
-    <DialogContent onCloseAutoFocus={event => { if (returnFocusTo?.isConnected) { event.preventDefault(); returnFocusTo.focus(); } }}>
-      <DialogHeader>
-        <DialogTitle>Compare schema</DialogTitle>
-        <DialogDescription>Generate SQL to change this backup’s schema to match the target. Nothing is applied. Review the SQL before running it; it can drop tables and columns.</DialogDescription>
-      </DialogHeader>
+  function download() {
+    if (!sql) return;
+    const url = URL.createObjectURL(new Blob([sql], {type: "application/sql"}));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `schema-diff-${backup.id}.sql`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+  return <div className="space-y-5">
+      <div><h2 className="text-lg font-semibold tracking-tight">Compare schema</h2>
+        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">Generate SQL to change this backup’s schema to match the target. Nothing is applied. Review the SQL before running it; it can drop tables and columns.</p>
+      </div>
       <p className="text-xs text-muted-foreground">Compares tables, columns, indexes, and constraints. Does not compare data, views, routines, or all engine-specific options.</p>
-      <label className="space-y-1 text-sm">
+      <label className="block max-w-lg space-y-2 text-sm">
         <span>Target</span>
         <select className={selectClass} value={mode} disabled={pending} onChange={event => { setMode(event.target.value); clearResult(); }}>
           <option value="live">Live database</option>
@@ -87,10 +93,10 @@ export function SchemaDiffDialog({ backup, returnFocusTo, onClose }: { backup: B
           <span>Target backup</span>
           <select className={selectClass} value={target} disabled={pending || isPending || !candidates.length} onChange={event => { setTarget(event.target.value); clearResult(); }}>
             <option value="">{isPending ? "Loading backups…" : candidates.length ? "Choose a backup" : "No matching backups on this page"}</option>
-            {candidates.map(item => <option key={item.id} value={item.id}>{item.path.split(/[\\/]/).pop() || item.id}</option>)}
+            {candidates.map(item => <option key={item.id} value={item.id}>{item.database_name || item.connection_name} · {new Date(item.created_at).toLocaleString()}</option>)}
           </select>
         </label>
-        {isError && <p role="alert" className="text-sm text-destructive">Couldn’t load backups.</p>}
+        {isError && <div role="alert" className="space-y-2 text-sm text-destructive"><p>Couldn’t load backups.</p><Button variant="outline" size="sm" onClick={() => refetch()}>Try again</Button></div>}
         {(pages > 1 || page > 1) && <div className="flex items-center gap-2 text-xs">
           <Button variant="outline" size="sm" disabled={pending || page <= 1} onClick={() => { setPage(page - 1); setTarget(""); clearResult(); }}>Previous</Button>
           <span>Page {page}</span>
@@ -99,17 +105,17 @@ export function SchemaDiffDialog({ backup, returnFocusTo, onClose }: { backup: B
       </div>}
       {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
       {sql === "" && <p role="status" className="text-sm">No differences in the supported schema objects.</p>}
-      {sql && <label className="min-w-0 space-y-1 text-sm">
+      {sql && <label className="block min-w-0 space-y-2 text-sm">
         <span>Migration SQL</span>
-        <textarea ref={output} readOnly value={sql} rows={8} spellCheck={false} className="w-full rounded-md border bg-muted p-2 font-mono text-xs" />
+        <textarea ref={output} readOnly value={sql} rows={16} spellCheck={false} className="w-full rounded-md border bg-muted p-4 font-mono text-xs leading-relaxed" />
       </label>}
       {copyStatus && <p role="status" className="text-xs text-muted-foreground">{copyStatus}</p>}
-      <DialogFooter>
+      <div className="flex flex-wrap gap-2">
         {sql && <Button variant="outline" onClick={copy}>Copy SQL</Button>}
+        {sql && <Button variant="outline" onClick={download}>Download SQL</Button>}
         <Button onClick={compare} disabled={pending || (mode === "backup" && !candidates.some(item => item.id === target))}>
           {pending ? "Comparing…" : "Compare schemas"}
         </Button>
-      </DialogFooter>
-    </DialogContent>
-  </Dialog>;
+      </div>
+    </div>;
 }

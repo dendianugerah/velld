@@ -364,8 +364,24 @@ func (r *BackupRepository) GetAllBackupsWithPagination(opts BackupListOptions) (
 	argCount := 2
 
 	if opts.Search != "" {
-		whereClause += fmt.Sprintf(" AND (LOWER(b.path) LIKE $%d OR LOWER(b.status) LIKE $%d)", argCount, argCount)
+		whereClause += fmt.Sprintf(" AND (LOWER(b.path) LIKE $%[1]d OR LOWER(b.status) LIKE $%[1]d OR LOWER(c.name) LIKE $%[1]d OR LOWER(c.database_name) LIKE $%[1]d)", argCount)
 		args = append(args, "%"+strings.ToLower(opts.Search)+"%")
+		argCount++
+	}
+	for _, filter := range []struct{ column, value string }{
+		{"b.status", opts.Status}, {"c.type", opts.DatabaseType},
+		{"COALESCE(b.verification_status, 'skipped')", opts.Verification}, {"b.id", opts.BackupID},
+		{"b.connection_id", opts.ConnectionID},
+	} {
+		if filter.value != "" {
+			whereClause += fmt.Sprintf(" AND %s = $%d", filter.column, argCount)
+			args = append(args, filter.value)
+			argCount++
+		}
+	}
+	if opts.DateFrom != nil {
+		whereClause += fmt.Sprintf(" AND datetime(b.created_at) >= datetime($%d)", argCount)
+		args = append(args, opts.DateFrom.UTC().Format(time.RFC3339))
 		argCount++
 	}
 
@@ -384,11 +400,11 @@ func (r *BackupRepository) GetAllBackupsWithPagination(opts BackupListOptions) (
 		SELECT 
 			b.id, b.connection_id, c.type, b.schedule_id, b.status, b.path, b.s3_object_key, b.size,
 			b.started_time, b.completed_time, b.created_at, b.updated_at,
-			c.database_name, b.verification_status, b.verification_message, b.verified_at
+			COALESCE(c.database_name, ''), b.verification_status, b.verification_message, b.verified_at, c.name
 		FROM backups b
 		INNER JOIN connections c ON b.connection_id = c.id
 		%s
-		ORDER BY b.created_at DESC
+		ORDER BY b.created_at DESC, b.id DESC
 		LIMIT $%d OFFSET $%d
 	`, whereClause, argCount, argCount+1)
 
@@ -415,6 +431,7 @@ func (r *BackupRepository) GetAllBackupsWithPagination(opts BackupListOptions) (
 			&createdAtStr, &updatedAtStr,
 			&backup.DatabaseName,
 			&backup.VerificationStatus, &backup.VerificationMessage, &backup.VerifiedAt,
+			&backup.ConnectionName,
 		)
 		if err != nil {
 			return nil, 0, err

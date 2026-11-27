@@ -38,12 +38,12 @@ export function HistoryFilters({
 }: HistoryFiltersProps) {
   
   return (
-    <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+    <div className="flex flex-col gap-3 2xl:flex-row 2xl:items-center 2xl:justify-between">
       <div className="relative w-full xl:max-w-xs">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           type="text"
-          placeholder="Search history..."
+          placeholder="Search database, connection or file…"
           aria-label="Search backup history"
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
@@ -74,6 +74,7 @@ export function HistoryFilters({
             <SelectItem value="completed">Completed</SelectItem>
             <SelectItem value="failed">Failed</SelectItem>
             <SelectItem value="running">Running</SelectItem>
+            <SelectItem value="pending">Pending</SelectItem>
           </SelectContent>
         </Select>
 
@@ -86,6 +87,8 @@ export function HistoryFilters({
             <SelectItem value="mysql">MySQL</SelectItem>
             <SelectItem value="postgresql">PostgreSQL</SelectItem>
             <SelectItem value="mongodb">MongoDB</SelectItem>
+            <SelectItem value="mariadb">MariaDB</SelectItem>
+            <SelectItem value="redis">Redis</SelectItem>
           </SelectContent>
         </Select>
 

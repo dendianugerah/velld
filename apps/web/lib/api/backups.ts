@@ -1,10 +1,15 @@
-import { BackupListResponse } from '@/types/backup';
+import { BackupList, BackupListResponse } from '@/types/backup';
 import { apiRequest } from '../api-client';
 
 export interface GetBackupsParams {
   page?: number;
   limit?: number;
   search?: string;
+  date?: string;
+  status?: string;
+  engine?: string;
+  verification?: string;
+  connection_id?: string;
 }
 
 export interface RestoreBackupParams {
@@ -24,11 +29,19 @@ export async function getBackups(params?: GetBackupsParams): Promise<BackupListR
   if (params?.page) query.set("page", String(params.page));
   if (params?.limit) query.set("limit", String(params.limit));
   if (params?.search) query.set("search", params.search);
+  for (const key of ['date', 'status', 'engine', 'verification', 'connection_id'] as const) {
+    if (params?.[key] && params[key] !== 'all') query.set(key, params[key]);
+  }
   const url = `/api/backups${query.size ? `?${query}` : ""}`;
 
   return apiRequest<BackupListResponse>(url, {
     method: 'GET',
   });
+}
+
+export async function getBackup(id: string): Promise<BackupList> {
+  const result = await apiRequest<{ data: BackupList }>(`/api/backups/${encodeURIComponent(id)}`);
+  return result.data;
 }
 
 export async function downloadBackup(backupId: string): Promise<Blob> {
