@@ -40,8 +40,8 @@ export function HistoryList() {
     <HistoryFilters search={search} onSearchChange={value => { setSearch(value); setPage(1); }}
       dateRange={dateRange} onDateRangeChange={setDateRange} status={status} onStatusChange={setStatus}
       databaseType={databaseType} onDatabaseTypeChange={setDatabaseType} onReset={reset} isLoading={isLoading} />
-    <div className="overflow-hidden rounded-lg border bg-white">
-      <div className="hidden grid-cols-[minmax(0,1fr)_100px_72px_115px_32px] gap-4 border-b bg-[#fafafa] px-4 py-2.5 text-[11px] text-muted-foreground md:grid">
+    <div className="overflow-hidden rounded-lg border bg-card">
+      <div className="hidden grid-cols-[minmax(0,1fr)_100px_72px_115px_32px] gap-4 border-b bg-muted/50 px-4 py-2.5 text-[11px] text-muted-foreground md:grid">
         <span>Database / file</span><span>Status</span><span>Size</span><span>Created</span><span className="sr-only">Actions</span>
       </div>
       {isLoading ? <div className="space-y-5 p-5"><Skeleton className="h-12 w-full" /><Skeleton className="h-12 w-full" /></div> : error ? <p role="alert" className="p-6 text-sm text-destructive">Couldn’t load backups. Refresh the page to try again.</p> : filtered.length ? filtered.map(backup => {

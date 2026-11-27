@@ -7,7 +7,7 @@ export function useSettings() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: ['settings'],
     queryFn: getUserSettings,
   });
@@ -33,7 +33,8 @@ export function useSettings() {
   return {
     settings: data?.data,
     isLoading,
-    updateSettings: (data: UpdateSettingsRequest) => mutation.mutate(data),
+    error,
+    updateSettings: (data: UpdateSettingsRequest) => mutation.mutateAsync(data),
     isUpdating: mutation.isPending,
   };
 }

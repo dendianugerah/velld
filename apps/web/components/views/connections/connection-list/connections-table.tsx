@@ -34,8 +34,8 @@ export function ConnectionsTable({ connections, onEdit, onDelete, onSchedule, on
   });
   const sortBy = (field: typeof sort) => { setSort(field); setAscending(sort === field ? !ascending : true); };
 
-  return <div className="overflow-hidden rounded-lg border bg-white">
-    <div className="hidden grid-cols-[minmax(0,1fr)_130px_120px_165px] items-center gap-4 border-b bg-[#fafafa] px-4 py-2.5 text-[11px] text-muted-foreground xl:grid">
+  return <div className="overflow-hidden rounded-lg border bg-card">
+    <div className="hidden grid-cols-[minmax(0,1fr)_130px_120px_165px] items-center gap-4 border-b bg-muted/50 px-4 py-2.5 text-[11px] text-muted-foreground xl:grid">
       <button onClick={() => sortBy("name")} className="flex w-fit items-center gap-2" aria-label="Sort connections by name">Connection<ArrowUpDown className="h-3 w-3" /></button>
       <span>Schedule</span>
       <button onClick={() => sortBy("lastBackup")} className="flex w-fit items-center gap-2" aria-label="Sort connections by last backup">Last backup<ArrowUpDown className="h-3 w-3" /></button>
@@ -51,7 +51,7 @@ export function ConnectionsTable({ connections, onEdit, onDelete, onSchedule, on
           <p className="mt-1 break-all text-[11px] text-muted-foreground">{typeLabels[connection.type] ?? connection.type} · {connection.host}:{connection.port}</p>
           </div>
         </div>
-        <button className="w-fit rounded-md border bg-white px-2 py-1.5 text-start text-[11px] capitalize hover:bg-muted" onClick={event => onSchedule(connection.id, event.currentTarget)} aria-label={`Edit schedule for ${connection.name}`}>
+        <button className="w-fit rounded-md border bg-card px-2 py-1.5 text-start text-[11px] capitalize hover:bg-muted" onClick={event => onSchedule(connection.id, event.currentTarget)} aria-label={`Edit schedule for ${connection.name}`}>
           {connection.backup_enabled ? (frequency === "test" ? "Every minute" : frequency === "custom" ? "Custom schedule" : frequency || "Scheduled") : "Add schedule"}
         </button>
         <p className="text-end text-[11px] text-muted-foreground xl:text-start">{connection.last_backup_time ? formatDistanceToNow(new Date(connection.last_backup_time), { addSuffix: true }) : "No backups yet"}</p>

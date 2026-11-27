@@ -1,15 +1,15 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { LayerCard as Card } from "@cloudflare/kumo/components/layer-card";
+import { Button } from "@cloudflare/kumo/components/button";
+import { SettingsInput as Input, SettingsField, SettingsFieldGroup, SettingsFieldRow } from "./settings-input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Loader2, Cloud, Check, AlertCircle, HelpCircle } from "lucide-react";
+import { Switch } from "@cloudflare/kumo/components/switch";
+import { Loader2, Cloud } from "lucide-react";
 import { useSettings } from "@/hooks/use-settings";
 import { useToast } from "@/hooks/use-toast";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const S3_PROVIDERS = [
@@ -24,10 +24,8 @@ const S3_PROVIDERS = [
 ];
 
 export function S3StorageSettings() {
-  const { settings, isLoading, updateSettings, isUpdating } = useSettings();
+  const { settings, isLoading, error, updateSettings, isUpdating } = useSettings();
   const { toast } = useToast();
-  const [isTesting, setIsTesting] = useState(false);
-  const [testResult, setTestResult] = useState<"success" | "error" | null>(null);
 
   const [formData, setFormData] = useState({
     s3_enabled: false,
@@ -70,38 +68,6 @@ export function S3StorageSettings() {
     }
   };
 
-  const handleTestConnection = async () => {
-    setIsTesting(true);
-    setTestResult(null);
-
-    try {
-      // TODO: Implement test S3 connection endpoint
-      // const response = await fetch('/api/settings/test-s3', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(formData),
-      // });
-      
-      // Simulate test for now
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      setTestResult("success");
-      toast({
-        title: "Connection Successful",
-        description: "Successfully connected to S3 storage",
-      });
-    } catch (error) {
-      setTestResult("error");
-      toast({
-        variant: "destructive",
-        title: "Connection Failed",
-        description: error instanceof Error ? error.message : "Failed to connect to S3 storage",
-      });
-    } finally {
-      setIsTesting(false);
-    }
-  };
-
   const handleSave = async () => {
     try {
       // Only send secret key if it was changed (not empty)
@@ -112,7 +78,6 @@ export function S3StorageSettings() {
       }
       
       await updateSettings(dataToSave);
-      setTestResult(null);
       
       // Clear the secret key field after successful save for security
       setFormData(prev => ({ ...prev, s3_secret_key: "" }));
@@ -145,31 +110,29 @@ export function S3StorageSettings() {
     );
   }
 
+  if (error) return <section id="storage" className="scroll-mt-20"><h2 className="text-[15px] font-semibold">Storage</h2><p role="alert" className="mt-3 text-sm text-destructive">Couldn’t load storage settings. Please try again.</p></section>;
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-lg flex items-center gap-2">
-          <Cloud className="w-5 h-5" />
-          S3 Object Storage
-        </CardTitle>
-        <CardDescription>
-          Store backups in S3-compatible object storage (AWS S3, MinIO, Backblaze B2, etc.)
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
+    <section id="storage" className="scroll-mt-20" aria-labelledby="storage-heading">
+      <h2 id="storage-heading" className="text-xl font-semibold tracking-[-0.025em]">Storage</h2>
+      <p className="mt-1.5 text-sm text-muted-foreground">Manage where your backup copies are stored.</p>
+      <Card className="mt-7 rounded-lg shadow-none">
+      <CardContent className="space-y-6 p-5">
         {/* Enable S3 Storage */}
-        <div className="flex items-center justify-between p-4 rounded-lg border bg-background/50">
-          <div className="space-y-0.5">
+        <div className="flex items-center justify-between gap-4">
+          <div className="space-y-1">
             <Label htmlFor="s3-enabled" className="text-sm font-medium">
-              Enable S3 Storage
+              S3 object storage
             </Label>
             <p className="text-sm text-muted-foreground">
-              Automatically upload backups to S3-compatible storage
+              Automatically upload backups to S3-compatible storage. This switch saves immediately.
             </p>
           </div>
           <div className="flex items-center gap-2">
             <Switch
               id="s3-enabled"
+              aria-label="S3 object storage"
+              disabled={isUpdating}
               checked={formData.s3_enabled}
               onCheckedChange={async (checked) => {
                 const previousState = formData.s3_enabled;
@@ -197,23 +160,10 @@ export function S3StorageSettings() {
 
         {formData.s3_enabled && (
           <>
-            {/* Provider Preset */}
-            <div className="space-y-2">
-              <Label htmlFor="provider">
-                Provider Preset
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <HelpCircle className="inline w-3.5 h-3.5 ml-1.5 text-muted-foreground" />
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Select a provider to auto-fill endpoint and region settings</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </Label>
+            <SettingsFieldGroup>
+            <SettingsField id="provider" label="Provider preset" hint="Select a provider to fill in its endpoint and region.">
               <Select onValueChange={handleProviderChange}>
-                <SelectTrigger>
+                <SelectTrigger id="provider" aria-describedby="provider-hint">
                   <SelectValue placeholder="Select a provider or use custom" />
                 </SelectTrigger>
                 <SelectContent>
@@ -224,127 +174,81 @@ export function S3StorageSettings() {
                   ))}
                 </SelectContent>
               </Select>
-            </div>
+            </SettingsField>
 
             {/* Grid Layout for Endpoint and Region */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="s3-endpoint">
-                  Endpoint
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <HelpCircle className="inline w-3.5 h-3.5 ml-1.5 text-muted-foreground" />
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>S3 API endpoint URL (without https://)</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </Label>
+            <SettingsFieldRow>
+              <SettingsField id="s3-endpoint" label="Endpoint" hint="Enter the host without https://.">
                 <Input
                   id="s3-endpoint"
+                  aria-label="Endpoint"
+                  aria-describedby="s3-endpoint-hint"
                   placeholder="s3.amazonaws.com"
                   value={formData.s3_endpoint}
                   onChange={(e) => setFormData({ ...formData, s3_endpoint: e.target.value })}
                 />
-              </div>
+              </SettingsField>
 
-              <div className="space-y-2">
-                <Label htmlFor="s3-region">
-                  Region
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <HelpCircle className="inline w-3.5 h-3.5 ml-1.5 text-muted-foreground" />
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>S3 region (e.g., us-east-1)</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </Label>
+              <SettingsField id="s3-region" label="Region">
                 <Input
                   id="s3-region"
+                  aria-label="Region"
                   placeholder="us-east-1"
                   value={formData.s3_region}
                   onChange={(e) => setFormData({ ...formData, s3_region: e.target.value })}
                 />
-              </div>
-            </div>
+              </SettingsField>
+            </SettingsFieldRow>
 
             {/* Bucket Name */}
-            <div className="space-y-2">
-              <Label htmlFor="s3-bucket">
-                Bucket Name
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <HelpCircle className="inline w-3.5 h-3.5 ml-1.5 text-muted-foreground" />
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>S3 bucket where backups will be stored</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </Label>
+            <SettingsField id="s3-bucket" label="Bucket name">
               <Input
                 id="s3-bucket"
+                aria-label="Bucket name"
                 placeholder="velld-backups"
                 value={formData.s3_bucket}
                 onChange={(e) => setFormData({ ...formData, s3_bucket: e.target.value })}
               />
-            </div>
+            </SettingsField>
 
             {/* Access Key and Secret Key */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="s3-access-key">Access Key ID</Label>
+            <SettingsFieldRow>
+              <SettingsField id="s3-access-key" label="Access Key ID">
                 <Input
                   id="s3-access-key"
+                  aria-label="Access Key ID"
                   placeholder="AKIAIOSFODNN7EXAMPLE"
                   value={formData.s3_access_key}
                   onChange={(e) => setFormData({ ...formData, s3_access_key: e.target.value })}
                 />
-              </div>
+              </SettingsField>
 
-              <div className="space-y-2">
-                <Label htmlFor="s3-secret-key">Secret Access Key</Label>
+              <SettingsField id="s3-secret-key" label="Secret Access Key">
                 <Input
                   id="s3-secret-key"
+                  aria-label="Secret Access Key"
                   type="password"
                   placeholder="wJalrXUtnFEMI/K7MDENG..."
                   value={formData.s3_secret_key}
                   onChange={(e) => setFormData({ ...formData, s3_secret_key: e.target.value })}
                 />
-              </div>
-            </div>
+              </SettingsField>
+            </SettingsFieldRow>
 
             {/* Path Prefix */}
-            <div className="space-y-2">
-              <Label htmlFor="s3-path-prefix">
-                Path Prefix (Optional)
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <HelpCircle className="inline w-3.5 h-3.5 ml-1.5 text-muted-foreground" />
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Folder path inside bucket (e.g., backups/production)</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </Label>
+            <SettingsField id="s3-path-prefix" label="Path prefix (optional)">
               <Input
                 id="s3-path-prefix"
+                aria-label="Path prefix (optional)"
                 placeholder="backups/production"
                 value={formData.s3_path_prefix}
                 onChange={(e) => setFormData({ ...formData, s3_path_prefix: e.target.value })}
               />
-            </div>
+            </SettingsField>
+            </SettingsFieldGroup>
 
             {/* SSL/TLS */}
-            <div className="flex items-center justify-between p-4 rounded-lg border bg-background/50">
+            <div className="flex items-center justify-between gap-4 border-t pt-5">
               <div className="space-y-0.5">
                 <Label htmlFor="s3-use-ssl" className="text-sm font-medium">
                   Use SSL/TLS
@@ -355,13 +259,14 @@ export function S3StorageSettings() {
               </div>
               <Switch
                 id="s3-use-ssl"
+                aria-label="Use SSL/TLS"
                 checked={formData.s3_use_ssl}
                 onCheckedChange={(checked) => setFormData({ ...formData, s3_use_ssl: checked })}
               />
             </div>
 
             {/* Purge Local Backup */}
-            <div className="flex items-center justify-between p-4 rounded-lg border bg-background/50">
+            <div className="flex items-center justify-between gap-4 border-t pt-5">
               <div className="space-y-0.5">
                 <Label htmlFor="s3-purge-local" className="text-sm font-medium">
                   Purge Local Backup After Upload
@@ -372,50 +277,14 @@ export function S3StorageSettings() {
               </div>
               <Switch
                 id="s3-purge-local"
+                aria-label="Purge local backup after upload"
                 checked={formData.s3_purge_local}
                 onCheckedChange={(checked) => setFormData({ ...formData, s3_purge_local: checked })}
               />
             </div>
 
-            {/* Test Connection Result */}
-            {testResult && (
-              <div className={`flex items-center gap-2 p-4 rounded-lg border ${
-                testResult === "success" 
-                  ? "bg-green-500/10 border-green-500/20 text-green-600 dark:text-green-400" 
-                  : "bg-red-500/10 border-red-500/20 text-red-600 dark:text-red-400"
-              }`}>
-                {testResult === "success" ? (
-                  <>
-                    <Check className="w-4 h-4" />
-                    <span className="text-sm font-medium">Connection successful!</span>
-                  </>
-                ) : (
-                  <>
-                    <AlertCircle className="w-4 h-4" />
-                    <span className="text-sm font-medium">Connection failed. Check your credentials.</span>
-                  </>
-                )}
-              </div>
-            )}
-
             {/* Action Buttons */}
             <div className="flex gap-2">
-              <Button
-                onClick={handleTestConnection}
-                variant="outline"
-                // disabled={isTesting || !formData.s3_endpoint || !formData.s3_bucket}
-                disabled={true}
-              >
-                {isTesting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Testing...
-                  </>
-                ) : (
-                  "Test Connection"
-                )}
-              </Button>
-
               <Button
                 onClick={handleSave}
                 disabled={isUpdating || !formData.s3_endpoint || !formData.s3_bucket}
@@ -434,5 +303,6 @@ export function S3StorageSettings() {
         )}
       </CardContent>
     </Card>
+    </section>
   );
 }

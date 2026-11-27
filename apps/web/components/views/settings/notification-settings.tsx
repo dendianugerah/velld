@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Mail, Info, Webhook } from "lucide-react";
+import { CardContent, CardHeader } from "@/components/ui/card";
+import { LayerCard as Card } from "@cloudflare/kumo/components/layer-card";
+import { Button } from "@cloudflare/kumo/components/button";
+import { SettingsInput as Input, SettingsField, SettingsFieldGroup, SettingsFieldRow } from "./settings-input";
+import { Switch } from "@cloudflare/kumo/components/switch";
+import { Mail, Webhook } from "lucide-react";
 import { useSettings } from "@/hooks/use-settings";
 import { Skeleton } from "@/components/ui/skeleton";
 import { UpdateSettingsRequest } from "@/types/settings";
@@ -14,7 +14,7 @@ import { UpdateSettingsRequest } from "@/types/settings";
 type SettingsValue = string | number | boolean;
 
 export function NotificationSettings() {
-  const { settings, isLoading, updateSettings, isUpdating } = useSettings();
+  const { settings, isLoading, error, updateSettings, isUpdating } = useSettings();
   const [formValues, setFormValues] = useState<UpdateSettingsRequest>({});
 
   if (isLoading) {
@@ -42,19 +42,19 @@ export function NotificationSettings() {
     );
   }
 
+  if (error) return <section id="notifications" className="scroll-mt-20"><h2 className="text-[15px] font-semibold">Notifications</h2><p role="alert" className="mt-3 text-sm text-destructive">Couldn’t load notification settings. Please try again.</p></section>;
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (Object.keys(formValues).length > 0) {
-      updateSettings(formValues);
+      void updateSettings(formValues).then(() => setFormValues({})).catch(() => {});
     }
   };
 
   const handleSwitchChange = async (field: keyof UpdateSettingsRequest, checked: boolean) => {
     try {
-      setFormValues(prev => ({ ...prev, [field]: checked }));
       await updateSettings({ [field]: checked });
     } catch (error) {
-      setFormValues(prev => ({ ...prev, [field]: !checked }));
       console.error(`Failed to update ${field}:`, error);
     }
   };
@@ -64,31 +64,18 @@ export function NotificationSettings() {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-lg">Notifications</CardTitle>
-        <CardDescription>Configure how you receive backup notifications</CardDescription>
-      </CardHeader>
-      <CardContent>
+    <section id="notifications" className="scroll-mt-20" aria-labelledby="notifications-heading">
+      <h2 id="notifications-heading" className="text-xl font-semibold tracking-[-0.025em]">Notifications</h2>
+      <p className="mt-1.5 text-sm text-muted-foreground">Choose how to hear about failed backups. Switches save immediately; changes to fields must be saved.</p>
+      <Card className="mt-7 rounded-lg shadow-none">
+      <CardContent className="p-5">
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="flex items-start gap-3 p-4 rounded-lg border bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-900">
-            <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
-                Notifications for Failed Backups Only
-              </p>
-              <p className="text-xs text-blue-700 dark:text-blue-300">
-                You will only receive notifications when a backup fails. Successful backups run silently in the background.
-              </p>
-            </div>
-          </div>
-
           {/* Email Notifications */}
           <div className="space-y-3">
-            <div className="flex items-center justify-between p-4 rounded-lg border bg-background/50">
+            <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-md bg-primary/10">
-                  <Mail className="w-4 h-4 text-primary" />
+                <div className="rounded-md bg-muted p-2">
+                  <Mail className="h-4 w-4 text-muted-foreground" />
                 </div>
                 <div>
                   <p className="text-sm font-medium">Email Notifications</p>
@@ -98,6 +85,7 @@ export function NotificationSettings() {
                 </div>
               </div>
               <Switch
+                aria-label="Email notifications"
                 checked={settings?.notify_email ?? false}
                 disabled={isUpdating}
                 onCheckedChange={(checked) => handleSwitchChange('notify_email', checked)}
@@ -105,15 +93,17 @@ export function NotificationSettings() {
             </div>
 
             {settings?.notify_email && (
-              <div className="ml-4 pl-6 border-l-2 space-y-4">
-                <div className="grid gap-2">
-                  <Label className="text-sm">
+              <div className="space-y-4 border-l pl-4 sm:ml-4 sm:pl-6">
+                <SettingsFieldGroup>
+                <SettingsField id="notification-email" label={<>
                     Email Address
                     {settings?.env_configured?.email && (
                       <span className="ml-2 text-xs text-muted-foreground">(set via environment variable)</span>
                     )}
-                  </Label>
+                  </>}>
                   <Input
+                    id="notification-email"
+                    aria-label="Email Address"
                     type="email"
                     placeholder="your@email.com"
                     defaultValue={settings?.email || ''}
@@ -121,32 +111,34 @@ export function NotificationSettings() {
                     disabled={settings?.env_configured?.email}
                     className={settings?.env_configured?.email ? 'bg-muted cursor-not-allowed' : ''}
                   />
-                </div>
+                </SettingsField>
                 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="grid gap-2">
-                    <Label className="text-sm">
+                <SettingsFieldRow>
+                  <SettingsField id="smtp-host" label={<>
                       SMTP Host
                       {settings?.env_configured?.smtp_host && (
                         <span className="ml-2 text-xs text-muted-foreground">(env var)</span>
                       )}
-                    </Label>
+                    </>}>
                     <Input
+                      id="smtp-host"
+                      aria-label="SMTP Host"
                       placeholder="smtp.gmail.com"
                       defaultValue={settings.smtp_host}
                       onChange={(e) => handleChange('smtp_host', e.target.value)}
                       disabled={settings?.env_configured?.smtp_host}
                       className={settings?.env_configured?.smtp_host ? 'bg-muted cursor-not-allowed' : ''}
                     />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label className="text-sm">
+                  </SettingsField>
+                  <SettingsField id="smtp-port" label={<>
                       SMTP Port
                       {settings?.env_configured?.smtp_port && (
                         <span className="ml-2 text-xs text-muted-foreground">(env var)</span>
                       )}
-                    </Label>
+                    </>}>
                     <Input
+                      id="smtp-port"
+                      aria-label="SMTP Port"
                       type="number"
                       placeholder="587"
                       defaultValue={settings?.smtp_port?.toString() || ''}
@@ -154,53 +146,54 @@ export function NotificationSettings() {
                       disabled={settings?.env_configured?.smtp_port}
                       className={settings?.env_configured?.smtp_port ? 'bg-muted cursor-not-allowed' : ''}
                     />
-                  </div>
-                </div>
+                  </SettingsField>
+                </SettingsFieldRow>
 
-                <div className="grid gap-2">
-                  <Label className="text-sm">
+                <SettingsField id="smtp-username" label={<>
                     SMTP Username
                     {settings?.env_configured?.smtp_username && (
                       <span className="ml-2 text-xs text-muted-foreground">(env var)</span>
                     )}
-                  </Label>
+                  </>}>
                   <Input
+                    id="smtp-username"
+                    aria-label="SMTP Username"
                     placeholder="username"
                     defaultValue={settings.smtp_username}
                     onChange={(e) => handleChange('smtp_username', e.target.value)}
                     disabled={settings?.env_configured?.smtp_username}
                     className={settings?.env_configured?.smtp_username ? 'bg-muted cursor-not-allowed' : ''}
                   />
-                </div>
+                </SettingsField>
                 
-                <div className="grid gap-2">
-                  <Label className="text-sm">
+                <SettingsField id="smtp-password" hint="Leave empty to keep current password" label={<>
                     SMTP Password
                     {settings?.env_configured?.smtp_password && (
                       <span className="ml-2 text-xs text-muted-foreground">(env var)</span>
                     )}
-                  </Label>
+                  </>}>
                   <Input
+                    id="smtp-password"
+                    aria-describedby="smtp-password-hint"
+                    aria-label="SMTP Password"
                     type="password"
                     placeholder="••••••••"
                     onChange={(e) => handleChange('smtp_password', e.target.value)}
                     disabled={settings?.env_configured?.smtp_password}
                     className={settings?.env_configured?.smtp_password ? 'bg-muted cursor-not-allowed' : ''}
                   />
-                  <p className="text-xs text-muted-foreground">
-                    Leave empty to keep current password
-                  </p>
-                </div>
+                </SettingsField>
+                </SettingsFieldGroup>
               </div>
             )}
           </div>
 
           {/* Webhook Notifications */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between p-4 rounded-lg border bg-background/50">
+          <div className="space-y-3 border-t pt-6">
+            <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-md bg-primary/10">
-                  <Webhook className="w-4 h-4 text-primary" />
+                <div className="rounded-md bg-muted p-2">
+                  <Webhook className="h-4 w-4 text-muted-foreground" />
                 </div>
                 <div>
                   <p className="text-sm font-medium">Webhook Notifications</p>
@@ -210,6 +203,7 @@ export function NotificationSettings() {
                 </div>
               </div>
               <Switch
+                aria-label="Webhook notifications"
                 checked={settings?.notify_webhook ?? false}
                 disabled={isUpdating}
                 onCheckedChange={(checked) => handleSwitchChange('notify_webhook', checked)}
@@ -217,18 +211,17 @@ export function NotificationSettings() {
             </div>
 
             {settings?.notify_webhook && (
-              <div className="ml-4 pl-6 border-l-2">
-                <div className="grid gap-2">
-                  <Label className="text-sm">Webhook URL</Label>
+              <div className="border-l pl-4 sm:ml-4 sm:pl-6">
+                <SettingsField id="notification-webhook" label="Webhook URL" hint="Supports Slack, Discord, and custom webhooks">
                   <Input
+                    id="notification-webhook"
+                    aria-describedby="notification-webhook-hint"
+                    aria-label="Webhook URL"
                     placeholder="https://hooks.slack.com/services/..."
                     defaultValue={settings.webhook_url}
                     onChange={(e) => handleChange('webhook_url', e.target.value)}
                   />
-                  <p className="text-xs text-muted-foreground">
-                    Supports Slack, Discord, and custom webhooks
-                  </p>
-                </div>
+                </SettingsField>
               </div>
             )}
           </div>
@@ -243,5 +236,6 @@ export function NotificationSettings() {
         </form>
       </CardContent>
     </Card>
+    </section>
   );
 }

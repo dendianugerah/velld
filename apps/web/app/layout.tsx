@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
-import { Plus_Jakarta_Sans } from "next/font/google";
+import { Geist } from "next/font/google";
 import "./globals.css";
 import { QueryProvider } from "@/components/query-provider"
 import { AuthMiddleware } from "@/components/auth-middleware";
 import { Toaster } from "@/components/ui/toaster";
 
-const geistSans = Plus_Jakarta_Sans({
+const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
 });

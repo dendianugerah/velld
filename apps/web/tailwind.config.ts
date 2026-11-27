@@ -1,8 +1,8 @@
-/* eslint-disable @typescript-eslint/no-require-imports */
 import type { Config } from "tailwindcss";
+import tailwindcssAnimate from "tailwindcss-animate";
 
 export default {
-    darkMode: ["class"],
+    darkMode: "class",
     content: [
     "./pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
@@ -43,8 +43,17 @@ export default {
   				foreground: 'hsl(var(--destructive-foreground))'
   			},
   			border: 'hsl(var(--border))',
-  			input: 'hsl(var(--input))',
-  			ring: 'hsl(var(--ring))',
+            input: 'hsl(var(--input))',
+            ring: 'hsl(var(--ring))',
+            success: 'hsl(var(--success))',
+            warning: 'hsl(var(--warning))',
+            info: 'hsl(var(--info))',
+            overlay: 'hsl(var(--overlay))',
+            sidebar: {
+              DEFAULT: 'hsl(var(--sidebar))',
+              active: 'hsl(var(--sidebar-active))',
+              hover: 'hsl(var(--sidebar-hover))',
+            },
   			chart: {
   				'1': 'hsl(var(--chart-1))',
   				'2': 'hsl(var(--chart-2))',
@@ -60,5 +69,5 @@ export default {
   		}
   	}
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [tailwindcssAnimate],
 } satisfies Config;

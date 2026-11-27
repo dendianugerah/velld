@@ -146,7 +146,7 @@ export function RestoreDialog({ backup, open, returnFocusTo, onOpenChange }: Res
               id="confirm-restore"
               checked={confirmed}
               onChange={(e) => setConfirmed(e.target.checked)}
-              className="h-4 w-4 rounded border-gray-300"
+              className="h-4 w-4 rounded border-input"
               disabled={!selectedConnectionId || isRestoring}
             />
             <label

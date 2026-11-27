@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useState } from "react";
 import { ChevronDown, Download } from "lucide-react";
+import { Button as KumoButton } from "@cloudflare/kumo/components/button";
+import { LayerCard } from "@cloudflare/kumo/components/layer-card";
 import { formatDistanceToNow, isValid, parseISO } from "date-fns";
 import { useBackup } from "@/hooks/use-backup";
 import { useConnections } from "@/hooks/use-connections";
@@ -36,51 +38,51 @@ export function ActivityList() {
   const recent = [...(backups ?? [])].sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at)).slice(0, 5);
 
   return <>
-    <PageHeader title="Overview" description="Your databases and their latest backups." action={connections?.length ? <AddConnectionDialog /> : undefined} />
-    <div className="space-y-9">
+    <PageHeader title="Overview" description="Your databases and backups, at a glance." action={connections?.length ? <AddConnectionDialog /> : undefined} />
+    <div className="space-y-10">
       <section aria-labelledby="databases-heading">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            <h2 id="databases-heading" className="text-[13px] font-semibold">Connections</h2>
-            {!!connections?.length && <span className="text-[11px] text-muted-foreground">{connections.length} total · {scheduled} scheduled</span>}
+            <h2 id="databases-heading" className="text-sm font-semibold">Connections</h2>
+            {!!connections?.length && <span className="text-xs text-muted-foreground">{connections.length} total · {scheduled} scheduled</span>}
           </div>
-          <Link href="/connections" className="text-[11px] font-medium text-muted-foreground hover:text-foreground">Manage connections <span aria-hidden="true">→</span></Link>
+          <Link href="/connections" className="text-xs font-medium text-muted-foreground hover:text-foreground">Manage connections <span aria-hidden="true">→</span></Link>
         </div>
 
         {connectionsLoading ? <div className="space-y-3 rounded-lg border p-4">{[1, 2, 3].map(key => <Skeleton key={key} className="h-12 w-full" />)}</div> : connectionsError ? (
           <div role="alert" className="flex flex-wrap items-center justify-between gap-4 rounded-lg border p-5 text-sm">
-            <div><p className="font-medium">Your connections couldn’t be loaded.</p><p className="mt-1.5 text-xs text-muted-foreground">Check that the Velld API is running, then try again.</p></div>
-            <Button variant="outline" size="sm" onClick={() => refetch()}>Try again</Button>
+              <div><p className="font-medium">Your connections couldn’t be loaded.</p><p className="mt-1.5 text-xs text-muted-foreground">Check that the Velld API is running, then try again.</p></div>
+            <KumoButton variant="secondary" onClick={() => refetch()}>Try again</KumoButton>
           </div>
         ) : connections?.length ? (
-          <div className="overflow-hidden rounded-lg border">
-            <div className="hidden grid-cols-[minmax(0,1fr)_145px_130px_112px] items-center gap-4 border-b bg-[#fafafa] px-4 py-2.5 text-[11px] text-muted-foreground md:grid"><span>Connection</span><span>Schedule</span><span>Last backup</span><span className="sr-only">Actions</span></div>
+          <LayerCard className="overflow-hidden rounded-lg shadow-none">
+            <div className="hidden grid-cols-[minmax(0,1fr)_145px_130px_112px] items-center gap-4 border-b bg-muted/50 px-4 py-2.5 text-[11px] text-muted-foreground md:grid"><span>Connection</span><span>Schedule</span><span>Last backup</span><span className="sr-only">Actions</span></div>
             {connections.slice(0, 6).map(connection => <div key={connection.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-3 border-b px-4 py-3.5 last:border-b-0 md:grid-cols-[minmax(0,1fr)_145px_130px_112px]">
               <div className="col-span-2 flex min-w-0 items-center gap-3 md:col-span-1">
                 <DatabaseMark type={connection.type} small />
                 <div className="min-w-0">
-                  <p className="break-words text-[13px] font-medium">{connection.name}</p>
-                  <p className="mt-1 break-all text-[11px] text-muted-foreground">{typeLabels[connection.type] ?? connection.type} · {connection.database || connection.host}</p>
+                  <p className="break-words text-sm font-medium">{connection.name}</p>
+                  <p className="mt-1 break-all text-xs text-muted-foreground">{typeLabels[connection.type] ?? connection.type} · {connection.database || connection.host}</p>
                   <p className="mt-1 text-[10px] text-muted-foreground md:hidden">{connection.last_backup_time ? `Last backup ${relativeTime(connection.last_backup_time)}` : "No backups yet"}</p>
                 </div>
               </div>
               <div>
-                <button onClick={event => { setScheduleTrigger(event.currentTarget); setScheduleId(connection.id); }} className="inline-flex items-center gap-2 rounded-md border bg-white px-2 py-1.5 text-[11px] font-medium capitalize hover:bg-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary" aria-label={`Edit schedule for ${connection.name}`}>
-                  {!connection.backup_enabled && <span className="h-1.5 w-1.5 rounded-full bg-[#b78c45]" aria-hidden="true" />}
+                <button onClick={event => { setScheduleTrigger(event.currentTarget); setScheduleId(connection.id); }} className="inline-flex items-center gap-2 rounded-md border bg-card px-2 py-1.5 text-[11px] font-medium capitalize hover:bg-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary" aria-label={`Edit schedule for ${connection.name}`}>
+                  {!connection.backup_enabled && <span className="h-1.5 w-1.5 rounded-full bg-warning" aria-hidden="true" />}
                   {connection.backup_enabled ? frequencyLabel(connection.cron_schedule) : "Manual only"}<ChevronDown className="h-3 w-3 text-muted-foreground" />
                 </button>
                 {connection.backup_enabled && !!connection.retention_days && <p className="mt-1.5 text-[10px] text-muted-foreground">{connection.retention_days}-day retention</p>}
                 {connection.backup_enabled && !!connection.retention_count && <p className="mt-1 text-[10px] text-muted-foreground">Latest {connection.retention_count} backups</p>}
               </div>
               <p className="hidden text-[11px] text-muted-foreground md:block">{relativeTime(connection.last_backup_time)}</p>
-              <Button variant="outline" size="sm" className="h-8 justify-self-end text-[11px]" disabled={isCreating} onClick={() => createBackup(connection.id)} aria-label={`Back up ${connection.name} now`}>{isCreating ? "Starting…" : "Back up now"}</Button>
+              <KumoButton variant="secondary" className="justify-self-end" disabled={isCreating} onClick={() => createBackup(connection.id)} aria-label={`Back up ${connection.name} now`}>{isCreating ? "Starting…" : "Back up now"}</KumoButton>
             </div>)}
-          </div>
+          </LayerCard>
         ) : (
-          <div className="rounded-lg border px-6 py-9">
-            <div className="mb-4 flex gap-2"><DatabaseMark type="postgresql" small /><DatabaseMark type="mysql" small /><DatabaseMark type="mongodb" small /></div>
-            <h3 className="text-base font-semibold tracking-tight">A place for your first database.</h3>
-            <p className="mb-5 mt-2 max-w-md text-xs leading-relaxed text-muted-foreground">Add a PostgreSQL, MySQL, or MongoDB connection, then run a backup or set a schedule.</p>
+          <div className="rounded-xl border border-border bg-muted/40 px-6 py-12 text-center">
+            <div className="mb-4 flex justify-center gap-2"><DatabaseMark type="postgresql" small /><DatabaseMark type="mysql" small /><DatabaseMark type="mongodb" small /></div>
+            <h3 className="text-sm font-semibold">Add your first database</h3>
+            <p className="mx-auto mb-5 mt-2 max-w-md text-xs leading-relaxed text-muted-foreground">Connect a database to run backups and set a schedule.</p>
             <AddConnectionDialog />
           </div>
         )}
@@ -89,11 +91,11 @@ export function ActivityList() {
 
       <section aria-labelledby="recent-heading">
         <div className="mb-4 flex items-center justify-between gap-4">
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1"><h2 id="recent-heading" className="text-[13px] font-semibold">Recent backups</h2><span className="text-[11px] text-muted-foreground">Updated every 30 seconds</span></div>
-          <Link href="/history" className="shrink-0 text-[11px] font-medium text-muted-foreground hover:text-foreground">View history <span aria-hidden="true">→</span></Link>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1"><h2 id="recent-heading" className="text-sm font-semibold">Recent backups</h2><span className="text-xs text-muted-foreground">Updated every 30 seconds</span></div>
+          <Link href="/history" className="shrink-0 text-xs font-medium text-muted-foreground hover:text-foreground">View history <span aria-hidden="true">→</span></Link>
         </div>
-        <div className="overflow-hidden rounded-lg border">
-          <div className="hidden grid-cols-[minmax(0,1fr)_100px_72px_115px_32px] items-center gap-4 border-b bg-[#fafafa] px-4 py-2.5 text-[11px] text-muted-foreground md:grid"><span>Database / file</span><span>Status</span><span className="text-end">Size</span><span>Created</span><span className="sr-only">Download</span></div>
+        <LayerCard className="overflow-hidden rounded-lg shadow-none">
+          <div className="hidden grid-cols-[minmax(0,1fr)_100px_72px_115px_32px] items-center gap-4 border-b bg-muted/50 px-4 py-2.5 text-[11px] text-muted-foreground md:grid"><span>Database / file</span><span>Status</span><span className="text-end">Size</span><span>Created</span><span className="sr-only">Download</span></div>
           {backupsLoading ? <div className="space-y-4 p-4"><Skeleton className="h-10 w-full" /><Skeleton className="h-10 w-full" /></div> : backupsError ? (
             <p role="alert" className="p-5 text-xs text-destructive">Couldn’t load recent backups. Try refreshing the page.</p>
           ) : recent.length ? recent.map(backup => {
@@ -106,8 +108,8 @@ export function ActivityList() {
               <span className="hidden text-[11px] text-muted-foreground md:block">{relativeTime(backup.created_at)}</span>
               <div className="justify-self-end">{backup.status === "completed" && <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" aria-label={`Download ${filename}`} disabled={isDownloading} onClick={() => downloadBackupFile(backup)}><Download className="!h-3.5 !w-3.5" /></Button>}</div>
             </div>;
-          }) : <div className="px-5 py-8"><p className="text-sm font-medium">Your first backup goes here.</p><p className="mt-2 text-xs text-muted-foreground">Choose a connection above and select Back up now.</p></div>}
-        </div>
+          }) : <div className="px-5 py-9 text-center"><p className="text-sm font-medium">No backups yet</p><p className="mt-2 text-xs text-muted-foreground">Choose a connection above to create your first backup.</p></div>}
+        </LayerCard>
       </section>
       <BackupScheduleDialog connectionId={scheduleId} connection={connections?.find(c => c.id === scheduleId)} returnFocusTo={scheduleTrigger} onClose={() => setScheduleId(null)} />
     </div>

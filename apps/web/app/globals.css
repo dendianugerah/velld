@@ -1,33 +1,38 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "@cloudflare/kumo/styles/tailwind";
+@import "tailwindcss";
+@config "../tailwind.config.ts";
+@source "../../../node_modules/@cloudflare/kumo/dist/**/*.{js,jsx,ts,tsx}";
 
 @layer base {
   :root {
     color-scheme: light;
-    --background: 45 22% 97%;
-    --foreground: 100 7% 16%;
+    --background: 0 0% 98%;
+    --foreground: 0 0% 9%;
     --card: 0 0% 100%;
-    --card-foreground: 96 9% 15%;
+    --card-foreground: 0 0% 9%;
     --popover: 0 0% 100%;
-    --popover-foreground: 96 9% 15%;
-    --primary: 205 62% 40%;
+    --popover-foreground: 0 0% 9%;
+    --primary: 215 100% 51%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 205 55% 94%;
-    --secondary-foreground: 205 62% 32%;
-    --muted: 60 12% 96%;
-    --muted-foreground: 96 4% 43%;
-    --accent: 205 40% 96%;
-    --accent-foreground: 205 62% 32%;
+    --secondary: 0 0% 96%;
+    --secondary-foreground: 0 0% 15%;
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 40%;
+    --accent: 0 0% 96%;
+    --accent-foreground: 0 0% 15%;
     --destructive: 0 63% 43%;
     --destructive-foreground: 0 0% 100%;
-    --border: 60 12% 88%;
-    --input: 60 12% 84%;
-    --ring: 205 62% 40%;
+    --border: 0 0% 90%;
+    --input: 0 0% 84%;
+    --ring: 215 100% 51%;
     --radius: 0.75rem;
     --success: 142 40% 32%;
     --warning: 38 75% 36%;
     --info: 212 55% 40%;
+    --sidebar: 0 0% 95%;
+    --sidebar-active: 0 0% 90%;
+    --sidebar-hover: 0 0% 92%;
+    --overlay: 0 0% 0%;
     --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   }
 
@@ -37,7 +42,7 @@
     font-feature-settings: "rlig" 1, "calt" 1;
   }
   html { scroll-padding-block-start: 140px; }
-  ::selection { background: #d9eaf7; color: #252922; }
+  ::selection { background: hsl(var(--primary) / 0.15); color: hsl(var(--foreground)); }
   button, input, select, textarea { font: inherit; }
   a, button, input, select, textarea { -webkit-tap-highlight-color: transparent; }
 }
