@@ -25,7 +25,7 @@ function parseApiError(err: unknown, fallback: string) {
   return fallback;
 }
 
-export function UpgradeDialog({ connection, onClose }: { connection: Connection; onClose: () => void }) {
+export function UpgradeDialog({ connection, onClose = () => {}, inline = false }: { connection: Connection; onClose?: () => void; inline?: boolean }) {
   const [info, setInfo] = useState<UpgradeInfo | null>(null);
   const [loadingInfo, setLoadingInfo] = useState(true);
   const [targetImage, setTargetImage] = useState("");
@@ -67,12 +67,11 @@ export function UpgradeDialog({ connection, onClose }: { connection: Connection;
     }
   }
 
-  return <Dialog open onOpenChange={open => { if (!open && !pending) onClose(); }}>
-    <DialogContent>
-      <DialogHeader>
+  const content = <>
+      {inline ? <div><h2 className="text-sm font-semibold">Safe upgrades</h2><p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">Take a snapshot, replace the live Docker container, and check its data. Velld rolls back if the upgrade fails. This operation interrupts the database.</p></div> : <DialogHeader>
         <DialogTitle>Upgrade {connection.name}</DialogTitle>
         <DialogDescription>Takes a backup snapshot, replaces the container with the target image, verifies data health, and rolls back automatically on failure.</DialogDescription>
-      </DialogHeader>
+      </DialogHeader>}
 
       {loadingInfo ? (
         <p className="text-sm text-muted-foreground">Checking Docker container…</p>
@@ -116,13 +115,16 @@ export function UpgradeDialog({ connection, onClose }: { connection: Connection;
       )}
 
       <DialogFooter>
-        <Button variant="outline" onClick={onClose} disabled={pending}>{result ? "Close" : "Cancel"}</Button>
+        {!inline && <Button variant="outline" onClick={onClose} disabled={pending}>{result ? "Close" : "Cancel"}</Button>}
         {info?.supported && !result && (
           <Button onClick={runUpgrade} disabled={pending || !targetImage.trim()}>
             {pending ? "Upgrading…" : "Upgrade safely"}
           </Button>
         )}
       </DialogFooter>
-    </DialogContent>
+    </>;
+  if (inline) return <div className="space-y-5">{content}</div>;
+  return <Dialog open onOpenChange={open => { if (!open && !pending) onClose(); }}>
+    <DialogContent>{content}</DialogContent>
   </Dialog>;
 }

@@ -20,11 +20,13 @@ import { useState } from "react";
 interface DeleteConnectionDialogProps {
   connection: Connection | null;
   onClose: () => void;
+  onDeleted?: () => void;
 }
 
 export function DeleteConnectionDialog({
   connection,
   onClose,
+  onDeleted,
 }: DeleteConnectionDialogProps) {
   const { removeConnection, isDeleting } = useConnections();
   const { settings } = useSettings();
@@ -35,13 +37,14 @@ export function DeleteConnectionDialog({
       removeConnection({ id: connection.id, cleanupS3 }, {
         onSuccess: () => {
           onClose();
+          onDeleted?.();
         },
       });
     }
   };
 
   return (
-    <Dialog open={!!connection} onOpenChange={() => onClose()}>
+    <Dialog open={!!connection} onOpenChange={() => { if (!isDeleting) onClose(); }}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">

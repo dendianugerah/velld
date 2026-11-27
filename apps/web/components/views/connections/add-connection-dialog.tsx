@@ -1,40 +1,8 @@
-"use client";
-
-import { Button } from "@/components/ui/button";
+import Link from "next/link";
 import { Plus } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { useState } from "react";
-import { ConnectionForm } from "./connection-form";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { buttonVariants } from "@/components/ui/button";
 
+// Keep the Overview entry point while using the same page-based flow everywhere.
 export function AddConnectionDialog() {
-  const [open, setOpen] = useState(false);
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button className="h-8 text-xs font-medium">
-          <Plus aria-hidden="true" />Add connection
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-[600px] max-h-[85vh]">
-        <DialogHeader>
-          <DialogTitle>Add New Connection</DialogTitle>
-          <DialogDescription>
-            Add a new database connection. The connection will be tested before saving.
-          </DialogDescription>
-        </DialogHeader>
-        <ScrollArea className="max-h-[calc(85vh-120px)] pr-4">
-          <ConnectionForm onSuccess={() => setOpen(false)} onCancel={() => setOpen(false)} />
-        </ScrollArea>
-      </DialogContent>
-    </Dialog>
-  );
+  return <Link href="/connections/new" className={buttonVariants()}><Plus aria-hidden="true" />Add connection</Link>;
 }

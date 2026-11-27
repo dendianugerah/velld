@@ -35,7 +35,7 @@ export function BackupScheduleDialog({ connectionId, connection, returnFocusTo, 
   return <ScheduleForm key={connectionId} connection={connection} returnFocusTo={returnFocusTo} onClose={onClose} />;
 }
 
-function ScheduleForm({ connection, returnFocusTo, onClose }: { connection: Connection; returnFocusTo?: HTMLElement | null; onClose: () => void }) {
+export function ScheduleForm({ connection, returnFocusTo, onClose = () => {}, inline = false }: { connection: Connection; returnFocusTo?: HTMLElement | null; onClose?: () => void; inline?: boolean }) {
   const { settings } = useSettings();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -63,6 +63,7 @@ function ScheduleForm({ connection, returnFocusTo, onClose }: { connection: Conn
       // A schedule may have saved even if the optional S3 preference failed.
       queryClient.invalidateQueries({ queryKey: ["connections"] });
       queryClient.invalidateQueries({ queryKey: ["backups"] });
+      queryClient.invalidateQueries({ queryKey: ["connection", connection.id] });
     },
     onSuccess: () => {
       toast({ title: "Schedule saved", description: enabled ? "Automatic backups are enabled." : "This connection uses manual backups." });
@@ -80,13 +81,7 @@ function ScheduleForm({ connection, returnFocusTo, onClose }: { connection: Conn
     save.mutate();
   }
 
-  return <Dialog open onOpenChange={open => { if (!open && !save.isPending) onClose(); }}>
-    <DialogContent onCloseAutoFocus={event => { if (returnFocusTo?.isConnected) { event.preventDefault(); returnFocusTo.focus(); } }}>
-      <DialogHeader>
-        <DialogTitle>Backup schedule</DialogTitle>
-        <DialogDescription className="break-words">{connection.name}</DialogDescription>
-      </DialogHeader>
-      <form onSubmit={submit} className="space-y-6">
+  const form = <form onSubmit={submit} className="space-y-6">
         <div className="flex items-center justify-between gap-6 rounded-xl bg-muted/70 p-4">
           <div><Label htmlFor="schedule-enabled">Automatic backups</Label><p className="mt-1.5 text-xs text-muted-foreground">Off means you’ll run backups manually.</p></div>
           <Switch id="schedule-enabled" checked={enabled} onCheckedChange={setEnabled} disabled={save.isPending} />
@@ -124,11 +119,19 @@ function ScheduleForm({ connection, returnFocusTo, onClose }: { connection: Conn
           </div>}
         </div>}
         {(validationError || save.error) && <p role="alert" className="text-sm text-destructive">{validationError || save.error?.message || "Couldn’t save the schedule. Please try again."}</p>}
-        <DialogFooter>
-          <Button type="button" variant="outline" disabled={save.isPending} onClick={onClose}>Cancel</Button>
+        <DialogFooter className={inline ? "sm:justify-start" : undefined}>
+          {!inline && <Button type="button" variant="outline" disabled={save.isPending} onClick={onClose}>Cancel</Button>}
           <Button type="submit" disabled={save.isPending}>{save.isPending ? "Saving…" : "Save schedule"}</Button>
         </DialogFooter>
-      </form>
+      </form>;
+  if (inline) return <div className="max-w-[640px]">{form}</div>;
+  return <Dialog open onOpenChange={open => { if (!open && !save.isPending) onClose(); }}>
+    <DialogContent onCloseAutoFocus={event => { if (returnFocusTo?.isConnected) { event.preventDefault(); returnFocusTo.focus(); } }}>
+      <DialogHeader>
+        <DialogTitle>Backup schedule</DialogTitle>
+        <DialogDescription className="break-words">{connection.name}</DialogDescription>
+      </DialogHeader>
+      {form}
     </DialogContent>
   </Dialog>;
 }

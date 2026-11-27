@@ -10,7 +10,7 @@ import type { Connection } from "@/types/connection";
 
 type RecoveryStatus = { from?: string; through?: string };
 
-export function PointInTimeRecoveryDialog({ connection, onClose }: { connection: Connection; onClose: () => void }) {
+export function PointInTimeRecoveryDialog({ connection, onClose = () => {}, inline = false }: { connection: Connection; onClose?: () => void; inline?: boolean }) {
   const endpoint = `/api/connections/${encodeURIComponent(connection.id)}/pitr`;
   const mysql = connection.type === "mysql";
   const [status, setStatus] = useState<RecoveryStatus | null>(null);
@@ -72,15 +72,11 @@ export function PointInTimeRecoveryDialog({ connection, onClose }: { connection:
     }
   }
 
-  return <Dialog open onOpenChange={open => { if (!open) onClose(); }}>
-    <DialogContent onCloseAutoFocus={event => {
-      const trigger = document.getElementById(`connection-actions-${connection.id}`);
-      if (trigger) { event.preventDefault(); trigger.focus(); }
-    }}>
-      <DialogHeader>
+  const content = <>
+      {inline ? <div><h2 className="text-sm font-semibold">Point-in-time recovery</h2><p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">Restore an unmasked copy in a temporary Docker database. Your source database is not overwritten.</p></div> : <DialogHeader>
         <DialogTitle>Point-in-time recovery</DialogTitle>
         <DialogDescription>Restore an unmasked copy of {connection.name} in a temporary Docker database. The source is not overwritten.</DialogDescription>
-      </DialogHeader>
+      </DialogHeader>}
       {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
       {recovered ? <div className="space-y-2">
         <label htmlFor="pitr-connection" className="text-sm font-medium">Connection string</label>
@@ -100,11 +96,17 @@ export function PointInTimeRecoveryDialog({ connection, onClose }: { connection:
       </div> : status && <p className="text-sm text-muted-foreground">Create a baseline first. The source needs {mysql ? "row-based binary logging" : "WAL archiving and replication access"}.</p>}
       {pending && <p role="status" className="text-sm text-muted-foreground">Working…</p>}
       <DialogFooter>
-        <Button variant="outline" onClick={onClose}>{recovered ? "Close" : "Cancel"}</Button>
+        {!inline && <Button variant="outline" onClick={onClose}>{recovered ? "Close" : "Cancel"}</Button>}
         {!recovered && status && (status.from
           ? <Button disabled={pending || !target} onClick={() => run("restore")}>Restore copy</Button>
           : <Button disabled={pending} onClick={() => run("prepare")}>Create baseline</Button>)}
       </DialogFooter>
-    </DialogContent>
+    </>;
+  if (inline) return <div className="space-y-5">{content}</div>;
+  return <Dialog open onOpenChange={open => { if (!open) onClose(); }}>
+    <DialogContent onCloseAutoFocus={event => {
+      const trigger = document.getElementById(`connection-actions-${connection.id}`);
+      if (trigger) { event.preventDefault(); trigger.focus(); }
+    }}>{content}</DialogContent>
   </Dialog>;
 }
