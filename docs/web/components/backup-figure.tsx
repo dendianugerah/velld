@@ -104,13 +104,13 @@ export const figureCallouts: { anchor: V; at: V }[][] = [
   ],
   [
     { anchor: P(192, -80, 196), at: [300, -170] },
-    { anchor: P(192, 55, 120), at: [60, -40] },
+    { anchor: P(196, 55, 34), at: [60, -40] },
     { anchor: P(196, 55, 42), at: [236, 146] },
   ],
   [
     { anchor: P(405, 110, 34), at: [316, 196] },
-    { anchor: P(316, 110, 14), at: [110, 245] },
-    { anchor: [280, 122], at: [312, 84] },
+    { anchor: P(370, 110, 78), at: [110, 245] },
+    { anchor: P(405, 110, 45), at: [312, 84] },
   ],
 ];
 
@@ -213,7 +213,6 @@ export function BackupFigure({ active, focus = null }: { active: number; focus?:
         <Tag at={[P(130, 110, 38)[0] + 10, P(130, 110, 38)[1] - 30]} text="prepare backup" />
       </g>
       <g className={styles.overlay} data-state={at(2)}>
-        <Tag at={[P(192, -80, 196)[0] - 120, P(192, -80, 196)[1] + 8]} text="<prefix>/<connection>/<file>" />
         <Tag at={[P(192, 55, 120)[0] - 62, P(192, 55, 120)[1] + 18]} text="fail → warning" tone="warn" />
       </g>
       <g className={styles.overlay} data-state={at(3)}>

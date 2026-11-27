@@ -7,6 +7,7 @@ import {
   Rocket,
 } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { useState } from "react";
 import { BackupStory } from "@/components/backup-story";
 import { Dither } from "@/components/ui/dither";
@@ -14,6 +15,7 @@ import styles from "./page.module.css";
 
 const repository = "https://github.com/dendianugerah/velld";
 const databaseWords = ["databases.", "Postgres.", "MySQL.", "MongoDB."];
+const databaseIcons = [null, "/images/postgresql.svg", "/images/mysql.svg", "/images/mongodb.svg"];
 const activities = [
   { word: "building.", icon: Code2 },
   { word: "shipping.", icon: Rocket },
@@ -71,7 +73,9 @@ export default function HomePage() {
                 aria-label={`${databaseWords[databaseIndex]} Swap database`}
               >
                 <span className={styles.chipIcon} aria-hidden="true">
-                  <Database />
+                  {databaseIcons[databaseIndex] ? (
+                    <Image src={databaseIcons[databaseIndex]!} alt="" width={24} height={24} className="absolute h-[57%] w-[57%] brightness-0 invert" />
+                  ) : <Database />}
                 </span>
                 <span className={styles.wordStack} aria-hidden="true">
                   {databaseWords.map((word, index) => (

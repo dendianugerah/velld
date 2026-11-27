@@ -178,8 +178,8 @@
 .base .side { fill: #f2f2f2; }
 .part[data-state="past"] :is(.top, .side, .detail) { stroke: #a3a3a3; }
 .part[data-state="on"] :is(.top, .side, .detail) { stroke: var(--ink); }
-.part[data-state="on"] .top { fill: color-mix(in oklch, var(--accent) 7%, #fff); }
-.part[data-state="on"] .side { fill: color-mix(in oklch, var(--accent) 14%, #fff); }
+.part[data-state="on"] .top { fill: color-mix(in oklch, var(--accent) 10%, #fff); }
+.part[data-state="on"] .side { fill: color-mix(in oklch, var(--accent) 18%, #fff); }
 .label {
   font-size: 12px;
   font-weight: 500;
@@ -220,10 +220,9 @@
 }
 @media (prefers-reduced-motion: no-preference) {
   .top, .side, .detail, .flow, .label, .face, .progressLine {
-    transition: stroke 400ms ease-out, fill 400ms ease-out, background-color 400ms ease-out;
+    transition: stroke 250ms ease-out, fill 250ms ease-out, background-color 250ms ease-out;
   }
-  .overlay { transition: opacity 350ms ease-out; }
-  .overlay[data-state="on"] { transition-delay: 150ms; }
+  .overlay { transition: opacity 200ms ease-out; }
   .flow[data-state="on"] { animation: flow 900ms linear infinite; }
 }
 @keyframes flow { to { stroke-dashoffset: -14; } }
