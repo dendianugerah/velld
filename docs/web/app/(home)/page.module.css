@@ -102,6 +102,10 @@
 .hero {
   position: relative;
   isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: calc(100dvh - 80px);
   max-width: 1360px;
   margin-inline: auto;
   padding: clamp(88px, 8vw, 112px) 24px 72px;
@@ -309,6 +313,7 @@
     font-size: 27px;
   }
   .hero {
+    min-height: calc(100dvh - 72px);
     padding: 80px 16px 56px;
   }
   .clickHint {
