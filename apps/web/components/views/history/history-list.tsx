@@ -17,12 +17,14 @@ import { RestoreDialog } from "./restore-dialog";
 import { BranchDialog } from "./branch-dialog";
 import { SchemaDiffDialog } from "./schema-diff-dialog";
 import { HistoryFilters } from "./history-filters";
+import { PG18Rehearsal } from "./pg18-rehearsal";
 
 export function HistoryList() {
   const { backups, isLoading, error, pagination, page, setPage, downloadBackupFile, isDownloading, search, setSearch, deleteBackupById, isDeleting } = useBackup();
   const [restore, setRestore] = useState<BackupList | null>(null);
   const [branch, setBranch] = useState<BackupList | null>(null);
   const [schemaDiff, setSchemaDiff] = useState<BackupList | null>(null);
+  const [pg18Backup, setPG18Backup] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<BackupList | null>(null);
   const [actionTrigger, setActionTrigger] = useState<HTMLElement | null>(null);
   const [dateRange, setDateRange] = useState("all");
@@ -62,11 +64,16 @@ export function HistoryList() {
                 <DropdownMenuItem disabled={backup.status !== "completed"} onClick={() => { setActionTrigger(document.getElementById(`backup-actions-${backup.id}`)); setRestore(backup); }}>Restore database…</DropdownMenuItem>
                 {["postgresql", "mysql", "mariadb", "mongodb"].includes(backup.database_type) && <DropdownMenuItem disabled={backup.status !== "completed"} onClick={() => { setActionTrigger(document.getElementById(`backup-actions-${backup.id}`)); setBranch(backup); }}>Branch from backup…</DropdownMenuItem>}
                 {["postgresql", "mysql"].includes(backup.database_type) && <DropdownMenuItem disabled={backup.status !== "completed"} onClick={() => { setActionTrigger(document.getElementById(`backup-actions-${backup.id}`)); setSchemaDiff(backup); }}>Compare schema…</DropdownMenuItem>}
+                {backup.database_type === "postgresql" && <DropdownMenuItem disabled={backup.status !== "completed"} onSelect={() => setPG18Backup(backup.id)}>PG 18 compatibility…</DropdownMenuItem>}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => { setActionTrigger(document.getElementById(`backup-actions-${backup.id}`)); setDeleting(backup); }}>Delete backup…</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
+          {pg18Backup === backup.id && <PG18Rehearsal backupId={backup.id} onClose={() => {
+            setPG18Backup(null);
+            document.getElementById(`backup-actions-${backup.id}`)?.focus();
+          }} />}
         </div>;
       }) : <div className="px-6 py-12"><h2 className="text-sm font-medium">{search || dateRange !== "all" || status !== "all" || databaseType !== "all" ? "No matching backups on this page." : "No backups yet."}</h2><p className="mt-2 text-xs text-muted-foreground">{search || dateRange !== "all" || status !== "all" || databaseType !== "all" ? "Try another page or clear the filters." : "Run a backup from Connections to get started."}</p></div>}
     </div>

@@ -173,14 +173,8 @@ func (s *BackupService) runRestoreCheck(backup *Backup, conn *connection.StoredC
 }
 
 func (s *BackupService) restoreIntoTarget(ctx context.Context, target *restoreCheckTarget, filePath string, dump dumpSummary) (string, error) {
-	readyCtx, readyCancel := context.WithTimeout(ctx, restoreCheckReadyTimeout)
-	defer readyCancel()
-	if err := waitForRestoreTarget(readyCtx, &target.conn); err != nil {
-		return "", fmt.Errorf("%s restore check container did not become ready: %w", target.image, err)
-	}
-
-	if err := createReferencedRoles(ctx, &target.conn, dump.roles); err != nil {
-		return "", fmt.Errorf("Could not prepare %s for the restore: %w", target.image, err)
+	if err := prepareRestoreTarget(ctx, target, dump); err != nil {
+		return "", err
 	}
 
 	output, err := s.restoreFile(ctx, &target.conn, filePath)
@@ -193,6 +187,19 @@ func (s *BackupService) restoreIntoTarget(ctx context.Context, target *restoreCh
 		return "", fmt.Errorf("Restore into %s finished but the data does not match the backup: %w", target.image, err)
 	}
 	return summary, nil
+}
+
+func prepareRestoreTarget(ctx context.Context, target *restoreCheckTarget, dump dumpSummary) error {
+	readyCtx, readyCancel := context.WithTimeout(ctx, restoreCheckReadyTimeout)
+	defer readyCancel()
+	if err := waitForRestoreTarget(readyCtx, &target.conn); err != nil {
+		return fmt.Errorf("%s restore check container did not become ready: %w", target.image, err)
+	}
+
+	if err := createReferencedRoles(ctx, &target.conn, dump.roles); err != nil {
+		return fmt.Errorf("Could not prepare %s for the restore: %w", target.image, err)
+	}
+	return nil
 }
 
 func backupDatabaseName(backup *Backup, conn *connection.StoredConnection) string {
@@ -425,6 +432,13 @@ func createReferencedRoles(ctx context.Context, conn *connection.StoredConnectio
 	defer db.Close()
 	for _, role := range roles {
 		if role == conn.Username {
+			continue
+		}
+		var exists bool
+		if err := db.QueryRowContext(ctx, "SELECT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = $1)", role).Scan(&exists); err != nil {
+			return fmt.Errorf("look up role %s: %w", role, err)
+		}
+		if exists {
 			continue
 		}
 		if _, err := db.ExecContext(ctx, "CREATE ROLE "+pq.QuoteIdentifier(role)); err != nil {

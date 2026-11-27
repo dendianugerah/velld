@@ -90,6 +90,9 @@ func main() {
 		settingsService,
 		cryptoService,
 	)
+	if err := backupService.InitializePG18Rehearsals(); err != nil {
+		log.Fatalf("Failed to initialize PG 18 rehearsals: %v", err)
+	}
 	go backupService.ResumeRestoreChecks()
 	go backupService.CleanExpiredBackupBranches()
 
@@ -127,6 +130,7 @@ func main() {
 	protected.HandleFunc("/backups/{id}", backupHandler.DeleteBackup).Methods("DELETE", "OPTIONS")
 	protected.HandleFunc("/backups/{id}/download", backupHandler.DownloadBackup).Methods("GET", "OPTIONS")
 	protected.HandleFunc("/backups/{id}/branch", backupHandler.CreateBackupBranch).Methods("POST", "OPTIONS")
+	protected.HandleFunc("/backups/{id}/pg18-rehearsal", backupHandler.PG18Rehearsal).Methods("GET", "POST", "OPTIONS")
 	protected.HandleFunc("/backups/{id}/schema-diff", backupHandler.SchemaDiff).Methods("POST", "OPTIONS")
 	protected.HandleFunc("/connections/{id}/upgrade", backupHandler.GetUpgradeInfo).Methods("GET", "OPTIONS")
 	protected.HandleFunc("/connections/{id}/upgrade", backupHandler.UpgradeConnection).Methods("POST", "OPTIONS")

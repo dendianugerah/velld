@@ -84,6 +84,23 @@ export async function createBackupBranch(backupId: string, signal: AbortSignal):
   return response.data;
 }
 
+export interface PG18Report {
+  target_version: string;
+  source_version?: string;
+  status: "not_run" | "pending" | "passed" | "failed";
+  message?: string;
+  duration_ms: number;
+  issues: { category: string; severity: "error" | "warning"; message: string }[];
+  omitted_issues?: number;
+}
+
+export async function getPG18Report(backupId: string, method: "GET" | "POST", signal?: AbortSignal): Promise<PG18Report> {
+  const response = await apiRequest<{ data: PG18Report }>(
+    `/api/backups/${encodeURIComponent(backupId)}/pg18-rehearsal`, { method, signal },
+  );
+  return response.data;
+}
+
 export async function compareBackupSchema(
   backupId: string,
   target: { target_backup_id: string } | { target_live: true },

@@ -1,6 +1,7 @@
 package backup
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"os"
@@ -56,6 +57,10 @@ func (s *BackupService) RestoreBackup(backupID string, connectionID string) erro
 }
 
 func (s *BackupService) restoreFile(ctx context.Context, conn *connection.StoredConnection, filePath string) ([]byte, error) {
+	return s.executeRestore(ctx, conn, filePath, false)
+}
+
+func (s *BackupService) executeRestore(ctx context.Context, conn *connection.StoredConnection, filePath string, collectPostgresDiagnostics bool) ([]byte, error) {
 	if err := s.verifyRestoreTools(conn.Type); err != nil {
 		return nil, err
 	}
@@ -75,6 +80,10 @@ func (s *BackupService) restoreFile(ctx context.Context, conn *connection.Stored
 	case "postgresql":
 		cmd = s.createPsqlRestoreCmd(conn)
 		if cmd != nil {
+			if collectPostgresDiagnostics {
+				cmd.Args = append(cmd.Args, "-q", "-v", "ON_ERROR_STOP=0")
+				cmd.Env = append(cmd.Env, "LC_ALL=C", "PGOPTIONS=-c lc_messages=C")
+			}
 			input, closeInput, err := openPostgresBackup(filePath)
 			if err != nil {
 				return nil, fmt.Errorf("open PostgreSQL backup: %w", err)
@@ -112,6 +121,12 @@ func (s *BackupService) restoreFile(ctx context.Context, conn *connection.Stored
 
 	restore := exec.CommandContext(ctx, cmd.Path, cmd.Args[1:]...)
 	restore.Stdin, restore.Env = cmd.Stdin, cmd.Env
+	if collectPostgresDiagnostics {
+		var diagnostics bytes.Buffer
+		restore.Stderr = &diagnostics
+		err := restore.Run()
+		return diagnostics.Bytes(), err
+	}
 	output, err := restore.CombinedOutput()
 	return output, s.validateRestoreOutput(conn.Type, conn.DatabaseName, output, err)
 }
