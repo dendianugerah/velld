@@ -31,21 +31,29 @@ import type { Connection, ConnectionForm as Values } from "@/types/connection";
 
 export function ConnectionForm({
   connection,
-  inputMethod,
+  initialType,
   onSuccess,
   onCancel,
 }: {
   connection?: Connection;
-  inputMethod?: "manual" | "url";
+  initialType?: DatabaseType;
   onSuccess?: (id: string) => void;
   onCancel?: () => void;
 }) {
-  const [values, setValues] = useState(() => connectionFormValues(connection));
+  const [values, setValues] = useState(() => ({
+    ...connectionFormValues(connection),
+    ...(initialType && {
+      type: initialType,
+      port: connectionPorts[initialType],
+    }),
+  }));
   const [editMethod, setEditMethod] = useState<"manual" | "url">("manual");
   const isD1 = values.type === "d1";
-  const method = inputMethod ?? (isD1 ? "manual" : editMethod);
-  const engines = Object.entries(typeLabels).filter(
-    ([type]) => !connection || (type === "d1") === (connection.type === "d1"),
+  const method = isD1 ? "manual" : editMethod;
+  const engines = Object.entries(typeLabels).filter(([type]) =>
+    initialType
+      ? type === initialType
+      : !connection || (type === "d1") === (connection.type === "d1"),
   );
   const [url, setUrl] = useState("");
   const [error, setError] = useState("");
@@ -178,30 +186,32 @@ export function ConnectionForm({
               </Field>
             ) : (
               <>
-                <Field id="connection-engine" label="Database engine">
-                  <Select
-                    id="connection-engine"
-                    aria-label="Database engine"
-                    value={values.type}
-                    onValueChange={(value) => {
-                      if (!value) return;
-                      const type = value as DatabaseType;
-                      setValues((previous) => ({
-                        ...previous,
-                        type,
-                        port: connectionPorts[type],
-                      }));
-                    }}
-                    items={Object.fromEntries(engines)}
-                    className="w-full"
-                  >
-                    {engines.map(([type, label]) => (
-                      <Select.Option key={type} value={type}>
-                        {label}
-                      </Select.Option>
-                    ))}
-                  </Select>
-                </Field>
+                {!initialType && (
+                  <Field id="connection-engine" label="Database engine">
+                    <Select
+                      id="connection-engine"
+                      aria-label="Database engine"
+                      value={values.type}
+                      onValueChange={(value) => {
+                        if (!value) return;
+                        const type = value as DatabaseType;
+                        setValues((previous) => ({
+                          ...previous,
+                          type,
+                          port: connectionPorts[type],
+                        }));
+                      }}
+                      items={Object.fromEntries(engines)}
+                      className="w-full"
+                    >
+                      {engines.map(([type, label]) => (
+                        <Select.Option key={type} value={type}>
+                          {label}
+                        </Select.Option>
+                      ))}
+                    </Select>
+                  </Field>
+                )}
                 {isD1 ? (
                   <>
                     <Field id="d1-account-id" label="Cloudflare account ID">

@@ -14,10 +14,19 @@ export function discoverDockerDatabases() {
   return apiRequest<{ containers: DockerDatabase[]; hint?: string }>('/api/connections/docker');
 }
 
-export function importDockerDatabase(id: string, database: string) {
+type DockerConnectionInput = { database: string; name: string };
+
+export function importDockerDatabase(id: string, input: DockerConnectionInput) {
   return apiRequest<{ id: string }>(`/api/connections/docker/${encodeURIComponent(id)}`, {
     method: 'POST',
-    body: JSON.stringify({ database }),
+    body: JSON.stringify(input),
+  });
+}
+
+export function testDockerDatabase(id: string, input: DockerConnectionInput) {
+  return apiRequest(`/api/connections/docker/${encodeURIComponent(id)}/test`, {
+    method: 'POST',
+    body: JSON.stringify(input),
   });
 }
 
@@ -29,14 +38,18 @@ export async function getConnection(id: string): Promise<Connection> {
   return apiRequest<Connection>(`/api/connections/${id}`);
 }
 
-export async function testConnection(connection: ConnectionForm) {
-  return apiRequest("/api/connections/test", {
+type ConnectionInput = ConnectionForm | { name: string; type: Connection['type']; connection_url: string };
+
+export async function testConnection(connection: ConnectionInput) {
+  const result = await apiRequest<{ isConnected: boolean; error?: string }>("/api/connections/test", {
     method: "POST",
     body: JSON.stringify(connection),
   });
+  if (!result.isConnected) throw new Error(result.error || "Couldn’t connect.");
+  return result;
 }
 
-export async function saveConnection(connection: ConnectionForm) {
+export async function saveConnection(connection: ConnectionInput) {
   return apiRequest<Connection>("/api/connections", {
     method: "POST",
     body: JSON.stringify(connection),

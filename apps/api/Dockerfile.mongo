@@ -11,12 +11,25 @@ COPY . .
 
 RUN CGO_ENABLED=1 GOOS=linux go build -o main cmd/api-server/main.go
 
+FROM mongo:8.0 AS mongo-tools
+
+RUN mkdir /mongo-tools && \
+    for tool in mongodump mongorestore; do \
+        bin="$(command -v "$tool")" && cp "$bin" /mongo-tools/ && \
+        ldd "$bin" | awk '/=> \// { print $3 } /^[[:space:]]*\/.*ld-linux/ { print $1 }' | xargs -r -I '{}' cp -L '{}' /mongo-tools/ || exit 1; \
+    done && mv /mongo-tools/ld-linux-*.so.* /mongo-tools/loader
+
 FROM alpine:latest
 
 # Install only MongoDB tools
 RUN apk add --no-cache \
-    sqlite-libs \
-    mongodb-tools
+    sqlite-libs
+
+COPY --from=mongo-tools /mongo-tools /opt/mongo-tools
+RUN for tool in mongodump mongorestore; do \
+        printf '#!/bin/sh\nexec /opt/mongo-tools/loader --library-path /opt/mongo-tools /opt/mongo-tools/%s "$@"\n' "$tool" > "/usr/local/bin/$tool" && \
+        chmod +x "/usr/local/bin/$tool" && "$tool" --version || exit 1; \
+    done
 
 WORKDIR /app
 

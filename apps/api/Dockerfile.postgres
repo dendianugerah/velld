@@ -16,7 +16,7 @@ FROM alpine:latest
 # Install only PostgreSQL client tools
 RUN apk add --no-cache \
     sqlite-libs \
-    postgresql-client
+    postgresql18-client
 
 WORKDIR /app
 

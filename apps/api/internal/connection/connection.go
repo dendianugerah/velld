@@ -28,9 +28,9 @@ func NewConnectionHandler(service *ConnectionService, backupService BackupServic
 }
 
 func (h *ConnectionHandler) TestConnection(w http.ResponseWriter, r *http.Request) {
-	var config ConnectionConfig
-	if err := json.NewDecoder(r.Body).Decode(&config); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	config, err := decodeConnectionRequest(r)
+	if err != nil {
+		response.SendError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -50,8 +50,8 @@ func (h *ConnectionHandler) TestConnection(w http.ResponseWriter, r *http.Reques
 }
 
 func (h *ConnectionHandler) SaveConnection(w http.ResponseWriter, r *http.Request) {
-	var config ConnectionConfig
-	if err := json.NewDecoder(r.Body).Decode(&config); err != nil {
+	config, err := decodeConnectionRequest(r)
+	if err != nil {
 		response.SendError(w, http.StatusBadRequest, err.Error())
 		return
 	}

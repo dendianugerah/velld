@@ -20,10 +20,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends mysql-server-co
 
 FROM alpine:latest
 
-# Install MySQL client tools
+# Install MariaDB client tools
 RUN apk add --no-cache \
     sqlite-libs \
-    mysql-client
+    mariadb-client
 
 COPY --from=mysql-binlog /binlog /opt/mysql-binlog
 RUN printf '%s\n' '#!/bin/sh' 'exec /opt/mysql-binlog/loader --library-path /opt/mysql-binlog /opt/mysql-binlog/mysqlbinlog "$@"' > /usr/local/bin/mysqlbinlog && \

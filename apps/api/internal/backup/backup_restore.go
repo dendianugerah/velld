@@ -256,11 +256,7 @@ func (s *BackupService) createMySQLRestoreCmd(conn *connection.StoredConnection)
 		"-u", conn.Username,
 	}
 
-	if !conn.SSL {
-		args = append(args, "--skip-ssl")
-	} else {
-		args = append(args, "--ssl-mode=REQUIRED")
-	}
+	args = append(args, mariaDBTLSArgs(conn.SSL)...)
 
 	args = append(args, conn.DatabaseName)
 

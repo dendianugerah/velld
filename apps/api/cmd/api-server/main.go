@@ -110,6 +110,7 @@ func main() {
 
 	protected.HandleFunc("/connections/test", connHandler.TestConnection).Methods("POST", "OPTIONS")
 	protected.HandleFunc("/connections/docker", dockerHandler.List).Methods("GET", "OPTIONS")
+	protected.HandleFunc("/connections/docker/{id}/test", dockerHandler.Test).Methods("POST", "OPTIONS")
 	protected.HandleFunc("/connections/docker/{id}", dockerHandler.Import).Methods("POST", "OPTIONS")
 	protected.HandleFunc("/connections/{id}/discover", connHandler.DiscoverDatabases).Methods("GET", "OPTIONS")
 	protected.HandleFunc("/connections/{id}/databases", connHandler.UpdateSelectedDatabases).Methods("PUT", "OPTIONS")

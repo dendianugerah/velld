@@ -71,12 +71,21 @@ func (h *DockerDiscoveryHandler) List(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *DockerDiscoveryHandler) Import(w http.ResponseWriter, r *http.Request) {
+	h.handleCandidate(w, r, true)
+}
+
+func (h *DockerDiscoveryHandler) Test(w http.ResponseWriter, r *http.Request) {
+	h.handleCandidate(w, r, false)
+}
+
+func (h *DockerDiscoveryHandler) handleCandidate(w http.ResponseWriter, r *http.Request, save bool) {
 	if !h.authorize(w, r) {
 		return
 	}
 
 	var req struct {
 		Database string `json:"database"`
+		Name     string `json:"name"`
 	}
 	r.Body = http.MaxBytesReader(w, r.Body, 4096)
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -84,8 +93,10 @@ func (h *DockerDiscoveryHandler) Import(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	id := mux.Vars(r)["id"]
-	h.importMu.Lock()
-	defer h.importMu.Unlock()
+	if save {
+		h.importMu.Lock()
+		defer h.importMu.Unlock()
+	}
 	candidates, _ := h.discovery.scan(r.Context())
 	for _, candidate := range candidates {
 		if candidate.ID != id {
@@ -103,6 +114,9 @@ func (h *DockerDiscoveryHandler) Import(w http.ResponseWriter, r *http.Request) 
 		if database := strings.TrimSpace(req.Database); database != "" {
 			candidate.config.Database = database
 		}
+		if name := strings.TrimSpace(req.Name); name != "" {
+			candidate.config.Name = name
+		}
 		if candidate.config.Database == "" {
 			response.SendError(w, http.StatusBadRequest, "Enter the database name to back up.")
 			return
@@ -112,6 +126,16 @@ func (h *DockerDiscoveryHandler) Import(w http.ResponseWriter, r *http.Request) 
 			return
 		}
 		service := NewConnectionService(h.repo, NewConnectionManager())
+		if !save {
+			if connected, err := service.TestConnection(candidate.config); err != nil || !connected {
+				response.SendError(w, http.StatusBadRequest, "Could not connect with the detected settings. Check the database name and credentials.")
+				return
+			}
+			w.Header().Set("Cache-Control", "no-store")
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(map[string]bool{"isConnected": true})
+			return
+		}
 		conn, err := service.SaveConnection(candidate.config, h.adminID)
 		if err != nil {
 			response.SendError(w, http.StatusBadRequest, "Could not connect with the detected settings. Check the database name and credentials, or add it manually.")

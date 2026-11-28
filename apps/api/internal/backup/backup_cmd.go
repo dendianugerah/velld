@@ -101,17 +101,20 @@ func (s *BackupService) createMySQLDumpCmd(conn *connection.StoredConnection, ou
 		"-u", conn.Username,
 	}
 
-	if !conn.SSL {
-		args = append(args, "--skip-ssl")
-	} else {
-		args = append(args, "--ssl-mode=REQUIRED")
-	}
+	args = append(args, mariaDBTLSArgs(conn.SSL)...)
 
 	args = append(args, "-r", outputPath, "--", conn.DatabaseName)
 
 	cmd := exec.Command(binPath, args...)
 	cmd.Env = append(os.Environ(), "MYSQL_PWD="+conn.Password)
 	return cmd
+}
+
+func mariaDBTLSArgs(useTLS bool) []string {
+	if useTLS {
+		return []string{"--ssl", "--ssl-verify-server-cert"}
+	}
+	return []string{"--skip-ssl"}
 }
 
 func (s *BackupService) createMongoDumpCmd(conn *connection.StoredConnection, outputPath string) (*exec.Cmd, func(), error) {

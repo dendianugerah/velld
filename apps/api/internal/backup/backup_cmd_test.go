@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 	"testing"
 
@@ -28,6 +29,20 @@ func writeTestClient(t *testing.T, dir, name, script string) {
 	t.Helper()
 	if err := os.WriteFile(filepath.Join(dir, common.GetPlatformExecutableName(name)), []byte(script), 0700); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestMariaDBToolsUseTLSFlags(t *testing.T) {
+	dir := useTestClientDir(t)
+	writeTestClient(t, dir, "mysqldump", "")
+	writeTestClient(t, dir, "mysql", "")
+	s := &BackupService{}
+	conn := &connection.StoredConnection{Type: "mysql", SSL: true}
+	for _, cmd := range []*exec.Cmd{s.createMySQLDumpCmd(conn, "backup.sql"), s.createMySQLRestoreCmd(conn)} {
+		if !slices.Contains(cmd.Args, "--ssl") || !slices.Contains(cmd.Args, "--ssl-verify-server-cert") ||
+			slices.Contains(cmd.Args, "--skip-ssl") || slices.Contains(cmd.Args, "--ssl-mode=REQUIRED") {
+			t.Fatalf("unexpected MariaDB TLS flags: %v", cmd.Args)
+		}
 	}
 }
 
