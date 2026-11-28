@@ -1,4 +1,4 @@
-import { Base, DatabaseType, StatusColor } from "./base";
+import { DatabaseType, StatusColor } from "./base";
 
 export interface Connection {
   id: string;
@@ -53,14 +53,3 @@ export type ConnectionForm = Pick<Connection,
   d1_api_token?: string;
   s3_cleanup_on_retention?: boolean;
 };
-
-export type ConnectionListResponse = Base<Connection[]>;
-
-export type SortBy = 'name' | 'status' | 'type' | 'lastBackup';
-
-export interface BackupConfig {
-  enabled: boolean;
-  schedule: string;
-  retention: string;
-  lastBackup?: string;
-}

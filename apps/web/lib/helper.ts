@@ -3,11 +3,6 @@ export const isAuthenticated = () => {
   return !!localStorage.getItem("token");
 };
 
-export const getToken = () => {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem("token");
-};
-
 export const logout = () => {
   if (typeof window === "undefined") return;
   localStorage.removeItem("token");
@@ -20,15 +15,6 @@ export function formatSize(bytes: number): string {
   const sizes = ["Bytes", "KB", "MB", "GB", "TB"];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
-}
-
-export function calculateDuration(start: string, end: string) {
-  const startTime = new Date(start);
-  const endTime = new Date(end);
-  const durationMs = endTime.getTime() - startTime.getTime();
-  const minutes = Math.floor(durationMs / 60000);
-  const seconds = Math.floor((durationMs % 60000) / 1000);
-  return `${minutes}m ${seconds}s`;
 }
 
 export const getScheduleFrequency = (cronSchedule: string | undefined) => {
