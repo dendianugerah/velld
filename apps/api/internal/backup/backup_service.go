@@ -97,7 +97,7 @@ func (s *BackupService) CreateBackup(connectionID string) (*Backup, error) {
 	}
 
 	// Check if multi-database backup is needed
-	if len(conn.SelectedDatabases) > 0 {
+	if conn.Type != "d1" && len(conn.SelectedDatabases) > 0 {
 		// Create backups for all selected databases
 		return s.createMultiDatabaseBackup(conn)
 	}
@@ -275,6 +275,8 @@ func (s *BackupService) createSingleDatabaseBackup(conn *connection.StoredConnec
 func (s *BackupService) runDump(conn *connection.StoredConnection, path string) error {
 	var cmd *exec.Cmd
 	switch conn.Type {
+	case "d1":
+		return writeD1Backup(conn, path)
 	case "postgresql":
 		cmd = s.createPgDumpCmd(conn)
 		if cmd != nil {

@@ -43,9 +43,11 @@ export function BackupDetail({id}: {id: string}) {
   }
 
   const complete = backup.status === "completed";
+  const isD1 = backup.database_type === "d1";
+  const canRestore = complete && !isD1;
   const canBranch = ["postgresql", "mysql", "mariadb", "mongodb"].includes(backup.database_type);
   const canCompare = ["postgresql", "mysql"].includes(backup.database_type);
-  const sections = [{id: "overview", label: "Overview"}, ...(complete ? [{id: "restore", label: "Restore"}, ...(canBranch ? [{id: "branch", label: "Branch"}] : []), ...(canCompare ? [{id: "compare", label: "Compare schema"}] : []), ...(backup.database_type === "postgresql" ? [{id: "pg18", label: "Test on PG 18"}] : [])] : [])];
+  const sections = [{id: "overview", label: "Overview"}, ...(complete ? [...(canRestore ? [{id: "restore", label: "Restore"}] : []), ...(canBranch ? [{id: "branch", label: "Branch"}] : []), ...(canCompare ? [{id: "compare", label: "Compare schema"}] : []), ...(backup.database_type === "postgresql" ? [{id: "pg18", label: "Test on PG 18"}] : [])] : [])];
   const view = sections.some(section => section.id === query.get("view")) ? query.get("view")! : "overview";
   const check = backup.verification_status;
   const objectKey = backup.s3_object_key;
@@ -63,7 +65,7 @@ export function BackupDetail({id}: {id: string}) {
   return <div>
     <Link href={back} className="mb-5 inline-flex items-center gap-1.5 rounded text-xs text-muted-foreground hover:text-foreground"><ArrowLeft aria-hidden="true" className="h-3.5 w-3.5" />Backup history</Link>
     <div className="mb-5 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
-      <div className="min-w-0"><h1 className="break-words text-2xl font-semibold tracking-[-0.035em]">{backup.database_name || backup.connection_name || "Backup"}</h1><p className="mt-1.5 break-words text-xs text-muted-foreground">{[backup.database_name && backup.connection_name !== backup.database_name ? backup.connection_name : "", backup.database_type, dateLabel(backup.created_at)].filter(Boolean).join(" · ")}</p></div>
+      <div className="min-w-0"><h1 className="break-words text-2xl font-semibold tracking-[-0.035em]">{backup.database_name || backup.connection_name || "Backup"}</h1><p className="mt-1.5 break-words text-xs text-muted-foreground">{[backup.database_name && backup.connection_name !== backup.database_name ? backup.connection_name : "", isD1 ? "Cloudflare D1" : backup.database_type, dateLabel(backup.created_at)].filter(Boolean).join(" · ")}</p></div>
       {complete && <KumoButton variant="secondary" disabled={isDownloading} onClick={() => downloadBackupFile(backup)}><Download aria-hidden="true" className="h-4 w-4" />{isDownloading ? "Downloading…" : "Download backup"}</KumoButton>}
     </div>
     {result.isError && <p role="alert" className="mb-4 text-xs text-destructive">Couldn’t refresh. <button className="underline" onClick={() => result.refetch()}>Try again</button></p>}
@@ -87,7 +89,7 @@ export function BackupDetail({id}: {id: string}) {
       </LayerCard>
       <div className="flex justify-end"><Button ref={deleteTrigger} variant="outline" size="sm" className="text-destructive" onClick={() => {setDeleteError(""); setDeleting(true);}}>Delete backup</Button></div>
     </section>
-    {complete && <><section hidden={view !== "restore"} aria-label="Restore backup"><RestorePanel backup={backup} /></section>{canBranch && <section hidden={view !== "branch"} aria-label="Branch from backup"><BranchPanel backup={backup} /></section>}{canCompare && <section hidden={view !== "compare"} aria-label="Compare schema"><SchemaDiffPanel backup={backup} /></section>}</>}
+    {complete && <>{canRestore && <section hidden={view !== "restore"} aria-label="Restore backup"><RestorePanel backup={backup} /></section>}{canBranch && <section hidden={view !== "branch"} aria-label="Branch from backup"><BranchPanel backup={backup} /></section>}{canCompare && <section hidden={view !== "compare"} aria-label="Compare schema"><SchemaDiffPanel backup={backup} /></section>}</>}
     {complete && backup.database_type === "postgresql" && view === "pg18" && <PG18Rehearsal backupId={id} />}
     <Dialog open={deleting} onOpenChange={open => {if (!isDeleting) setDeleting(open);}}><DialogContent onCloseAutoFocus={event => {event.preventDefault(); deleteTrigger.current?.focus();}}><DialogHeader><DialogTitle>Delete this backup?</DialogTitle><DialogDescription>{objectKey ? "This also deletes the object storage copy." : "This can’t be undone."}</DialogDescription></DialogHeader>{deleteError && <p role="alert" className="text-sm text-destructive">{deleteError}</p>}<DialogFooter><Button variant="outline" disabled={isDeleting} onClick={() => setDeleting(false)}>Cancel</Button><Button variant="destructive" disabled={isDeleting} onClick={() => deleteBackupById(id, {onSuccess: () => router.push(back), onError: error => setDeleteError(recoveryError(error, "Couldn’t delete this backup. Try again."))})}>{isDeleting ? "Deleting…" : "Delete backup"}</Button></DialogFooter></DialogContent></Dialog>
   </div>;

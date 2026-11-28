@@ -1,8 +1,12 @@
 package connection
 
 import (
+	"context"
 	"fmt"
+	"strings"
+	"time"
 
+	"github.com/dendianugerah/velld/internal/d1"
 	"github.com/google/uuid"
 )
 
@@ -19,12 +23,47 @@ func NewConnectionService(repo *ConnectionRepository, manager *ConnectionManager
 }
 
 func (s *ConnectionService) TestConnection(config ConnectionConfig) (bool, error) {
-	err := s.manager.Connect(config)
-	if err != nil {
+	if config.Type == "d1" {
+		normalizeConnection(&config)
+		_, err := s.checkConnection(config)
+		return err == nil, err
+	}
+	if err := s.manager.Connect(config); err != nil {
 		return false, err
 	}
 	defer s.manager.Disconnect(config.ID)
 	return true, nil
+}
+
+func (s *ConnectionService) checkConnection(config ConnectionConfig) (int64, error) {
+	if config.Type == "d1" {
+		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		defer cancel()
+		return d1.NewClient().DatabaseSize(ctx, d1.Credentials{
+			AccountID: config.D1AccountID, DatabaseID: config.D1DatabaseID, APIToken: config.D1APIToken,
+		})
+	}
+	if err := s.manager.Connect(config); err != nil {
+		return 0, err
+	}
+	defer s.manager.Disconnect(config.ID)
+	size, _ := s.manager.GetDatabaseSize(config.ID)
+	return size, nil
+}
+
+func normalizeConnection(config *ConnectionConfig) {
+	if config.Type != "d1" {
+		config.D1AccountID, config.D1DatabaseID, config.D1APIToken = "", "", ""
+		return
+	}
+	config.D1AccountID = strings.TrimSpace(config.D1AccountID)
+	config.D1DatabaseID = strings.TrimSpace(config.D1DatabaseID)
+	config.D1APIToken = strings.TrimSpace(config.D1APIToken)
+	config.Host, config.Port, config.SSL = d1.Endpoint, 443, true
+	config.Database = config.D1DatabaseID
+	config.Username, config.Password, config.MongoAuthSource = "", "", ""
+	config.SSHEnabled, config.SSHPort = false, 0
+	config.SSHHost, config.SSHUsername, config.SSHPassword, config.SSHPrivateKey = "", "", "", ""
 }
 
 func (s *ConnectionService) SaveConnection(config ConnectionConfig, userID uuid.UUID) (*StoredConnection, error) {
@@ -32,14 +71,10 @@ func (s *ConnectionService) SaveConnection(config ConnectionConfig, userID uuid.
 		config.ID = uuid.New().String()
 	}
 
-	if err := s.manager.Connect(config); err != nil {
-		return nil, err
-	}
-	defer s.manager.Disconnect(config.ID)
-
-	dbSize, err := s.manager.GetDatabaseSize(config.ID)
+	normalizeConnection(&config)
+	dbSize, err := s.checkConnection(config)
 	if err != nil {
-		dbSize = 0 // Set to 0 if we can't get the size
+		return nil, err
 	}
 
 	storedConn := StoredConnection{
@@ -52,6 +87,9 @@ func (s *ConnectionService) SaveConnection(config ConnectionConfig, userID uuid.
 		Password:        config.Password,
 		DatabaseName:    config.Database,
 		MongoAuthSource: config.MongoAuthSource,
+		D1AccountID:     config.D1AccountID,
+		D1DatabaseID:    config.D1DatabaseID,
+		D1APIToken:      config.D1APIToken,
 		SSL:             config.SSL,
 		SSHEnabled:      config.SSHEnabled,
 		SSHHost:         config.SSHHost,
@@ -80,20 +118,26 @@ func (s *ConnectionService) GetConnection(id string) (*StoredConnection, error) 
 }
 
 func (s *ConnectionService) UpdateConnection(config ConnectionConfig, userID uuid.UUID) (*StoredConnection, error) {
-	if err := s.manager.Connect(config); err != nil {
-		return nil, err
-	}
-	defer s.manager.Disconnect(config.ID)
-
-	dbSize, err := s.manager.GetDatabaseSize(config.ID)
-	if err != nil {
-		dbSize = 0 // Set to 0 if we can't get the size
-	}
-
 	// Get existing connection to preserve fields that aren't being updated
 	existingConn, err := s.repo.GetConnection(config.ID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get existing connection: %w", err)
+	}
+	if existingConn.Type == "d1" || config.Type == "d1" {
+		if existingConn.UserID != userID {
+			return nil, fmt.Errorf("connection not found")
+		}
+		if existingConn.Type != config.Type {
+			return nil, fmt.Errorf("cannot change the engine of a D1 connection")
+		}
+		if strings.TrimSpace(config.D1APIToken) == "" {
+			config.D1APIToken = existingConn.D1APIToken
+		}
+	}
+	normalizeConnection(&config)
+	dbSize, err := s.checkConnection(config)
+	if err != nil {
+		return nil, err
 	}
 
 	storedConn := StoredConnection{
@@ -106,6 +150,9 @@ func (s *ConnectionService) UpdateConnection(config ConnectionConfig, userID uui
 		Password:             config.Password,
 		DatabaseName:         config.Database,
 		MongoAuthSource:      config.MongoAuthSource,
+		D1AccountID:          config.D1AccountID,
+		D1DatabaseID:         config.D1DatabaseID,
+		D1APIToken:           config.D1APIToken,
 		SSL:                  config.SSL,
 		SSHEnabled:           config.SSHEnabled,
 		SSHHost:              config.SSHHost,
@@ -155,6 +202,9 @@ func (s *ConnectionService) DiscoverDatabases(id string) ([]string, error) {
 		return nil, fmt.Errorf("failed to get connection: %w", err)
 	}
 
+	if conn.Type == "d1" {
+		return []string{}, nil
+	}
 	config := ConnectionConfig{
 		ID:              conn.ID,
 		Type:            conn.Type,

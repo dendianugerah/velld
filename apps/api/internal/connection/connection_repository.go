@@ -20,6 +20,10 @@ func NewConnectionRepository(db *sql.DB, crypto *common.EncryptionService) *Conn
 }
 
 func (r *ConnectionRepository) Save(conn StoredConnection) error {
+	d1Token, err := r.encryptD1Token(conn.D1APIToken)
+	if err != nil {
+		return err
+	}
 	username, err := r.crypto.Encrypt(conn.Username)
 	if err != nil {
 		return err
@@ -66,9 +70,10 @@ func (r *ConnectionRepository) Save(conn StoredConnection) error {
 			id, name, type, host, port, username, password, 
 			database_name, ssl, database_size, created_at, updated_at, 
 			last_connected_at, user_id, status, ssh_enabled, ssh_host, 
-			ssh_port, ssh_username, ssh_password, ssh_private_key, s3_cleanup_on_retention, mongo_auth_source
+			ssh_port, ssh_username, ssh_password, ssh_private_key, s3_cleanup_on_retention, mongo_auth_source,
+			d1_account_id, d1_database_id, d1_api_token
 		) VALUES (
-			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23
+			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26
 		)`
 
 	_, err = r.db.Exec(
@@ -96,6 +101,9 @@ func (r *ConnectionRepository) Save(conn StoredConnection) error {
 		sshPrivateKey,
 		s3CleanupInt,
 		conn.MongoAuthSource,
+		conn.D1AccountID,
+		conn.D1DatabaseID,
+		d1Token,
 	)
 
 	return err
@@ -103,7 +111,7 @@ func (r *ConnectionRepository) Save(conn StoredConnection) error {
 
 func (r *ConnectionRepository) GetConnection(id string) (*StoredConnection, error) {
 	var conn StoredConnection
-	var encryptedUsername, encryptedPassword string
+	var encryptedUsername, encryptedPassword, encryptedD1Token string
 	var encryptedSSHPassword, encryptedSSHPrivateKey sql.NullString
 	var selectedDatabasesStr sql.NullString
 	var sslInt, sshEnabledInt, s3CleanupInt int
@@ -113,7 +121,8 @@ func (r *ConnectionRepository) GetConnection(id string) (*StoredConnection, erro
 		database_size, created_at, updated_at, last_connected_at, user_id, status,
 		ssh_enabled, ssh_host, ssh_port, ssh_username, ssh_password, ssh_private_key,
 		COALESCE(selected_databases, '') as selected_databases,
-		COALESCE(s3_cleanup_on_retention, 1) as s3_cleanup_on_retention, mongo_auth_source
+		COALESCE(s3_cleanup_on_retention, 1) as s3_cleanup_on_retention, mongo_auth_source,
+		d1_account_id, d1_database_id, d1_api_token
 	FROM connections WHERE id = $1`
 
 	err := r.db.QueryRow(query, id).Scan(
@@ -141,6 +150,9 @@ func (r *ConnectionRepository) GetConnection(id string) (*StoredConnection, erro
 		&selectedDatabasesStr,
 		&s3CleanupInt,
 		&conn.MongoAuthSource,
+		&conn.D1AccountID,
+		&conn.D1DatabaseID,
+		&encryptedD1Token,
 	)
 	if err != nil {
 		return nil, err
@@ -189,10 +201,20 @@ func (r *ConnectionRepository) GetConnection(id string) (*StoredConnection, erro
 		}
 	}
 
+	if encryptedD1Token != "" {
+		conn.D1APIToken, err = r.crypto.Decrypt(encryptedD1Token)
+		if err != nil {
+			return nil, err
+		}
+	}
 	return &conn, nil
 }
 
 func (r *ConnectionRepository) Update(conn StoredConnection) error {
+	d1Token, err := r.encryptD1Token(conn.D1APIToken)
+	if err != nil {
+		return err
+	}
 	username, err := r.crypto.Encrypt(conn.Username)
 	if err != nil {
 		return err
@@ -240,8 +262,9 @@ func (r *ConnectionRepository) Update(conn StoredConnection) error {
 			username = $5, password = $6, database_name = $7, 
 			ssl = $8, ssh_enabled = $9, ssh_host = $10, ssh_port = $11,
 			ssh_username = $12, ssh_password = $13, ssh_private_key = $14,
-			database_size = $15, s3_cleanup_on_retention = $16, mongo_auth_source = $17, updated_at = CURRENT_TIMESTAMP
-		WHERE id = $18`
+			database_size = $15, s3_cleanup_on_retention = $16, mongo_auth_source = $17,
+			d1_account_id = $18, d1_database_id = $19, d1_api_token = $20, updated_at = CURRENT_TIMESTAMP
+		WHERE id = $21`
 
 	_, err = r.db.Exec(
 		query,
@@ -262,10 +285,20 @@ func (r *ConnectionRepository) Update(conn StoredConnection) error {
 		conn.DatabaseSize,
 		s3CleanupInt,
 		conn.MongoAuthSource,
+		conn.D1AccountID,
+		conn.D1DatabaseID,
+		d1Token,
 		conn.ID,
 	)
 
 	return err
+}
+
+func (r *ConnectionRepository) encryptD1Token(token string) (string, error) {
+	if token == "" {
+		return "", nil
+	}
+	return r.crypto.Encrypt(token)
 }
 
 func (r *ConnectionRepository) ListByUserID(userID uuid.UUID) ([]ConnectionListItem, error) {
