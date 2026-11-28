@@ -1,17 +1,26 @@
 import type { Connection, ConnectionForm } from "@/types/connection";
 import type { DatabaseType } from "@/types/base";
 
-export const connectionPorts: Record<DatabaseType, number> = { postgresql: 5432, mysql: 3306, mongodb: 27017 };
+export const connectionPorts: Record<DatabaseType, number> = { postgresql: 5432, mysql: 3306, mongodb: 27017, d1: 443 };
 
 export function connectionFormValues(connection?: Connection): ConnectionForm {
   return {
     name: connection?.name ?? "", type: connection?.type ?? "postgresql", host: connection?.host ?? "",
     port: connection?.port ?? 5432, username: connection?.username ?? "", password: connection?.password ?? "",
     database: connection?.database_name ?? "", mongo_auth_source: connection?.mongo_auth_source ?? "",
+    d1_account_id: connection?.d1_account_id ?? "", d1_database_id: connection?.d1_database_id ?? "",
     ssl: connection?.ssl ?? true, ssh_enabled: connection?.ssh_enabled ?? false,
     ssh_host: connection?.ssh_host ?? "", ssh_port: connection?.ssh_port || 22,
     ssh_username: connection?.ssh_username ?? "", ssh_password: connection?.ssh_password ?? "",
     ssh_private_key: connection?.ssh_private_key ?? "",
+  };
+}
+
+export function d1ConnectionPayload(values: ConnectionForm): ConnectionForm {
+  return {
+    name: values.name.trim(), type: "d1", host: "", port: connectionPorts.d1, username: "", password: "", database: "", ssl: true, ssh_enabled: false,
+    d1_account_id: values.d1_account_id?.trim(), d1_database_id: values.d1_database_id?.trim(),
+    d1_api_token: values.d1_api_token?.trim(),
   };
 }
 

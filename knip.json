@@ -1,0 +1,9 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "workspaces": {
+    "apps/web": {
+      "entry": ["**/*.{test,spec}.{js,jsx,ts,tsx}"],
+      "ignoreDependencies": ["eslint-config-next", "outtrue"]
+    }
+  }
+}

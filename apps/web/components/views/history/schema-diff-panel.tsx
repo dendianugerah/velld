@@ -79,9 +79,7 @@ export function SchemaDiffPanel({ backup }: { backup: BackupList }) {
     URL.revokeObjectURL(url);
   }
   return <div className="space-y-5">
-      <div><h2 className="text-lg font-semibold tracking-tight">Compare schema</h2>
-        <p className="mt-2 max-w-2xl text-sm text-muted-foreground">Generate SQL to match this backup’s schema to a target. Nothing is applied. Tables, columns, indexes, and constraints only.</p>
-      </div>
+      <h2 className="text-lg font-semibold tracking-tight">Compare schema</h2>
       <div className="max-w-lg space-y-2 text-sm">
         <span className="block">Target</span>
         <Select aria-label="Target" value={mode} disabled={pending} onValueChange={value => { setMode(value ?? "live"); clearResult(); }} items={{ live: "Live database", backup: "Another backup" }} className={selectClass}>
@@ -102,7 +100,7 @@ export function SchemaDiffPanel({ backup }: { backup: BackupList }) {
         </div>}
       </div>}
       {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
-      {sql === "" && <p role="status" className="text-sm">No differences in the supported schema objects.</p>}
+      {sql === "" && <p role="status" className="text-sm">No differences in compared objects.</p>}
       {sql && <label className="block min-w-0 space-y-2 text-sm">
         <span>Migration SQL</span>
         <textarea ref={output} readOnly value={sql} rows={16} spellCheck={false} className="w-full rounded-md border bg-muted p-4 font-mono text-xs leading-relaxed" />

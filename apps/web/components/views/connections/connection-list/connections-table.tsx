@@ -75,8 +75,8 @@ export function ConnectionsTable({
                     {connection.name}
                   </p>
                   <p className="mt-1 break-all text-xs text-muted-foreground">
-                    {typeLabels[connection.type] ?? connection.type} ·{" "}
-                    {connection.host}
+                    {typeLabels[connection.type] ?? connection.type}
+                    {connection.type !== "d1" && ` · ${connection.host}`}
                   </p>
                 </div>
               </Link>

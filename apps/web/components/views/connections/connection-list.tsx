@@ -106,7 +106,7 @@ export function ConnectionsList() {
           </h2>
           {!connections?.length && (
             <p className="mt-2 text-[13px] text-muted-foreground">
-              Add a database to start backing it up.
+              Add a PostgreSQL, MySQL, MongoDB, or Cloudflare D1 database.
             </p>
           )}
           <div className="mt-5">

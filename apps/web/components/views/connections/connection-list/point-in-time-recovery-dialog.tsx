@@ -64,7 +64,7 @@ export function PointInTimeRecoveryDialog({
     if (
       action === "remove" &&
       !window.confirm(
-        "Remove this recovery baseline? It cannot be restored later.",
+        "Remove this recovery baseline?",
       )
     )
       return;
@@ -113,13 +113,10 @@ export function PointInTimeRecoveryDialog({
           <div className="flex items-center gap-1">
             <h2 className="text-sm font-semibold">Point-in-time recovery</h2>
             <FieldHelp label="About point-in-time recovery">
-              Restores a copy to a temporary Docker database without overwriting
-              the source.
+              Restores an unmasked copy to a temporary Docker database without
+              overwriting the source.
             </FieldHelp>
           </div>
-          <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">
-            The restored copy contains unmasked data.
-          </p>
         </div>
       ) : (
         <DialogHeader>
@@ -148,8 +145,7 @@ export function PointInTimeRecoveryDialog({
             onFocus={(event) => event.currentTarget.select()}
           />
           <p className="text-sm text-muted-foreground">
-            Expires {new Date(recovered.expires_at).toLocaleString()}. Connect
-            on the Docker host or forward the port over SSH.
+            Unmasked copy · Expires {new Date(recovered.expires_at).toLocaleString()}
           </p>
         </div>
       ) : status?.from ? (
@@ -165,7 +161,7 @@ export function PointInTimeRecoveryDialog({
             )}
           </p>
           <label htmlFor="pitr-target" className="text-sm font-medium">
-            Restore timestamp (local time)
+            {mysql ? "Restore to before (local time)" : "Restore timestamp (local time)"}
           </label>
           <Input
             id="pitr-target"
@@ -175,11 +171,6 @@ export function PointInTimeRecoveryDialog({
             disabled={pending}
             onChange={(event) => setTarget(event.target.value)}
           />
-          {mysql && (
-            <p className="text-sm text-muted-foreground">
-              MySQL replays events before the selected second.
-            </p>
-          )}
           <div className="flex flex-wrap gap-2">
             {mysql && (
               <Button

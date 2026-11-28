@@ -1,501 +1,93 @@
 ---
 title: Installation
-description: Get started with Velld in minutes
+description: Run Velld with Docker Compose or develop locally with Bun and Go.
 ---
 
-import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
-import { Callout } from 'fumadocs-ui/components/callout';
+## Install with your agent
 
-# Installation
+```text title="Velld install prompt"
+Install and verify self-hosted Velld on this machine. Use https://github.com/dendianugerah/velld and read its .env.example and Docker Compose files first.
 
-Velld is designed to be simple to install and run. Choose the installation method that works best for you.
+Use docker-compose.prebuilt.yml for published images, or build docker-compose.yml from the requested Git ref. Keep any existing .env, credentials, and volumes. On a fresh install, generate separate JWT_SECRET and ENCRYPTION_KEY values with openssl rand -hex 32 and set unique admin credentials. Don't print secrets.
 
-## Prerequisites
+Set NEXT_PUBLIC_API_URL to an API URL my browser can reach (default: http://localhost:8080). For local use, bind published ports to 127.0.0.1 in the chosen Compose file. Ask before enabling Docker socket access or remote access. Never delete volumes or connect to production.
 
-Before you begin, ensure you have:
-
-- **Docker** and **Docker Compose** installed
-- At least **512MB RAM** and **1GB disk space**
-- A database you want to backup (PostgreSQL, MySQL, or MongoDB)
-
-<Callout type="info">
-  Velld only installs the database clients you need. This keeps the Docker image lightweight and secure.
-</Callout>
-
-## Quick Start
-
-**Fastest way** - Pull and run pre-built images directly (no git clone needed):
-
-```bash
-# Pull images
-docker pull ghcr.io/dendianugerah/velld/api:latest
-docker pull ghcr.io/dendianugerah/velld/web:latest
-
-# Create .env file
-cat > .env << EOF
-NEXT_PUBLIC_API_URL=http://localhost:8080
-JWT_SECRET=$(openssl rand -hex 32)
-ENCRYPTION_KEY=$(openssl rand -hex 32)
-ADMIN_USERNAME_CREDENTIAL=admin
-ADMIN_PASSWORD_CREDENTIAL=changeme
-EOF
-
-# Run API
-docker run -d \
-  --name velld-api \
-  -p 8080:8080 \
-  --env-file .env \
-  -v velld-data:/app/data \
-  -v velld-backups:/app/backups \
-  ghcr.io/dendianugerah/velld/api:latest
-
-# Run Web
-docker run -d \
-  --name velld-web \
-  -p 3000:3000 \
-  -e NEXT_PUBLIC_API_URL=http://localhost:8080 \
-  ghcr.io/dendianugerah/velld/web:latest
+Start the stack with docker compose up -d, using -f with the chosen file and --build for a source install. Check Compose status, GET /health, and the web URL. Report how to sign in without printing credentials. Use Bun for JavaScript tasks.
 ```
 
-<Callout type="warning">
-  **Important:** The data directory has changed from `/app/internal/database` to `/app/data`.
-</Callout>
+## Docker Compose
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
-
----
-
-## Using Docker Compose
-
-If you prefer docker-compose:
+On a host with Docker Engine or Docker Desktop, Compose v2, Git, and OpenSSL:
 
 ```bash
 git clone https://github.com/dendianugerah/velld.git
 cd velld
-cp .env.example .env
+umask 077
+cp -n .env.example .env
+```
+
+Edit `.env` before starting:
+
+| Variable | Value |
+| --- | --- |
+| `JWT_SECRET` | A random secret for signing sessions. Generate with `openssl rand -hex 32`. |
+| `ENCRYPTION_KEY` | Exactly 64 hexadecimal characters. Run `openssl rand -hex 32` again and keep this value with your recovery materials. |
+| `ADMIN_USERNAME_CREDENTIAL`, `ADMIN_PASSWORD_CREDENTIAL` | Set both to create a login on first startup. Changing the variables does not reset an existing user's password. |
+| `NEXT_PUBLIC_API_URL` | The URL reachable **from your browser**, not the Compose service name. Use `http://localhost:8080` on the same machine or your HTTPS API URL for remote access. |
+| `DB_PATH` | Optional SQLite path. Defaults to `/app/data/velld.db` in Compose; keep it in a persistent mount. |
+| `RESTORE_CHECK_ENABLED` | Set to `false` to disable automatic restore checks. |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM` | Optional email settings. Values set in the environment override the corresponding UI settings. |
+| `VELLD_PITR_WAL_DIR` | Required only for PostgreSQL [point-in-time recovery](/docs/restore-best-practices#point-in-time-recovery). Set it to the WAL archive mount path inside the API container. |
+
+Put the generated values in `.env`, not the shell command that produced them. Don't commit the file.
+
+```bash
 docker compose -f docker-compose.prebuilt.yml up -d
+docker compose -f docker-compose.prebuilt.yml ps
+curl -fsS http://localhost:8080/health
 ```
 
----
+Open [http://localhost:3000](http://localhost:3000) and sign in with the admin credentials you set. The shipped port mappings are not loopback-only. For local-only access, replace the API mapping with `"127.0.0.1:8080:8080"` and the web mapping with `"127.0.0.1:3000:3000"` in your chosen Compose file before starting. Use HTTPS for remote access.
 
-## Build from Source
-
-If you want to build the images yourself:
+The prebuilt file uses GHCR `latest` images published from the default branch. For features on another Git ref, check out that ref and build both services:
 
 ```bash
-git clone https://github.com/dendianugerah/velld.git
-cd velld
-cp .env.example .env
-docker compose up -d
-```
-
----
-
-## Local Development
-
-To work on Velld without Docker, install [Bun](https://bun.com/), Node.js 20+, Go 1.25+, and a C compiler for SQLite. Clone the repository and prepare your local configuration:
-
-```bash
-git clone https://github.com/dendianugerah/velld.git
-cd velld
-cp .env.example .env
-```
-
-Replace the `JWT_SECRET` and `ENCRYPTION_KEY` placeholders with separate outputs from `openssl rand -hex 32`, and set the admin username and password you'll use to sign in. From the repository root, run:
-
-```bash
-bun install
-bun run dev
-```
-
-The web app runs at [localhost:3000](http://localhost:3000) and the API at [localhost:8080](http://localhost:8080/health). Use `bun run dev:web` or `bun run dev:api` to start only one. Use `bun run build` to build both, or `bun run build:web` and `bun run build:api` to build them separately.
-
-The docs site has its own dependencies. From the repository root, run `bun install --cwd docs/web`, then `bun run dev:docs` to serve the site at [localhost:3001](http://localhost:3001) or `bun run build:docs` to build it. After installing dependencies for both projects, use `bun run dev:all` to start the web app, API, and docs together.
-
----
-
-## Database-Specific Installation
-
-Choose only the database client you need to keep your installation lightweight:
-
-<Tabs items={['PostgreSQL', 'MySQL', 'MongoDB']}>
-  <Tab value="PostgreSQL">
-    ### PostgreSQL Only
-
-    **1. Create a custom Dockerfile**
-
-    Create `apps/api/Dockerfile.postgres`:
-
-    ```dockerfile
-    FROM golang:1.25-alpine AS builder
-
-    WORKDIR /app
-
-    RUN apk add --no-cache gcc musl-dev
-
-    COPY go.mod go.sum ./
-    RUN go mod download
-
-    COPY . .
-
-    RUN CGO_ENABLED=1 GOOS=linux go build -o main cmd/api-server/main.go
-
-    FROM alpine:latest
-
-    # Install only PostgreSQL client
-    RUN apk add --no-cache \
-        sqlite-libs \
-        postgresql-client
-
-    WORKDIR /app
-
-    COPY --from=builder /app/main .
-    COPY --from=builder /app/internal/database ./internal/database
-
-    EXPOSE 8080
-
-    CMD ["./main"]
-    ```
-
-    **2. Update docker-compose.yml**
-
-    ```yaml
-    services:
-      api:
-        build:
-          context: ./apps/api
-          dockerfile: Dockerfile.postgres  # Use PostgreSQL-only Dockerfile
-        ports:
-          - "8080:8080"
-        env_file:
-          - .env
-        volumes:
-          - api_data:/app/data
-          - backup_data:/app/backups
-        restart: unless-stopped
-
-      web:
-        build:
-          context: .
-          dockerfile: apps/web/Dockerfile
-        ports:
-          - "3000:3000"
-        environment:
-          NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
-        depends_on:
-          - api
-        restart: unless-stopped
-
-    volumes:
-      api_data:
-      backup_data:
-    ```
-
-    **3. Start the services**
-
-    ```bash
-    docker compose up -d
-    ```
-
-    <Callout type="success">
-      Your PostgreSQL-only installation is now running! Image size: ~50MB lighter.
-    </Callout>
-  </Tab>
-
-  <Tab value="MySQL">
-    ### MySQL Only
-
-    **1. Create a custom Dockerfile**
-
-    Create `apps/api/Dockerfile.mysql`:
-
-    ```dockerfile
-    FROM golang:1.25-alpine AS builder
-
-    WORKDIR /app
-
-    RUN apk add --no-cache gcc musl-dev
-
-    COPY go.mod go.sum ./
-    RUN go mod download
-
-    COPY . .
-
-    RUN CGO_ENABLED=1 GOOS=linux go build -o main cmd/api-server/main.go
-
-    FROM alpine:latest
-
-    # Install only MySQL client
-    RUN apk add --no-cache \
-        sqlite-libs \
-        mysql-client
-
-    WORKDIR /app
-
-    COPY --from=builder /app/main .
-    COPY --from=builder /app/internal/database ./internal/database
-
-    EXPOSE 8080
-
-    CMD ["./main"]
-    ```
-
-    **2. Update docker-compose.yml**
-
-    ```yaml
-    services:
-      api:
-        build:
-          context: ./apps/api
-          dockerfile: Dockerfile.mysql  # Use MySQL-only Dockerfile
-        ports:
-          - "8080:8080"
-        env_file:
-          - .env
-        volumes:
-          - api_data:/app/data
-          - backup_data:/app/backups
-        restart: unless-stopped
-
-      web:
-        build:
-          context: .
-          dockerfile: apps/web/Dockerfile
-        ports:
-          - "3000:3000"
-        environment:
-          NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
-        depends_on:
-          - api
-        restart: unless-stopped
-
-    volumes:
-      api_data:
-      backup_data:
-    ```
-
-    **3. Start the services**
-
-    ```bash
-    docker compose up -d
-    ```
-
-    <Callout type="success">
-      Your MySQL-only installation is now running! Image size: ~45MB lighter.
-    </Callout>
-  </Tab>
-
-  <Tab value="MongoDB">
-    ### MongoDB Only
-
-    **1. Create a custom Dockerfile**
-
-    Create `apps/api/Dockerfile.mongo`:
-
-    ```dockerfile
-    FROM golang:1.25-alpine AS builder
-
-    WORKDIR /app
-
-    RUN apk add --no-cache gcc musl-dev
-
-    COPY go.mod go.sum ./
-    RUN go mod download
-
-    COPY . .
-
-    RUN CGO_ENABLED=1 GOOS=linux go build -o main cmd/api-server/main.go
-
-    FROM alpine:latest
-
-    # Install only MongoDB tools
-    RUN apk add --no-cache \
-        sqlite-libs \
-        mongodb-tools
-
-    WORKDIR /app
-
-    COPY --from=builder /app/main .
-    COPY --from=builder /app/internal/database ./internal/database
-
-    EXPOSE 8080
-
-    CMD ["./main"]
-    ```
-
-    **2. Update docker-compose.yml**
-
-    ```yaml
-    services:
-      api:
-        build:
-          context: ./apps/api
-          dockerfile: Dockerfile.mongo  # Use MongoDB-only Dockerfile
-        ports:
-          - "8080:8080"
-        env_file:
-          - .env
-        volumes:
-          - api_data:/app/data
-          - backup_data:/app/backups
-        restart: unless-stopped
-
-      web:
-        build:
-          context: .
-          dockerfile: apps/web/Dockerfile
-        ports:
-          - "3000:3000"
-        environment:
-          NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
-        depends_on:
-          - api
-        restart: unless-stopped
-
-    volumes:
-      api_data:
-      backup_data:
-    ```
-
-    **3. Start the services**
-
-    ```bash
-    docker compose up -d
-    ```
-
-    <Callout type="success">
-      Your MongoDB-only installation is now running! Image size: ~60MB lighter.
-    </Callout>
-  </Tab>
-</Tabs>
-
----
-
-## Environment Configuration
-
-Create a `.env` file in the project root:
-
-```bash
-cp .env.example .env
-```
-
-### Required Variables
-
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `NEXT_PUBLIC_API_URL` | API server URL (must be accessible from browser) | `http://localhost:8080` |
-| `JWT_SECRET` | JWT signing key - generate with `openssl rand -hex 32` | 64 hex characters |
-| `ENCRYPTION_KEY` | Database credential encryption key - generate with `openssl rand -hex 32` | 64 hex characters |
-| `ADMIN_USERNAME_CREDENTIAL` | Admin username for initial setup | - |
-| `ADMIN_PASSWORD_CREDENTIAL` | Admin password for initial setup | - |
-
-<Callout type="error">
-  **Production:** Always set `JWT_SECRET` and `ENCRYPTION_KEY` manually. While they auto-generate if missing, changing keys will log out users and break database connections.
-  
-  ```bash
-  # Generate secure keys
-  openssl rand -hex 32  # Run twice, once for each
-  ```
-</Callout>
-
-### Admin account
-
-Set both admin credentials before the first start so you can log in. Existing accounts continue to work without these variables, and public registration is unavailable. Changing the environment password does not change an existing account's password.
-
-### Optional: Email Notifications
-
-Configure SMTP to get notified when backups fail. You can configure these either:
-- **Via UI**: Go to Settings → Notifications (recommended for most users)
-- **Via Environment Variables**: Set below variables (useful for Docker/Kubernetes deployments)
-
-When configured via environment variables, these settings become **read-only in the UI** and cannot be changed from the web interface.
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `SMTP_HOST` | SMTP server hostname | - |
-| `SMTP_PORT` | SMTP port | `587` |
-| `SMTP_USER` | SMTP username/email | - |
-| `SMTP_PASSWORD` | SMTP password (use [App Password](https://support.google.com/accounts/answer/185833) for Gmail) | - |
-| `SMTP_FROM` | From address | - |
-
-### Advanced
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `DB_PATH` | Path to Velld's SQLite database | `/app/data/velld.db` |
-| `PORT` | API server port | `8080` |
-
-<Callout type="info">
-  **Data Persistence:** Ensure `/app/data` is mounted as a volume to persist your database.
-</Callout>
-
----
-
-## Verify Installation
-
-Once the services are running, verify everything works:
-
-1. **Check service status**
-   ```bash
-   docker compose ps
-   ```
-
-2. **View logs**
-   ```bash
-   docker compose logs -f
-   ```
-
-3. **Access the web interface**
-   
-   Open [http://localhost:3000](http://localhost:3000) in your browser.
-
-4. **Sign in**
-   
-   Log in with the admin username and password you configured, or use your existing account. When both admin credentials are set, the API creates that account on startup if the username does not already exist.
-
----
-
-## Updating Velld
-
-Redis backups are no longer supported. Before upgrading, disable any Redis backup schedules and move those backups to another tool. This update does not delete existing backup records or files.
-
-To update to the latest version:
-
-```bash
-# Pull the latest changes
-git pull origin main
-
-# Rebuild and restart
-docker compose down
 docker compose up -d --build
 ```
 
----
+Both Compose files persist SQLite in `api_data` and backup files in `backup_data`. Back up both volumes and `.env` before updating. Never use `docker compose down -v` on an installation you want to keep.
 
-## Troubleshooting
+## Enable Docker features
 
-### Services won't start
+On a trusted Docker host with `/var/run/docker.sock`, add the discovery overlay **after** your base Compose file:
 
 ```bash
-# Check logs for errors
-docker compose logs api
-docker compose logs web
-
-# Ensure ports 3000 and 8080 are available
-lsof -i :3000
-lsof -i :8080
+docker compose -f docker-compose.prebuilt.yml -f docker-compose.discovery.yml up -d
 ```
 
-### Database connection fails
+For source builds, use `-f docker-compose.yml -f docker-compose.discovery.yml up -d --build`. Keep the same file flags for later Compose commands. The overlay mounts the socket into the API and adds the Docker host gateway. It enables Docker discovery and lets the API start containers for restore checks, branches, schema comparisons, PG 18 rehearsals, upgrades, and PITR restores.
 
-- Ensure your database is accessible from the Docker container
-- Use `host.docker.internal` instead of `localhost` to connect to databases on your host machine
-- Check firewall rules
+Docker socket access gives Velld control of the Docker daemon even though the mount is read-only. Leave the overlay off if you don't need these features.
 
-### Backup fails
+## Local development
 
-- Verify the database client is installed (check which Dockerfile you're using)
-- Test connection credentials manually
-- Check backup directory permissions
+Use Bun and Go 1.25 or newer with a C toolchain for SQLite. Install `pg_dump`/`psql`, the MariaDB client tools, or `mongodump`/`mongorestore` locally for the engines you use. The full API image bundles database clients.
 
----
+From the repository root, with `.env` configured:
+
+```bash
+bun install --frozen-lockfile
+bun run dev
+```
+
+For the docs site alone:
+
+```bash
+cd docs/web
+bun install --frozen-lockfile
+bun run dev --port 3001
+```
+
+## Update Velld
+
+Back up the volumes and secrets first. With prebuilt images, use `docker compose -f docker-compose.prebuilt.yml pull`, then repeat your original `up -d` command, including any overlays. With source builds, check out the intended ref and repeat your `up -d --build` command. Check `/health` after restarting.

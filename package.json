@@ -11,13 +11,18 @@
     "build": "bun run build:api && bun run build:web",
     "build:web": "bun run --cwd apps/web build",
     "build:api": "go -C apps/api build -o ./bin/api-server ./cmd/api-server",
-    "build:docs": "bun run --cwd docs/web build"
+    "build:docs": "bun run --cwd docs/web build",
+    "check": "bun run check:api && bun run check:web",
+    "check:api": "go -C apps/api vet ./... && go -C apps/api test ./...",
+    "check:web": "bun run --cwd apps/web lint && bun run --cwd apps/web typecheck && bun test apps/web && bun run check:dead-code",
+    "check:dead-code": "knip --workspace apps/web --include files,dependencies,unlisted,exports,types"
   },
   "overrides": {
     "postcss": "^8.5.23",
     "sharp": "^0.35.5"
   },
   "devDependencies": {
-    "concurrently": "^9.2.1"
+    "concurrently": "^9.2.1",
+    "knip": "5.82.1"
   }
 }

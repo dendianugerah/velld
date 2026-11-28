@@ -36,9 +36,6 @@ export function ConnectionDetail({ id }: { id: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const requested = searchParams.get("tab");
-  const section = sections.some((item) => item.id === requested)
-    ? requested
-    : "overview";
   const detail = useConnection(id);
   const list = useConnections();
   const { createBackup, isCreating } = useBackup();
@@ -47,6 +44,13 @@ export function ConnectionDetail({ id }: { id: string }) {
     ...detail.data,
     ...list.connections?.find((value) => value.id === id),
   };
+  const isD1 = connection?.type === "d1";
+  const visibleSections = sections.filter(
+    (item) => !isD1 || item.id !== "recovery",
+  );
+  const section = visibleSections.some((item) => item.id === requested)
+    ? requested
+    : "overview";
   const href = `/connections/${id}`;
   const historyHref = `/history?connection_id=${encodeURIComponent(id)}`;
 
@@ -91,8 +95,8 @@ export function ConnectionDetail({ id }: { id: string }) {
                   {connection.name}
                 </h1>
                 <p className="mt-1.5 break-all text-[13px] text-muted-foreground">
-                  {typeLabels[connection.type] ?? connection.type} ·{" "}
-                  {connection.host}:{connection.port}
+                  {typeLabels[connection.type] ?? connection.type}
+                  {!isD1 && ` · ${connection.host}:${connection.port}`}
                 </p>
               </div>
             </div>
@@ -104,7 +108,7 @@ export function ConnectionDetail({ id }: { id: string }) {
             aria-label="Connection sections"
             className={cn("mb-8 mt-8", connectionSectionsClass)}
           >
-            {sections.map((item) => (
+            {visibleSections.map((item) => (
               <Link
                 key={item.id}
                 href={item.id === "overview" ? href : `${href}?tab=${item.id}`}
@@ -132,10 +136,12 @@ export function ConnectionDetail({ id }: { id: string }) {
                 }
               />
             </dl>
-            <DatabaseSelection
-              key={`${id}:${JSON.stringify(connection.selected_databases)}`}
-              connection={connection}
-            />
+            {!isD1 && (
+              <DatabaseSelection
+                key={`${id}:${JSON.stringify(connection.selected_databases)}`}
+                connection={connection}
+              />
+            )}
             {section === "overview" && <ConnectionBackups connectionId={id} />}
           </div>
           <section
@@ -207,28 +213,43 @@ export function ConnectionDetail({ id }: { id: string }) {
                   label="Engine"
                   value={typeLabels[connection.type] ?? connection.type}
                 />
-                <Config label="Host" value={connection.host} />
-                <Config label="Port" value={String(connection.port)} />
-                <Config
-                  label="Username"
-                  value={connection.username || "Not set"}
-                />
-                <Config
-                  label="Default database"
-                  value={connection.database_name || "Not set"}
-                />
-                <Config
-                  label="TLS"
-                  value={connection.ssl ? "Enabled" : "Disabled"}
-                />
-                <Config
-                  label="SSH tunnel"
-                  value={
-                    connection.ssh_enabled
-                      ? `${connection.ssh_username}@${connection.ssh_host}:${connection.ssh_port}`
-                      : "Disabled"
-                  }
-                />
+                {isD1 ? (
+                  <>
+                    <Config
+                      label="Cloudflare account ID"
+                      value={connection.d1_account_id ?? ""}
+                    />
+                    <Config
+                      label="D1 database ID"
+                      value={connection.d1_database_id ?? ""}
+                    />
+                  </>
+                ) : (
+                  <>
+                    <Config label="Host" value={connection.host} />
+                    <Config label="Port" value={String(connection.port)} />
+                    <Config
+                      label="Username"
+                      value={connection.username || "Not set"}
+                    />
+                    <Config
+                      label="Default database"
+                      value={connection.database_name || "Not set"}
+                    />
+                    <Config
+                      label="TLS"
+                      value={connection.ssl ? "Enabled" : "Disabled"}
+                    />
+                    <Config
+                      label="SSH tunnel"
+                      value={
+                        connection.ssh_enabled
+                          ? `${connection.ssh_username}@${connection.ssh_host}:${connection.ssh_port}`
+                          : "Disabled"
+                      }
+                    />
+                  </>
+                )}
               </dl>
             </div>
             <div className="flex flex-col justify-between gap-4 border-t pt-7 sm:flex-row sm:items-center">

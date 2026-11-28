@@ -1,0 +1,34 @@
+name: Web checks
+
+on:
+  push:
+    branches: [main, develop, 'dendi/**']
+    paths: &web_paths
+      - 'apps/web/**'
+      - 'package.json'
+      - 'bun.lock'
+      - 'bunfig.toml'
+      - 'knip.json'
+      - '.github/workflows/web-check.yml'
+  pull_request:
+    branches: [main, develop, 'dendi/**']
+    paths: *web_paths
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: '1.4.5'
+      - run: bun install --frozen-lockfile
+      - run: bun run check:web
+      - run: bun run build:web

@@ -1,29 +1,12 @@
 ---
 title: Introduction
-description: Backups, schedules, and restores. All in one place.
+description: Self-hosted database backups, restore verification, and recovery.
 ---
 
-Velld is a self-hosted, open-source tool for managing database backups. Connect your databases, schedule backups, and keep track of them from one place.
+Velld backs up PostgreSQL, MySQL, and MongoDB to local disk and optionally to S3-compatible storage or Cloudflare R2.
 
-## Get started
+1. [Install Velld](/docs/installation), or [paste the install prompt into your agent](/docs/installation#install-with-your-agent).
+2. [Add a database connection](/docs/databases) and [run your first backup](/docs/quick-start).
+3. [Verify a restore or practice recovery](/docs/restore-best-practices) before relying on a backup.
 
-1. [Install Velld](/docs/installation) on your server.
-2. Follow the [quick start](/docs/quick-start) to connect a database and create your first backup.
-3. Read the [restore best practices](/docs/restore-best-practices) to prepare for recovery.
-
-## Supported databases
-
-Velld supports PostgreSQL, MySQL, MariaDB, and MongoDB.
-
-## How it works
-
-1. **Connect** your database and test the connection.
-2. **Back up** on demand or set a schedule and retention policy.
-3. **Monitor** backup history and receive notifications when scheduled backups fail.
-4. **Restore** using your backup files and the appropriate database tools.
-
-Credentials are encrypted, and Velld also provides a REST API for managing backups.
-
-## Need help?
-
-Check the [troubleshooting guide](/docs/troubleshooting) or visit [Velld on GitHub](https://github.com/dendianugerah/velld) to report an issue or contribute.
+Machine-readable docs: [llms.txt](/llms.txt) · [full text](/llms-full.txt).

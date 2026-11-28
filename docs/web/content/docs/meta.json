@@ -3,6 +3,7 @@
   "pages": [
     "index",
     "installation",
+    "databases",
     "quick-start",
     "restore-best-practices",
     "troubleshooting"

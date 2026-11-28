@@ -132,11 +132,6 @@ func (tunnel *SSHTunnel) Stop() error {
 	return nil
 }
 
-// GetLocalAddr returns the local address (host:port) to connect to
-func (tunnel *SSHTunnel) GetLocalAddr() string {
-	return tunnel.Local.String()
-}
-
 // GetLocalPort returns just the local port number
 func (tunnel *SSHTunnel) GetLocalPort() int {
 	return tunnel.Local.Port

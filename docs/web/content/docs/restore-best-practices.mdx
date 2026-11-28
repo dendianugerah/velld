@@ -1,114 +1,53 @@
 ---
-title: Restore Best Practices
-description: Safe database restoration practices for production environments.
+title: Restore and recovery
+description: Verify a backup, create a masked branch, rehearse upgrades, or recover to a timestamp.
 ---
 
-# Database Restore Best Practices
+## Restore to an empty database
 
-## The Rule
+1. Create a new, empty database of the same engine and add it as a separate [connection](/docs/databases).
+2. In **History**, open the completed backup, select **Restore**, and choose the new target. Confirm the destination before starting.
+3. Check the restored data and run application smoke tests. For a production cutover, switch the application only after validation and retain a rollback path.
 
-**Always restore to an empty database.** This prevents conflicts, ensures atomic operations, and allows safe rollback.
+Manual restore is not a merge or a rollback button. Do not run it against your existing production database. A target may be partially populated after a failed restore; retry into a fresh target.
 
-## Why
+## Restore checks
 
-Restoring to a database with existing tables causes:
-- Schema conflicts and partial restores
-- Data corruption from mixed sources
-- Foreign key violations
+With [Docker access](/docs/installation#enable-docker-features), Velld automatically tries restoring completed backups into disposable database containers, one at a time. In **History**, open a backup's **Overview** to see the check result and its output. **Skipped** is not a pass; inspect the output, especially if the API cannot reach Docker. A passed check verifies the test restore, not whether your application works or your production target has the same extensions and roles.
 
-An empty database guarantees the restore either fully succeeds or fully fails—no mixed states.
+## Create a masked branch
 
----
+1. Open a completed backup in **History → Branch** and create a branch.
+2. Copy its generated connection string and connect from the Docker host. The address uses `127.0.0.1`; a remote client needs a tunnel to that host.
+3. Run tests on the copy. The branch expires after 24 hours; do not use it as persistent storage.
 
-## How to Restore Safely
+Velld masks values it recognizes before issuing credentials. This is not a guarantee that all sensitive data is removed. Review the copy before sharing it.
 
-### Development
+## Compare schemas
 
-```bash
-DROP DATABASE myapp_dev;
-CREATE DATABASE myapp_dev;
-# Restore via Velld: https://velld.vercel.app
-```
+For a completed PostgreSQL or MySQL backup, select **Compare schema**. Compare it against another completed backup of the same engine or against the original connection's live database. Velld restores the backup into a disposable container to inspect its schema. The output is SQL from the source backup schema toward the chosen target schema, not a row diff. Review and test it separately; Velld does not apply it.
 
-### Production
+## Test on PG 18
 
-```bash
-# 1. Create new empty database
-CREATE DATABASE myapp_production_new;
+Open a completed PostgreSQL backup and select **Test on PG 18**. The rehearsal restores the dump into a disposable PostgreSQL 18 container and reports restore diagnostics such as extension, role, and compatibility issues. Fix blockers, take a fresh backup, and test again. This doesn't change the source database or guarantee application compatibility.
 
-# 2. Restore to new database (via Velld)
+## Safe upgrades
 
-# 3. Test thoroughly
+Use **Connections → connection → Recovery → Safe upgrades** for a database container that Velld can match on its Docker daemon. Choose a different supported image for that engine, such as `postgres:18` for a supported PostgreSQL container running `postgres:17`.
 
-# 4. Switch application connection string
+Plan downtime and stop application writes **before** the operation. It snapshots the database before stopping the original container, restores into a replacement, and checks container health plus object and record counts. If replacement or verification fails, Velld attempts to restart the original and reports whether rollback was verified. Check the result and smoke-test the application before resuming writes. Keep an independent backup; these checks don't prove the whole application or cluster was migrated.
 
-# 5. Drop old database after verification
-DROP DATABASE myapp_production;
-```
+## Point-in-time recovery
 
-**Why Blue-Green:**
-- Zero downtime
-- Safe rollback (just switch back)
-- Production data untouched until verified
+PITR uses a baseline and database logs, not the ordinary scheduled dumps. It supports PostgreSQL and MySQL. Set the connection's database name first.
 
----
+- **PostgreSQL 13+:** Use a primary with WAL archiving enabled, no custom tablespaces, and credentials allowed to run `pg_basebackup`. Configure `archive_command` on the source to preserve the WAL files in the connection's own directory. Mount the archive root into the API and set `VELLD_PITR_WAL_DIR` to that mount. If it is `/wal`, Velld reads `/wal/<connection-id>`. Keep the segments needed from the baseline through your target.
+- **MySQL:** Use InnoDB tables and uncompressed row-based binary logging (`log_bin=ON`, `binlog_format=ROW`, `binlog_transaction_compression=OFF`). Give the connection access to read binary logs and archive them before the source purges them.
 
-## Troubleshooting
+Open **Connections → connection → Recovery → Point-in-time recovery**:
 
-### Restore to a timestamp
+1. Choose **Create baseline**. For MySQL, use **Archive new logs** to extend coverage.
+2. Choose a past local timestamp at or after the baseline. MySQL restores to before the selected second.
+3. Choose **Restore copy**. Docker is required. The **unmasked** copy runs on the Docker host with temporary credentials and expires after 24 hours. The source is unchanged.
 
-In **Connections → Actions → Point-in-time recovery**, create a recovery
-baseline before the writes you might need to recover. Enter a timestamp to
-restore an **unmasked** copy. Velld never overwrites the source. The copy
-listens on the Docker host’s loopback address and expires after 24 hours.
-Mount `/var/run/docker.sock` on the API to use this feature.
-
-- **PostgreSQL 13+:** Use a primary with no custom tablespaces, allow physical
-  replication for the connection’s login, and install a compatible
-  `pg_basebackup` client. Set `archive_mode=on` and configure `archive_command`
-  to publish completed segments atomically to a private per-source directory.
-  Mount that archive read-only on the API, set `VELLD_PITR_WAL_DIR` to the
-  parent directory, and name the archive subdirectory with the Velld connection
-  ID. Keep the WAL from the baseline through the target; PostgreSQL must see
-  enough WAL to reach the requested time. Use a new baseline after changing
-  timelines. The baseline contains the entire cluster and requires a compatible
-  PostgreSQL recovery image; Velld issues a login for the configured database.
-- **MySQL 8:** Use InnoDB and uncompressed row-format binlogs. The login needs
-  dump access (including the privileges needed for `--master-data`) and
-  replication access to read the binlogs. Velld uses MariaDB's dump and SQL
-  clients and Oracle's `mysqlbinlog` (included in the MySQL API images).
-  Apply schema changes with the
-  configured database selected and avoid cross-database statements: replay is
-  filtered to that database. Keep binlogs on the source until copied with
-  **Archive new logs**. A restore after the last archived timestamp tries to
-  fetch newer logs; older covered timestamps can be restored offline. A
-  timestamp excludes events at or after that second. Recreate the baseline
-  after failover or a binlog reset.
-
-Recovery baselines and copied MySQL binlogs are stored locally, separately from
-regular dumps and S3 retention. Remove an unused baseline from the dialog to
-free that space. Manage PostgreSQL archive retention on the source.
-
-### "Target database must be empty"
-
-Create a new database:
-```sql
-CREATE DATABASE myapp_new;
-```
-
-Then restore to `myapp_new`.
-
-### Application fails after restore
-
-Check:
-- Schema version matches application
-- Database migrations are current
-- User permissions are correct
-
----
-
-## References
-
-- [PostgreSQL Backup Best Practices](https://www.postgresql.org/docs/current/backup-dump.html#BACKUP-DUMP-RESTORE)
-- [MySQL Point-in-Time Recovery](https://dev.mysql.com/doc/refman/8.0/en/point-in-time-recovery.html)
-- [Blue-Green Deployment Pattern](https://martinfowler.com/bliki/BlueGreenDeployment.html)
+Baselines are stored under `.pitr` in Velld's local backups directory, separate from ordinary backup uploads.

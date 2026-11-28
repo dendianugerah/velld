@@ -19,6 +19,9 @@ var requiredTools = map[string]string{
 }
 
 func (s *BackupService) verifyBackupTools(dbType string) error {
+	if dbType == "d1" {
+		return nil
+	}
 	if _, exists := requiredTools[dbType]; !exists {
 		return fmt.Errorf("unsupported database type: %s", dbType)
 	}

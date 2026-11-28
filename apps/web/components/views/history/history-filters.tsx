@@ -15,7 +15,9 @@ interface HistoryFiltersProps {
   databaseType: string;
   onDatabaseTypeChange: (value: string) => void;
   onReset: () => void;
-  isLoading?: boolean;
+  verification: string;
+  onVerificationChange: (value: string) => void;
+  active: boolean;
 }
 
 export function HistoryFilters({
@@ -28,21 +30,22 @@ export function HistoryFilters({
   databaseType,
   onDatabaseTypeChange,
   onReset,
-  isLoading
+  verification,
+  onVerificationChange,
+  active,
 }: HistoryFiltersProps) {
 
   return (
     <div className="flex flex-col gap-3 2xl:flex-row 2xl:items-center 2xl:justify-between">
       <div className="relative w-full xl:max-w-xs">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Search aria-hidden="true" className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
-          type="text"
-          placeholder="Search database, connection or file…"
+          type="search"
+          placeholder="Search backups…"
           aria-label="Search backup history"
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="pl-10"
-          disabled={isLoading}
+          className="ps-9"
         />
       </div>
 
@@ -62,18 +65,26 @@ export function HistoryFilters({
           <Select.Option value="pending">Pending</Select.Option>
         </Select>
 
-        <Select aria-label="Filter by database engine" value={databaseType} onValueChange={value => { if (value) onDatabaseTypeChange(value); }} items={{ all: "All Databases", mysql: "MySQL", postgresql: "PostgreSQL", mongodb: "MongoDB", mariadb: "MariaDB", redis: "Redis" }} className="w-full sm:w-[140px]">
-          <Select.Option value="all">All Databases</Select.Option>
+        <Select aria-label="Filter by database engine" value={databaseType} onValueChange={value => { if (value) onDatabaseTypeChange(value); }} items={{ all: "All engines", mysql: "MySQL", postgresql: "PostgreSQL", mongodb: "MongoDB", d1: "Cloudflare D1", mariadb: "MariaDB", redis: "Redis" }} className="w-full sm:w-[140px]">
+          <Select.Option value="all">All engines</Select.Option>
           <Select.Option value="mysql">MySQL</Select.Option>
           <Select.Option value="postgresql">PostgreSQL</Select.Option>
           <Select.Option value="mongodb">MongoDB</Select.Option>
+          <Select.Option value="d1">Cloudflare D1</Select.Option>
           <Select.Option value="mariadb">MariaDB</Select.Option>
           <Select.Option value="redis">Redis</Select.Option>
         </Select>
 
-        <Button variant="ghost" size="sm" onClick={onReset} className="w-full sm:w-auto">
-          Reset
-        </Button>
+        <Select aria-label="Filter by restore check" value={verification} onValueChange={value => { if (value) onVerificationChange(value); }} items={{ all: "Restore checks", passed: "Verified", failed: "Failed", pending: "Running", skipped: "Not checked" }} className="w-full sm:w-[145px]">
+          <Select.Option value="all">Restore checks</Select.Option>
+          <Select.Option value="passed">Verified</Select.Option>
+          <Select.Option value="failed">Failed</Select.Option>
+          <Select.Option value="pending">Running</Select.Option>
+          <Select.Option value="skipped">Not checked</Select.Option>
+        </Select>
+        {active && <Button variant="ghost" size="sm" onClick={onReset} className="w-full sm:w-auto">
+          Clear filters
+        </Button>}
       </div>
     </div>
   );

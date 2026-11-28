@@ -32,14 +32,9 @@ export function RestorePanel({ backup }: { backup: Backup }) {
 
   return (
     <div className="space-y-5">
-      <div>
-        <h2 className="text-lg font-semibold tracking-tight">
-          Restore to a database
-        </h2>
-        <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-          Restore this file into an existing {backup.database_type} connection.
-        </p>
-      </div>
+      <h2 className="text-lg font-semibold tracking-tight">
+        Restore to a database
+      </h2>
       {error ? (
         <div role="alert" className="space-y-2 text-sm">
           <p>Couldn’t load target connections.</p>
@@ -75,20 +70,13 @@ export function RestorePanel({ backup }: { backup: Backup }) {
         <p className="text-sm text-muted-foreground">
           No compatible connections.{" "}
           <Link className="text-primary underline" href="/connections">
-            Add a {backup.database_type} connection
-          </Link>{" "}
-          first.
+            Add a connection
+          </Link>
+          .
         </p>
       )}
-      <div className="rounded-lg border border-warning/30 bg-warning/5 p-4 text-sm leading-relaxed">
-        <p className="font-medium">This writes to the target database.</p>
-        <p className="mt-1 text-muted-foreground">
-          Existing objects or data may be replaced. Restoring to the original
-          connection changes your source database.
-        </p>
-      </div>
       {selected && (
-        <label className="flex items-start gap-2.5 text-sm leading-relaxed">
+        <label className="flex max-w-lg items-start gap-2.5 rounded-md border border-warning/30 bg-warning/5 p-3 text-sm leading-relaxed">
           <input
             type="checkbox"
             className="mt-1 h-4 w-4 shrink-0 accent-primary"
@@ -101,7 +89,7 @@ export function RestorePanel({ backup }: { backup: Backup }) {
             {selected.id === backup.connection_id
               ? ", the original connection"
               : ""}
-            .
+            . Existing objects or data may be replaced.
           </span>
         </label>
       )}

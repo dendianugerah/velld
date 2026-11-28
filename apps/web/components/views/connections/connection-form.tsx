@@ -23,6 +23,7 @@ import {
   connectionError,
   connectionFormValues,
   connectionPorts,
+  d1ConnectionPayload,
   parseConnectionUrl,
 } from "@/lib/connection-form";
 import { typeLabels, type DatabaseType } from "@/types/base";
@@ -41,7 +42,11 @@ export function ConnectionForm({
 }) {
   const [values, setValues] = useState(() => connectionFormValues(connection));
   const [editMethod, setEditMethod] = useState<"manual" | "url">("manual");
-  const method = inputMethod ?? editMethod;
+  const isD1 = values.type === "d1";
+  const method = inputMethod ?? (isD1 ? "manual" : editMethod);
+  const engines = Object.entries(typeLabels).filter(
+    ([type]) => !connection || (type === "d1") === (connection.type === "d1"),
+  );
   const [url, setUrl] = useState("");
   const [error, setError] = useState("");
   const [auth, setAuth] = useState<"password" | "key">(
@@ -53,12 +58,12 @@ export function ConnectionForm({
     setValues((previous) => ({ ...previous, [key]: value }));
   const save = useMutation({
     mutationFn: async (data: Values) => {
-      await testConnection(data);
+      if (data.type !== "d1") await testConnection(data);
       return connection
         ? updateConnection({ ...data, id: connection.id })
         : saveConnection(data);
     },
-    onSuccess: (result) => {
+    onSuccess: (result, data) => {
       queryClient.invalidateQueries({ queryKey: ["connections"] });
       if (connection)
         queryClient.invalidateQueries({
@@ -66,7 +71,10 @@ export function ConnectionForm({
         });
       toast({
         title: connection ? "Connection updated" : "Connection added",
-        description: "The database connection was tested successfully.",
+        description:
+          data.type === "d1"
+            ? undefined
+            : "The database connection was tested successfully.",
       });
       onSuccess?.(connection?.id ?? result.id);
     },
@@ -86,6 +94,17 @@ export function ConnectionForm({
       }
     }
     data.name = data.name.trim();
+    if (data.type === "d1") {
+      if (!data.name) {
+        setError("Enter a connection name.");
+        return;
+      }
+      save.mutate(d1ConnectionPayload(data));
+      return;
+    }
+    delete data.d1_account_id;
+    delete data.d1_database_id;
+    delete data.d1_api_token;
     data.host = data.host.trim();
     if (
       !data.name ||
@@ -133,7 +152,7 @@ export function ConnectionForm({
         </div>
         <LayerCard className="rounded-lg p-5 shadow-none sm:p-6">
           <section aria-label="Connection details" className="space-y-5">
-            {connection && (
+            {connection && !isD1 && (
               <SegmentedControl
                 label="Connection input method"
                 value={method}
@@ -177,237 +196,300 @@ export function ConnectionForm({
                         port: connectionPorts[type],
                       }));
                     }}
-                    items={{ ...typeLabels }}
+                    items={Object.fromEntries(engines)}
                     className="w-full"
                   >
-                    {Object.entries(typeLabels).map(([type, label]) => (
+                    {engines.map(([type, label]) => (
                       <Select.Option key={type} value={type}>
                         {label}
                       </Select.Option>
                     ))}
                   </Select>
                 </Field>
-                <div className="grid gap-5 sm:grid-cols-[minmax(0,1fr)_140px]">
-                  <Field id="connection-host" label="Host">
-                    <Input
-                      id="connection-host"
-                      aria-label="Host"
-                      required
-                      autoComplete="off"
-                      placeholder="db.example.com"
-                      value={values.host}
-                      onChange={(event) => set("host", event.target.value)}
-                    />
-                  </Field>
-                  <Field id="connection-port" label="Port">
-                    <Input
-                      id="connection-port"
-                      aria-label="Port"
-                      type="number"
-                      min={1}
-                      max={65535}
-                      required
-                      value={values.port || ""}
-                      onChange={(event) =>
-                        set("port", event.target.valueAsNumber)
+                {isD1 ? (
+                  <>
+                    <Field id="d1-account-id" label="Cloudflare account ID">
+                      <Input
+                        id="d1-account-id"
+                        aria-label="Cloudflare account ID"
+                        required
+                        autoComplete="off"
+                        spellCheck={false}
+                        value={values.d1_account_id ?? ""}
+                        onChange={(event) =>
+                          set("d1_account_id", event.target.value)
+                        }
+                      />
+                    </Field>
+                    <Field id="d1-database-id" label="D1 database ID">
+                      <Input
+                        id="d1-database-id"
+                        aria-label="D1 database ID"
+                        required
+                        autoComplete="off"
+                        spellCheck={false}
+                        value={values.d1_database_id ?? ""}
+                        onChange={(event) =>
+                          set("d1_database_id", event.target.value)
+                        }
+                      />
+                    </Field>
+                    <Field
+                      id="d1-api-token"
+                      label={
+                        connection ? "New API token (optional)" : "API token"
                       }
-                    />
-                  </Field>
-                </div>
-                <div className="grid gap-5 sm:grid-cols-2">
-                  <Field
-                    id="connection-username"
-                    label={`Username${values.type === "mongodb" ? " (optional)" : ""}`}
-                  >
-                    <Input
-                      id="connection-username"
-                      aria-label={`Username${values.type === "mongodb" ? " (optional)" : ""}`}
-                      required={values.type !== "mongodb"}
-                      autoComplete="off"
-                      value={values.username}
-                      onChange={(event) => set("username", event.target.value)}
-                    />
-                  </Field>
-                  <Field
-                    id="connection-password"
-                    label={`Password${values.type === "mongodb" ? " (optional)" : ""}`}
-                  >
-                    <Input
-                      id="connection-password"
-                      aria-label={`Password${values.type === "mongodb" ? " (optional)" : ""}`}
-                      type="password"
-                      autoComplete="new-password"
-                      value={values.password}
-                      onChange={(event) => set("password", event.target.value)}
-                    />
-                  </Field>
-                </div>
-                <Field id="connection-database" label="Database (optional)">
-                  <Input
-                    id="connection-database"
-                    aria-label="Database (optional)"
-                    placeholder={
-                      values.type === "postgresql"
-                        ? "postgres"
-                        : values.type === "mongodb"
-                          ? "admin"
-                          : "Leave empty to discover databases"
-                    }
-                    value={values.database}
-                    onChange={(event) => set("database", event.target.value)}
-                  />
-                </Field>
-                {values.type === "mongodb" && (
-                  <Field
-                    id="mongo-auth-source"
-                    label="Authentication database (optional)"
-                  >
-                    <Input
-                      id="mongo-auth-source"
-                      aria-label="Authentication database (optional)"
-                      placeholder="admin"
-                      value={values.mongo_auth_source}
-                      onChange={(event) =>
-                        set("mongo_auth_source", event.target.value)
-                      }
-                    />
-                  </Field>
+                    >
+                      <Input
+                        id="d1-api-token"
+                        aria-label={
+                          connection ? "New API token (optional)" : "API token"
+                        }
+                        type="password"
+                        required={!connection}
+                        autoComplete="new-password"
+                        value={values.d1_api_token ?? ""}
+                        onChange={(event) =>
+                          set("d1_api_token", event.target.value)
+                        }
+                      />
+                    </Field>
+                  </>
+                ) : (
+                  <>
+                    <div className="grid gap-5 sm:grid-cols-[minmax(0,1fr)_140px]">
+                      <Field id="connection-host" label="Host">
+                        <Input
+                          id="connection-host"
+                          aria-label="Host"
+                          required
+                          autoComplete="off"
+                          placeholder="db.example.com"
+                          value={values.host}
+                          onChange={(event) => set("host", event.target.value)}
+                        />
+                      </Field>
+                      <Field id="connection-port" label="Port">
+                        <Input
+                          id="connection-port"
+                          aria-label="Port"
+                          type="number"
+                          min={1}
+                          max={65535}
+                          required
+                          value={values.port || ""}
+                          onChange={(event) =>
+                            set("port", event.target.valueAsNumber)
+                          }
+                        />
+                      </Field>
+                    </div>
+                    <div className="grid gap-5 sm:grid-cols-2">
+                      <Field
+                        id="connection-username"
+                        label={`Username${values.type === "mongodb" ? " (optional)" : ""}`}
+                      >
+                        <Input
+                          id="connection-username"
+                          aria-label={`Username${values.type === "mongodb" ? " (optional)" : ""}`}
+                          required={values.type !== "mongodb"}
+                          autoComplete="off"
+                          value={values.username}
+                          onChange={(event) =>
+                            set("username", event.target.value)
+                          }
+                        />
+                      </Field>
+                      <Field
+                        id="connection-password"
+                        label={`Password${values.type === "mongodb" ? " (optional)" : ""}`}
+                      >
+                        <Input
+                          id="connection-password"
+                          aria-label={`Password${values.type === "mongodb" ? " (optional)" : ""}`}
+                          type="password"
+                          autoComplete="new-password"
+                          value={values.password}
+                          onChange={(event) =>
+                            set("password", event.target.value)
+                          }
+                        />
+                      </Field>
+                    </div>
+                    <Field id="connection-database" label="Database (optional)">
+                      <Input
+                        id="connection-database"
+                        aria-label="Database (optional)"
+                        placeholder={
+                          values.type === "postgresql"
+                            ? "postgres"
+                            : values.type === "mongodb"
+                              ? "admin"
+                              : "Leave empty to discover databases"
+                        }
+                        value={values.database}
+                        onChange={(event) =>
+                          set("database", event.target.value)
+                        }
+                      />
+                    </Field>
+                    {values.type === "mongodb" && (
+                      <Field
+                        id="mongo-auth-source"
+                        label="Authentication database (optional)"
+                      >
+                        <Input
+                          id="mongo-auth-source"
+                          aria-label="Authentication database (optional)"
+                          placeholder="admin"
+                          value={values.mongo_auth_source}
+                          onChange={(event) =>
+                            set("mongo_auth_source", event.target.value)
+                          }
+                        />
+                      </Field>
+                    )}
+                    <div className="flex items-center justify-between gap-5 border-t pt-5">
+                      <Label htmlFor="connection-ssl">Use TLS</Label>
+                      <Switch
+                        id="connection-ssl"
+                        aria-label="Use TLS"
+                        checked={values.ssl}
+                        onCheckedChange={(value) => set("ssl", value)}
+                      />
+                    </div>
+                  </>
                 )}
-                <div className="flex items-center justify-between gap-5 border-t pt-5">
-                  <Label htmlFor="connection-ssl">Use TLS</Label>
-                  <Switch
-                    id="connection-ssl"
-                    aria-label="Use TLS"
-                    checked={values.ssl}
-                    onCheckedChange={(value) => set("ssl", value)}
-                  />
-                </div>
               </>
             )}
           </section>
-          <details
-            className="group mt-6 rounded-lg border"
-            open={values.ssh_enabled || undefined}
-          >
-            <summary className="flex cursor-pointer list-none items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring">
-              SSH tunnel{" "}
-              {values.ssh_enabled && (
-                <span className="text-xs font-normal text-muted-foreground">
-                  On
-                </span>
-              )}
-              <ChevronDown
-                className="ms-auto h-4 w-4 text-muted-foreground group-open:rotate-180"
-                aria-hidden="true"
-              />
-            </summary>
-            <div className="space-y-5 border-t p-4 sm:p-5">
-              <div className="flex items-center justify-between gap-5">
-                <Label htmlFor="ssh-enabled">Connect through SSH</Label>
-                <Switch
-                  id="ssh-enabled"
-                  aria-label="Connect through SSH"
-                  checked={values.ssh_enabled}
-                  onCheckedChange={(value) => set("ssh_enabled", value)}
+          {(!isD1 || method === "url") && (
+            <details
+              className="group mt-6 rounded-lg border"
+              open={values.ssh_enabled || undefined}
+            >
+              <summary className="flex cursor-pointer list-none items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring">
+                SSH tunnel{" "}
+                {values.ssh_enabled && (
+                  <span className="text-xs font-normal text-muted-foreground">
+                    On
+                  </span>
+                )}
+                <ChevronDown
+                  className="ms-auto h-4 w-4 text-muted-foreground group-open:rotate-180"
+                  aria-hidden="true"
                 />
+              </summary>
+              <div className="space-y-5 border-t p-4 sm:p-5">
+                <div className="flex items-center justify-between gap-5">
+                  <Label htmlFor="ssh-enabled">Connect through SSH</Label>
+                  <Switch
+                    id="ssh-enabled"
+                    aria-label="Connect through SSH"
+                    checked={values.ssh_enabled}
+                    onCheckedChange={(value) => set("ssh_enabled", value)}
+                  />
+                </div>
+                {values.ssh_enabled && (
+                  <>
+                    <div className="grid gap-5 sm:grid-cols-[minmax(0,1fr)_140px]">
+                      <Field id="ssh-host" label="SSH host">
+                        <Input
+                          id="ssh-host"
+                          aria-label="SSH host"
+                          required
+                          value={values.ssh_host}
+                          onChange={(event) =>
+                            set("ssh_host", event.target.value)
+                          }
+                        />
+                      </Field>
+                      <Field id="ssh-port" label="SSH port">
+                        <Input
+                          id="ssh-port"
+                          aria-label="SSH port"
+                          type="number"
+                          min={1}
+                          max={65535}
+                          required
+                          value={values.ssh_port || ""}
+                          onChange={(event) =>
+                            set("ssh_port", event.target.valueAsNumber)
+                          }
+                        />
+                      </Field>
+                    </div>
+                    <Field id="ssh-user" label="SSH username">
+                      <Input
+                        id="ssh-user"
+                        aria-label="SSH username"
+                        required
+                        autoComplete="off"
+                        value={values.ssh_username}
+                        onChange={(event) =>
+                          set("ssh_username", event.target.value)
+                        }
+                      />
+                    </Field>
+                    <Field id="ssh-auth" label="Authentication">
+                      <Select
+                        id="ssh-auth"
+                        aria-label="Authentication"
+                        value={auth}
+                        onValueChange={(value) => {
+                          const next = value as "password" | "key";
+                          setAuth(next);
+                          setValues((previous) => ({
+                            ...previous,
+                            ssh_password:
+                              next === "key" ? "" : previous.ssh_password,
+                            ssh_private_key:
+                              next === "password"
+                                ? ""
+                                : previous.ssh_private_key,
+                          }));
+                        }}
+                        items={{ password: "Password", key: "Private key" }}
+                        className="w-full"
+                      >
+                        <Select.Option value="password">Password</Select.Option>
+                        <Select.Option value="key">Private key</Select.Option>
+                      </Select>
+                    </Field>
+                    {auth === "password" ? (
+                      <Field id="ssh-password" label="SSH password">
+                        <Input
+                          id="ssh-password"
+                          aria-label="SSH password"
+                          required
+                          type="password"
+                          autoComplete="new-password"
+                          value={values.ssh_password}
+                          onChange={(event) =>
+                            set("ssh_password", event.target.value)
+                          }
+                        />
+                      </Field>
+                    ) : (
+                      <Field id="ssh-key" label="SSH private key">
+                        <textarea
+                          id="ssh-key"
+                          required
+                          rows={6}
+                          spellCheck={false}
+                          value={values.ssh_private_key}
+                          onChange={(event) =>
+                            set("ssh_private_key", event.target.value)
+                          }
+                          className="w-full rounded-lg border border-input bg-card p-3 font-mono text-xs focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
+                        />
+                      </Field>
+                    )}
+                  </>
+                )}
               </div>
-              {values.ssh_enabled && (
-                <>
-                  <div className="grid gap-5 sm:grid-cols-[minmax(0,1fr)_140px]">
-                    <Field id="ssh-host" label="SSH host">
-                      <Input
-                        id="ssh-host"
-                        aria-label="SSH host"
-                        required
-                        value={values.ssh_host}
-                        onChange={(event) =>
-                          set("ssh_host", event.target.value)
-                        }
-                      />
-                    </Field>
-                    <Field id="ssh-port" label="SSH port">
-                      <Input
-                        id="ssh-port"
-                        aria-label="SSH port"
-                        type="number"
-                        min={1}
-                        max={65535}
-                        required
-                        value={values.ssh_port || ""}
-                        onChange={(event) =>
-                          set("ssh_port", event.target.valueAsNumber)
-                        }
-                      />
-                    </Field>
-                  </div>
-                  <Field id="ssh-user" label="SSH username">
-                    <Input
-                      id="ssh-user"
-                      aria-label="SSH username"
-                      required
-                      autoComplete="off"
-                      value={values.ssh_username}
-                      onChange={(event) =>
-                        set("ssh_username", event.target.value)
-                      }
-                    />
-                  </Field>
-                  <Field id="ssh-auth" label="Authentication">
-                    <Select
-                      id="ssh-auth"
-                      aria-label="Authentication"
-                      value={auth}
-                      onValueChange={(value) => {
-                        const next = value as "password" | "key";
-                        setAuth(next);
-                        setValues((previous) => ({
-                          ...previous,
-                          ssh_password:
-                            next === "key" ? "" : previous.ssh_password,
-                          ssh_private_key:
-                            next === "password" ? "" : previous.ssh_private_key,
-                        }));
-                      }}
-                      items={{ password: "Password", key: "Private key" }}
-                      className="w-full"
-                    >
-                      <Select.Option value="password">Password</Select.Option>
-                      <Select.Option value="key">Private key</Select.Option>
-                    </Select>
-                  </Field>
-                  {auth === "password" ? (
-                    <Field id="ssh-password" label="SSH password">
-                      <Input
-                        id="ssh-password"
-                        aria-label="SSH password"
-                        required
-                        type="password"
-                        autoComplete="new-password"
-                        value={values.ssh_password}
-                        onChange={(event) =>
-                          set("ssh_password", event.target.value)
-                        }
-                      />
-                    </Field>
-                  ) : (
-                    <Field id="ssh-key" label="SSH private key">
-                      <textarea
-                        id="ssh-key"
-                        required
-                        rows={6}
-                        spellCheck={false}
-                        value={values.ssh_private_key}
-                        onChange={(event) =>
-                          set("ssh_private_key", event.target.value)
-                        }
-                        className="w-full rounded-lg border border-input bg-card p-3 font-mono text-xs focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
-                      />
-                    </Field>
-                  )}
-                </>
-              )}
-            </div>
-          </details>
+            </details>
+          )}
         </LayerCard>
       </fieldset>
       {error && (

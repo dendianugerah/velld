@@ -135,6 +135,9 @@ func (s *BackupService) runRestoreCheck(backup *Backup, conn *connection.StoredC
 	ctx, cancel := context.WithTimeout(context.Background(), restoreCheckTimeout)
 	defer cancel()
 
+	if conn.Type == "d1" {
+		return s.runD1RestoreCheck(ctx, backup, conn)
+	}
 	if _, ok := restoreTools[conn.Type]; !ok {
 		return VerificationSkipped, fmt.Sprintf("Restore checks are not supported for %s", conn.Type)
 	}

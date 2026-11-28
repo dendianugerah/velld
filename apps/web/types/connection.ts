@@ -1,4 +1,4 @@
-import { Base, DatabaseType, StatusColor } from "./base";
+import { DatabaseType, StatusColor } from "./base";
 
 export interface Connection {
   id: string;
@@ -11,6 +11,8 @@ export interface Connection {
   database: string;
   database_name: string;
   mongo_auth_source?: string;
+  d1_account_id?: string;
+  d1_database_id?: string;
   database_size: number;
   selected_databases?: string[];
   ssl: boolean;
@@ -38,6 +40,8 @@ export type ConnectionForm = Pick<Connection,
   | "password" 
   | "database" 
   | "mongo_auth_source"
+  | "d1_account_id"
+  | "d1_database_id"
   | "ssl"
   | "ssh_enabled"
   | "ssh_host"
@@ -46,16 +50,6 @@ export type ConnectionForm = Pick<Connection,
   | "ssh_password"
   | "ssh_private_key"
 > & {
+  d1_api_token?: string;
   s3_cleanup_on_retention?: boolean;
 };
-
-export type ConnectionListResponse = Base<Connection[]>;
-
-export type SortBy = 'name' | 'status' | 'type' | 'lastBackup';
-
-export interface BackupConfig {
-  enabled: boolean;
-  schedule: string;
-  retention: string;
-  lastBackup?: string;
-}

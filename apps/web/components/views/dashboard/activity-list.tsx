@@ -111,8 +111,9 @@ export function ActivityList() {
                         {connection.name}
                       </Link>
                       <p className="mt-1 break-all text-xs text-muted-foreground">
-                        {typeLabels[connection.type] ?? connection.type} ·{" "}
-                        {connection.database || connection.host}
+                        {typeLabels[connection.type] ?? connection.type}
+                        {connection.type !== "d1" &&
+                          ` · ${connection.database || connection.host}`}
                       </p>
                       <p className="mt-1 text-[10px] text-muted-foreground md:hidden">
                         {connection.last_backup_time
