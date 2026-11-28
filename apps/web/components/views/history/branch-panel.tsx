@@ -49,15 +49,12 @@ export function BranchPanel({ backup }: { backup: BackupList }) {
   }
 
   return <div className="space-y-5">
-      <div><h2 className="text-lg font-semibold tracking-tight">Branch from backup</h2>
-        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">Create a temporary database copy without changing the source. Common email, name, and phone fields are masked based on their field names. Other data is unchanged.</p>
-      </div>
-      <p className="text-xs leading-relaxed text-muted-foreground">Requires Docker on the Velld host. Masking is limited to recognized fields; review the data before sharing access.</p>
+      <h2 className="text-lg font-semibold tracking-tight">Branch from backup</h2>
       {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
       {branch && <div className="min-w-0 space-y-2">
         <label htmlFor="branch-connection" className="text-sm font-medium">Connection string</label>
         <Input id="branch-connection" ref={connection} className="font-mono text-xs" readOnly value={branch.connection_string} />
-        <p className="text-sm text-muted-foreground">Expires {new Date(branch.expires_at).toLocaleString()}. Connect on the Docker host or forward the port over SSH.</p>
+        <p className="text-xs text-muted-foreground">Partially masked · Expires {new Date(branch.expires_at).toLocaleString()}</p>
         <p role="status" className="text-sm text-muted-foreground">{copyStatus}</p>
       </div>}
       <div className="flex flex-wrap gap-2">

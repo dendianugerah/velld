@@ -9,7 +9,7 @@ import { LayerCard } from "@cloudflare/kumo/components/layer-card";
 import { useBackup } from "@/hooks/use-backup";
 import { useConnections } from "@/hooks/use-connections";
 import { formatSize } from "@/lib/helper";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BackupStatus, RestoreCheckStatus } from "@/components/ui/backup-status";
 import { CustomPagination } from "@/components/ui/custom-pagination";
@@ -63,7 +63,6 @@ export function HistoryList() {
           return <div key={backup.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-4 gap-y-3 border-b px-4 py-4 last:border-b-0 xl:grid-cols-[minmax(0,1fr)_94px_130px_150px] xl:items-center">
             <div className="min-w-0"><Link href={href} className="group inline-flex max-w-full items-center gap-1.5 rounded-sm text-sm font-semibold hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"><span className="truncate">{backup.database_name || backup.connection_name || "Database backup"}</span><ChevronRight aria-hidden="true" className="h-3.5 w-3.5 shrink-0 text-muted-foreground group-hover:text-primary" /></Link>
               <p className="mt-1 break-words text-xs text-muted-foreground">{backup.connection_name || backup.database_type} · <time dateTime={backup.created_at} title={format(created, "PPpp")}>{formatDistanceToNow(created, {addSuffix: true})}</time></p>
-              <p className="mt-1.5 truncate font-mono text-[11px] text-muted-foreground" title={filename}>{filename}</p>
             </div>
             <div className="flex flex-col items-end gap-2 xl:items-start"><span className="sr-only">Backup status: </span><BackupStatus status={backup.status} /><div className="xl:hidden"><RestoreCheckStatus status={backup.verification_status || "skipped"} /></div></div>
             <div className="hidden xl:block"><RestoreCheckStatus status={backup.verification_status || "skipped"} /></div>
@@ -72,12 +71,11 @@ export function HistoryList() {
               {backup.status === "completed" && <Button variant="ghost" size="icon" className="size-9 shrink-0" aria-label={`Download ${filename}`} title="Download backup" disabled={isDownloading} onClick={() => downloadBackupFile(backup)}><Download aria-hidden="true" /></Button>}
             </div>
           </div>;
-        }) : <div className="px-6 py-12 text-center"><h2 className="text-sm font-medium">{active ? "No matching backups" : "No backups yet"}</h2><p className="mt-2 text-xs text-muted-foreground">{active ? "Try a different search or clear your filters." : <>Run a backup from <Link href="/connections" className="font-medium text-foreground underline underline-offset-2">Connections</Link> to get started.</>}</p></div>}
+        }) : <div className="space-y-3 px-6 py-12 text-center"><h2 className="text-sm font-medium">{active ? "No matching backups" : "No backups yet"}</h2>{!active && <Link href="/connections" className={buttonVariants({variant: "outline", size: "sm"})}>Go to Connections</Link>}</div>}
       </div>
     </LayerCard>
-    <div className="flex flex-wrap items-center justify-between gap-4"><p role="status" className="text-[11px] text-muted-foreground">{isFetching ? "Updating…" : pagination ? `${pagination.total} ${active ? "matching " : ""}backup${pagination.total === 1 ? "" : "s"} · Page ${page} of ${Math.max(1, pagination.total_pages)}` : ""}</p>
+    <div className="flex flex-wrap items-center justify-between gap-4"><p role="status" className="text-xs text-muted-foreground">{isFetching ? "Updating…" : pagination && pagination.total > 0 ? `${pagination.total} ${active ? "matching " : ""}backup${pagination.total === 1 ? "" : "s"}` : ""}</p>
       {pagination && pagination.total_pages > 1 && <CustomPagination currentPage={page} totalPages={pagination.total_pages} onPageChange={value => change("page", String(value))} />}
     </div>
-    <p className="text-[11px] leading-relaxed text-muted-foreground">A completed backup is a saved file. A restore check verifies it in a temporary database.</p>
   </div>;
 }
