@@ -72,9 +72,6 @@ export function ConnectionDetail({ id }: { id: string }) {
       ) : !connection || detail.error || list.error ? (
         <div role="alert" className="mx-auto max-w-[720px] space-y-4 text-sm">
           <h1 className="text-xl font-semibold">Connection unavailable</h1>
-          <p>
-            Couldn’t load this connection. Try again or return to Connections.
-          </p>
           <Button
             variant="secondary"
             onClick={() => {
@@ -255,9 +252,6 @@ export function ConnectionDetail({ id }: { id: string }) {
             <div className="flex flex-col justify-between gap-4 border-t pt-7 sm:flex-row sm:items-center">
               <div>
                 <h3 className="text-sm font-semibold">Delete connection</h3>
-                <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">
-                  Remove this connection and its backup schedules.
-                </p>
               </div>
               <IconButton
                 variant="outline"

@@ -53,20 +53,6 @@ function Tag({ at, text, tone }: { at: V; text: string; tone?: "ok" | "warn" }) 
   );
 }
 
-function Callout({ letter, anchor, at, focused }: { letter: string; anchor: V; at: V; focused: boolean }) {
-  const dx = anchor[0] - at[0];
-  const dy = anchor[1] - at[1];
-  const length = Math.hypot(dx, dy) || 1;
-  return (
-    <g className={styles.callout} data-focus={focused}>
-      <path d={line([at[0] + (dx / length) * 11, at[1] + (dy / length) * 11], anchor)} />
-      <circle className={styles.anchor} cx={anchor[0]} cy={anchor[1]} r={2.4} />
-      <circle cx={at[0]} cy={at[1]} r={11} />
-      <text x={at[0]} y={at[1] + 3.6} textAnchor="middle">{letter}</text>
-    </g>
-  );
-}
-
 // Data paths, in world coordinates, follow the code's order of operations.
 const routes = {
   connect: line(P(75, 335, 41), P(75, 205, 41)),
@@ -91,29 +77,6 @@ const usage: Record<string, number[]> = {
   container: [3],
 };
 
-export const figureCallouts: { anchor: V; at: V }[][] = [
-  [
-    { anchor: P(75, 268, 48), at: [-250, 70] },
-    { anchor: P(60, 170, 72), at: [-232, -10] },
-    { anchor: P(60, 200, 32), at: [70, 20] },
-  ],
-  [
-    { anchor: P(60, 170, 52), at: [-140, -6] },
-    { anchor: P(130, 110, 38), at: [14, 18] },
-    { anchor: P(196, 55, 42), at: [150, 30] },
-  ],
-  [
-    { anchor: P(192, -80, 196), at: [300, -170] },
-    { anchor: P(196, 55, 34), at: [60, -40] },
-    { anchor: P(196, 55, 42), at: [236, 146] },
-  ],
-  [
-    { anchor: P(405, 110, 34), at: [316, 196] },
-    { anchor: P(370, 110, 78), at: [110, 245] },
-    { anchor: P(405, 110, 45), at: [312, 84] },
-  ],
-];
-
 function useReducedMotion() {
   const [reduced, setReduced] = useState(true);
   useEffect(() => {
@@ -126,7 +89,7 @@ function useReducedMotion() {
   return reduced;
 }
 
-export function BackupFigure({ active, focus = null }: { active: number; focus?: number | null }) {
+export function BackupFigure({ active }: { active: number }) {
   const reduced = useReducedMotion();
   const state = (name: string) => {
     const stages = usage[name];
@@ -163,7 +126,7 @@ export function BackupFigure({ active, focus = null }: { active: number; focus?:
 
       <g className={styles.part} data-state={state("gzip")}>
         <Box x={110} y={90} z={12} w={40} d={40} h={26} />
-          <text className={styles.face} x={P(130, 130, 22)[0]} y={P(130, 130, 22)[1] + 4} textAnchor="middle">process</text>
+          <text className={styles.face} x={P(130, 130, 22)[0]} y={P(130, 130, 22)[1] + 4} textAnchor="middle">gzip</text>
       </g>
 
       <g className={styles.part} data-state={state("tool")}>
@@ -198,32 +161,12 @@ export function BackupFigure({ active, focus = null }: { active: number; focus?:
 
       <path className={styles.flow} data-state={flow(2)} d={routes.upload} />
 
-      <g className={styles.overlay} data-state={at(0)}>
-        <g className={styles.card}>
-          <Box x={42} y={158} z={70} w={36} d={24} h={2} />
-        </g>
-        <Tag at={[P(60, 170, 104)[0], P(60, 170, 104)[1] - 12]} text="credentials protected" />
-        <Tag at={[P(75, 365, 66)[0], P(75, 365, 66)[1] - 30]} text="database" />
-        <Tag at={[P(60, 170, 52)[0] + 160, P(60, 170, 52)[1] - 6]} text="compatible tool" tone="ok" />
-        <Tag at={[P(75, 268, 41)[0] + 20, P(75, 268, 41)[1] + 34]} text="127.0.0.1:<port>" />
-      </g>
       <g className={styles.overlay} data-state={at(1)}>
         <Tag at={[P(226, 85, 0)[0] + 40, P(226, 85, 0)[1] + 34]} text="backup file" />
-        <Tag at={[P(60, 170, 52)[0] - 10, P(60, 170, 52)[1] - 34]} text="native backup tool" />
-        <Tag at={[P(130, 110, 38)[0] + 10, P(130, 110, 38)[1] - 30]} text="prepare backup" />
-      </g>
-      <g className={styles.overlay} data-state={at(2)}>
-        <Tag at={[P(192, 55, 120)[0] - 62, P(192, 55, 120)[1] + 18]} text="fail → warning" tone="warn" />
       </g>
       <g className={styles.overlay} data-state={at(3)}>
         <Tag at={[P(370, 110, 78)[0] - 10, P(370, 110, 78)[1] - 40]} text="tables ✓  rows ✓" tone="ok" />
       </g>
-
-      {figureCallouts.map((set, stage) => (
-        <g key={stage} className={styles.overlay} data-state={at(stage)}>
-          {set.map((c, i) => <Callout key={i} letter={"ABC"[i]} anchor={c.anchor} at={c.at} focused={active === stage && focus === i} />)}
-        </g>
-      ))}
 
       {!reduced && packets[active]?.map((d) =>
         [0, 1, 2].map((i) => (

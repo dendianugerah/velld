@@ -78,9 +78,6 @@ export function ScheduleForm({ connection }: { connection: Connection }) {
     onSuccess: () => {
       toast({
         title: "Schedule saved",
-        description: enabled
-          ? "Automatic backups are enabled."
-          : "This connection uses manual backups.",
       });
     },
   });
@@ -106,9 +103,6 @@ export function ScheduleForm({ connection }: { connection: Connection }) {
       <div className="flex items-center justify-between gap-6 rounded-xl bg-muted/70 p-4">
         <div>
           <Label htmlFor="schedule-enabled">Automatic backups</Label>
-          <p className="mt-1.5 text-xs text-muted-foreground">
-            Off means you’ll run backups manually.
-          </p>
         </div>
         <Switch
           id="schedule-enabled"

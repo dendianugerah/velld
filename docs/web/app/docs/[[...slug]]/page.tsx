@@ -52,7 +52,6 @@ export default async function Page(props: {
       </details>
       <article className={styles.article}>
         <h1>{page.data.title}</h1>
-        {page.data.description && <p className={styles.description}>{page.data.description}</p>}
         <DocsBody className={styles.body}>
           <MDXContent components={getMDXComponents({ a: createRelativeLink(source, page) })} />
         </DocsBody>

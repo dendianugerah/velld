@@ -71,7 +71,7 @@ Docker socket access gives Velld control of the Docker daemon even though the mo
 
 ## Local development
 
-Use Bun and Go 1.25 or newer with a C toolchain for SQLite. Install `pg_dump`/`psql`, the MariaDB client tools, or `mongodump`/`mongorestore` locally for the engines you use. The full API image bundles database clients.
+Use Bun, Node.js 20+, and Go 1.25+ with a C toolchain for SQLite. Install `pg_dump`/`psql`, the MariaDB client tools, or `mongodump`/`mongorestore` for the engines you use. The full API image bundles these clients; D1 uses HTTPS instead.
 
 From the repository root, with `.env` configured:
 
@@ -79,6 +79,10 @@ From the repository root, with `.env` configured:
 bun install --frozen-lockfile
 bun run dev
 ```
+
+The dashboard runs on port 3000 and the API on 8080. `bun run check` runs API vet/tests, dashboard lint/type checks/tests, and dead-code checks.
+
+Set `NEXT_PUBLIC_API_URL` before a source build; Next.js includes it in the production output.
 
 For the docs site alone:
 

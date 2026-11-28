@@ -1,102 +1,46 @@
-# Velld API Docker Images
+# Velld API images
 
-This directory contains multiple Dockerfile configurations for different database setups.
+The root Compose file builds `apps/api/Dockerfile`. All API images compile Go with CGO for SQLite; D1 exports and SQLite restore checks are built into the API.
 
-## Available Dockerfiles
+## Client bundles
 
-### `Dockerfile` (Default - All Databases)
-Includes PostgreSQL, MySQL, and MongoDB clients. Use this if you need to backup multiple database types.
+| Dockerfile | Database tools |
+| --- | --- |
+| `Dockerfile` | PostgreSQL, MariaDB/MySQL, MongoDB, and MySQL binlog reader |
+| `Dockerfile.postgres` | PostgreSQL client |
+| `Dockerfile.mysql` | MariaDB/MySQL client and MySQL binlog reader |
+| `Dockerfile.mongo` | MongoDB Database Tools |
 
-**Size:** ~120MB  
-**Includes:** postgresql-client, mysql-client, mongodb-tools
+Build from this directory:
 
 ```bash
 docker build -t velld-api .
+docker build -f Dockerfile.postgres -t velld-api-postgres .
 ```
 
-### `Dockerfile.postgres` (PostgreSQL Only)
-Lightweight image with only PostgreSQL client.
+To change the source-build Compose image, set `services.api.build.dockerfile` in the root `docker-compose.yml`. The prebuilt Compose file pulls GHCR images instead.
 
-**Size:** ~70MB  
-**Includes:** postgresql-client only
+Database-specific images only bundle the listed clients. Use the full image for mixed engines. Velld's MySQL commands use MariaDB client flags; Oracle MySQL clients are not a drop-in replacement.
 
-```bash
-docker build -f Dockerfile.postgres -t velld-api .
-```
+## Runtime
 
-### `Dockerfile.mysql` (MySQL Only)
-Lightweight image with only MySQL client.
+Configure required secrets and admin credentials using the [root setup guide](../../README.md#run-with-docker). Keep SQLite (`/app/data`) and backups (`/app/backups`) in persistent volumes.
 
-**Size:** ~65MB  
-**Includes:** mysql-client only
+The optional root `docker-compose.discovery.yml` mounts `/var/run/docker.sock` and adds the host gateway. It enables discovery, native-engine restore checks, and disposable recovery containers. The API talks to the Docker Engine API, not a Docker CLI. Socket access grants control of the host's Docker daemon.
 
-```bash
-docker build -f Dockerfile.mysql -t velld-api .
-```
+## Tests
 
-### `Dockerfile.mongo` (MongoDB Only)
-Lightweight image with only MongoDB tools.
-
-**Size:** ~80MB  
-**Includes:** mongodb-tools only
-
-```bash
-docker build -f Dockerfile.mongo -t velld-api .
-```
-
-## Usage with Docker Compose
-
-To use a specific Dockerfile, update your `docker-compose.yml`:
-
-```yaml
-services:
-  api:
-    build:
-      context: ./apps/api
-      dockerfile: Dockerfile.postgres  # Change this to your preferred Dockerfile
-    ports:
-      - "8080:8080"
-    # ...rest of configuration
-```
-
-## Choosing the Right Dockerfile
-
-| Database(s) You Need | Dockerfile to Use | Image Size |
-|---------------------|-------------------|------------|
-| PostgreSQL only | `Dockerfile.postgres` | ~70MB |
-| MySQL only | `Dockerfile.mysql` | ~65MB |
-| MongoDB only | `Dockerfile.mongo` | ~80MB |
-| Multiple types | `Dockerfile` (default) | ~120MB |
-
-## Security Benefits
-
-Using database-specific Dockerfiles:
-- ✅ Smaller attack surface (fewer tools installed)
-- ✅ Faster builds and deployments
-- ✅ Reduced image size
-- ✅ Only install what you actually need
-
-## Development
-
-All Dockerfiles use multi-stage builds:
-1. **Builder stage:** Compiles the Go application with CGO enabled (for SQLite support)
-2. **Runtime stage:** Minimal Alpine Linux with only necessary database clients
-
-This keeps the final image as small and secure as possible.
-
-### Backup and restore integration tests
-
-Run from this directory with the Go version in `go.mod` on a host with Docker
-(including access to `/var/run/docker.sock` for MySQL discovery), PostgreSQL
-14–16 client tools (`pg_dump` and `psql`), the MariaDB client tools used by
-the Velld API image (`mysqldump` and `mysql`), and MongoDB Database Tools
-(`mongodump` and `mongorestore`) installed.
+From this directory, with the Go version in `go.mod` and a C compiler:
 
 ```bash
 go vet ./...
 go test ./...
+```
+
+Integration tests also require Docker, PostgreSQL 14–16 client tools, MariaDB's `mysqldump`/`mysql`, and `mongodump`/`mongorestore`:
+
+```bash
 go test -v -count=1 -tags integration -run '^TestDocker' ./internal/backup
 ```
 
-The integration suite starts and removes its own containers and uses
-Docker-assigned loopback ports. It fails if Docker or the tools are unavailable.
+The suite starts and removes disposable containers on Docker-assigned loopback ports. It fails if Docker or required clients are unavailable.

@@ -4,7 +4,7 @@ import Logo from "../ui/logo";
 interface AuthLayoutProps {
   children: ReactNode;
   title: string;
-  subtitle: string;
+  subtitle?: string;
 }
 
 export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
@@ -19,7 +19,7 @@ export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
             </div>
             <div className="space-y-2">
               <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
-              <p className="text-sm text-muted-foreground">{subtitle}</p>
+              {subtitle && <p className="text-sm text-muted-foreground">{subtitle}</p>}
             </div>
           </div>
           {children}

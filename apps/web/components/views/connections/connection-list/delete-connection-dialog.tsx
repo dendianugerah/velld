@@ -49,10 +49,10 @@ export function DeleteConnectionDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <AlertCircle className="h-5 w-5 text-destructive" />
-            Delete Connection
+            Delete connection
           </DialogTitle>
           <DialogDescription>
-            Are you sure you want to delete this connection?
+            This also removes its backup schedules.
           </DialogDescription>
         </DialogHeader>
         
@@ -76,9 +76,6 @@ export function DeleteConnectionDialog({
                     <Cloud className="h-4 w-4" />
                     Also delete S3 backups
                   </Label>
-                  <p className="text-xs text-muted-foreground">
-                    Permanently delete all backups stored in S3 for this connection
-                  </p>
                 </div>
                 <Switch
                   id="cleanup-s3"
@@ -89,9 +86,6 @@ export function DeleteConnectionDialog({
               </div>
             )}
 
-            <p className="text-sm text-muted-foreground">
-              This action cannot be undone. This will permanently delete the connection and all associated backup schedules.
-            </p>
           </div>
         )}
 
@@ -109,7 +103,7 @@ export function DeleteConnectionDialog({
             onClick={handleDelete}
             disabled={isDeleting}
           >
-            {isDeleting ? "Deleting..." : "Delete Connection"}
+            {isDeleting ? "Deleting…" : "Delete connection"}
           </Button>
         </DialogFooter>
       </DialogContent>

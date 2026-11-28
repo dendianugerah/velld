@@ -119,28 +119,6 @@
 .buildingChip .chipIcon svg[data-active="true"] {
   opacity: 1;
 }
-.clickHint {
-  position: absolute;
-  left: calc(100% - 5px);
-  bottom: calc(100% + 9px);
-  display: flex;
-  align-items: flex-start;
-  gap: 2px;
-  color: #3c6178;
-  font: 600 13px/1.2 var(--font-sans, sans-serif);
-  letter-spacing: 0;
-  white-space: nowrap;
-  pointer-events: none;
-}
-.clickHint svg {
-  width: 36px;
-  height: 26px;
-  stroke: #3c6178;
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  transform: scaleX(-1) rotate(-8deg);
-}
 .highlight {
   position: relative;
   display: inline-block;
@@ -199,16 +177,6 @@
   }
 }
 @media (max-width: 600px) {
-  .clickHint {
-    left: auto;
-    right: -5px;
-    bottom: calc(100% + 8px);
-    font-size: 12px;
-  }
-  .clickHint svg {
-    width: 25px;
-    height: 19px;
-  }
   .wordChip::after {
     content: "";
     position: absolute;

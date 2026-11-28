@@ -137,32 +137,6 @@
   letter-spacing: -0.01em;
   text-wrap: pretty;
 }
-.items { list-style: none; margin: 0; padding: 0; }
-.items li {
-  display: grid;
-  grid-template-columns: 24px 1fr;
-  gap: 12px;
-  padding: 12px 0;
-  border-top: 1px solid var(--rule);
-}
-.letter { transition: background-color 150ms ease-out, color 150ms ease-out; }
-@media (hover: hover) {
-  .chapter[data-active="true"] .items li:hover .letter { background: var(--accent); color: #fff; }
-}
-.items strong { display: block; font-size: 16px; font-weight: 600; line-height: 1.4; color: var(--ink); }
-.items p { margin: 4px 0 0; color: var(--muted); font-size: 15px; line-height: 1.5; text-wrap: pretty; overflow-wrap: anywhere; }
-.letter {
-  width: 22px;
-  height: 22px;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  background: color-mix(in oklch, var(--accent) 10%, #fff);
-  color: var(--accent);
-  font-size: 12px;
-  font-weight: 600;
-}
-
 /* Figure. Parts darken when their step is active and settle to grey once passed. */
 .svg :is(polygon, path, ellipse, circle, rect) {
   stroke-width: 1;
@@ -206,18 +180,6 @@
   font-size: 10.5px;
   fill: var(--ink);
 }
-.callout path { fill: none; stroke: var(--accent); stroke-dasharray: 2 2; }
-.callout circle { fill: #fff; stroke: var(--accent); }
-.callout .anchor { fill: var(--accent); }
-.callout circle:not(.anchor) { transition: fill 150ms ease-out; }
-.callout text { transition: fill 150ms ease-out; }
-.callout[data-focus="true"] circle:not(.anchor) { fill: var(--accent); }
-.callout[data-focus="true"] text { fill: #fff; }
-.callout text {
-  font-size: 11px;
-  font-weight: 600;
-  fill: var(--accent);
-}
 @media (prefers-reduced-motion: no-preference) {
   .top, .side, .detail, .flow, .label, .face, .progressLine {
     transition: stroke 250ms ease-out, fill 250ms ease-out, background-color 250ms ease-out;
@@ -251,8 +213,6 @@
   .progress { font-size: 12px; gap: 8px; }
   .progressLine { margin-bottom: 8px; }
   .label, .face, .tag { display: none; }
-  .callout text { font-size: 15px; }
-  .callout circle:not(.anchor) { r: 14px; }
   .chapters { padding: 0 0 24svh; }
   .introLede { margin-top: 12px; font-size: 16px; }
   .progressNumber { display: none; }
@@ -261,9 +221,6 @@
   .chapterNumber { font-size: 12px; margin-bottom: 8px; }
   .chapter h3 { font-size: 32px; }
   .lede { margin: 8px 0 16px; font-size: 16px; }
-  .items li { padding: 12px 0; }
-  .items strong { font-size: 15px; }
-  .items p { font-size: 14px; }
 }
 @media (max-height: 520px) and (max-width: 759px) {
   .desktopIntro { display: block; }
@@ -272,8 +229,6 @@
   .drawing { height: 30svh; }
   .progress { display: none; }
   .chapter h3 { font-size: 28px; }
-  .items li { padding: 8px 0; }
-  .items p { font-size: 13px; line-height: 1.45; }
 }
 @media (max-height: 520px) and (min-width: 600px) and (max-width: 1100px) {
   .story { padding-top: 48px; }
@@ -287,8 +242,4 @@
   .chapterNumber { font-size: 12px; margin-bottom: 8px; }
   .chapter h3 { font-size: 28px; }
   .lede { display: block; margin: 8px 0 12px; font-size: 14px; line-height: 1.45; }
-  .items li { padding: 8px 0; grid-template-columns: 20px 1fr; gap: 8px; }
-  .letter { width: 18px; height: 18px; font-size: 10px; }
-  .items strong { font-size: 13px; }
-  .items p { font-size: 12px; line-height: 1.4; margin-top: 2px; }
 }

@@ -14,8 +14,8 @@ import { Dither } from "@/components/ui/dither";
 import styles from "./page.module.css";
 
 const repository = "https://github.com/dendianugerah/velld";
-const databaseWords = ["databases.", "Postgres.", "MySQL.", "MongoDB."];
-const databaseIcons = [null, "/images/postgresql.svg", "/images/mysql.svg", "/images/mongodb.svg"];
+const databaseWords = ["databases.", "Postgres.", "MySQL.", "MongoDB.", "D1."];
+const databaseIcons = [null, "/images/postgresql.svg", "/images/mysql.svg", "/images/mongodb.svg", null];
 const activities = [
   { word: "building.", icon: Code2 },
   { word: "shipping.", icon: Rocket },
@@ -84,12 +84,6 @@ export default function HomePage() {
                     </span>
                   ))}
                 </span>
-                <span className={styles.clickHint} aria-hidden="true">
-                  <svg viewBox="0 0 42 30" fill="none">
-                    <path d="M3 4c13 1 23 7 27 19m-8-4 9 5 3-10" />
-                  </svg>
-                  click me
-                </span>
               </button>
             </span>
             <span className="mt-2 block">
@@ -118,8 +112,6 @@ export default function HomePage() {
             </span>
           </h1>
           <p className="mx-auto mt-7 max-w-[640px] text-[clamp(17px,1.45vw,20px)] leading-[1.7] font-[450] tracking-[-0.015em] text-[#40484c] text-pretty max-[600px]:mt-6 max-[600px]:text-base">
-            Backups, schedules, and restores. All in one place.
-            <br />
             <span className={styles.highlight}>Open source. On your own server.</span>
           </p>
         </section>

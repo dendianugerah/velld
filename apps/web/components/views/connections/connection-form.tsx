@@ -63,7 +63,7 @@ export function ConnectionForm({
         ? updateConnection({ ...data, id: connection.id })
         : saveConnection(data);
     },
-    onSuccess: (result, data) => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["connections"] });
       if (connection)
         queryClient.invalidateQueries({
@@ -71,10 +71,6 @@ export function ConnectionForm({
         });
       toast({
         title: connection ? "Connection updated" : "Connection added",
-        description:
-          data.type === "d1"
-            ? undefined
-            : "The database connection was tested successfully.",
       });
       onSuccess?.(connection?.id ?? result.id);
     },

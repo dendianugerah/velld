@@ -222,9 +222,6 @@ export function S3StorageSettings() {
       >
         Storage
       </h2>
-      <p className="mt-1.5 text-sm text-muted-foreground">
-        Manage where your backup copies are stored.
-      </p>
       <Card className="mt-7 rounded-lg shadow-none">
         <CardContent className="space-y-6 p-5">
           {/* Enable S3 Storage */}
@@ -234,8 +231,7 @@ export function S3StorageSettings() {
                 Object storage
               </Label>
               <p className="text-sm text-muted-foreground">
-                Automatically upload backups to S3-compatible storage. This
-                switch saves immediately.
+                Saves immediately.
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -294,11 +290,10 @@ export function S3StorageSettings() {
                   <SettingsField
                     id="r2-account-id"
                     label="Cloudflare Account ID"
-                    hint="Find this in your Cloudflare R2 dashboard. Velld uses it to connect over HTTPS to your R2 bucket."
                   >
                     <Input
                       id="r2-account-id"
-                      aria-describedby="r2-account-id-hint"
+                      aria-label="Cloudflare Account ID"
                       placeholder="32-character account ID"
                       value={formData.r2_account_id}
                       onChange={(e) =>
@@ -314,7 +309,6 @@ export function S3StorageSettings() {
                     <SettingsField
                       id="provider"
                       label="Provider preset"
-                      hint="Select a provider to fill in its endpoint and region."
                     >
                       <Select
                         id="provider"
@@ -449,15 +443,12 @@ export function S3StorageSettings() {
                 <div className="flex items-center justify-between gap-4 border-t pt-5">
                   <div className="space-y-0.5">
                     <Label htmlFor="s3-use-ssl" className="text-sm font-medium">
-                      Use SSL/TLS
+                      Use HTTPS
                     </Label>
-                    <p className="text-sm text-muted-foreground">
-                      Connect to S3 over HTTPS (recommended)
-                    </p>
                   </div>
                   <Switch
                     id="s3-use-ssl"
-                    aria-label="Use SSL/TLS"
+                    aria-label="Use HTTPS"
                     checked={formData.s3_use_ssl}
                     onCheckedChange={(checked) =>
                       setFormData({ ...formData, s3_use_ssl: checked })
@@ -473,16 +464,15 @@ export function S3StorageSettings() {
                     htmlFor="s3-purge-local"
                     className="text-sm font-medium"
                   >
-                    Purge Local Backup After Upload
+                    Delete local files after upload
                   </Label>
                   <p className="text-sm text-muted-foreground">
-                    Automatically delete local backup files after a successful
-                    upload to save disk space.
+                    Restores use the object-storage copy.
                   </p>
                 </div>
                 <Switch
                   id="s3-purge-local"
-                  aria-label="Purge local backup after upload"
+                  aria-label="Delete local files after upload"
                   checked={formData.s3_purge_local}
                   onCheckedChange={(checked) =>
                     setFormData({ ...formData, s3_purge_local: checked })
@@ -506,7 +496,7 @@ export function S3StorageSettings() {
             >
               {testResult.error
                 ? `Connection failed: ${testResult.error}`
-                : "Connection successful. Velld wrote, read, and deleted a test object."}
+                : "Connection successful."}
             </p>
           )}
           <div className="flex flex-wrap justify-end gap-3">

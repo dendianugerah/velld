@@ -27,7 +27,6 @@ export function ProfileSettings() {
   return <div className="mx-auto max-w-[1000px]">
     <div className="mb-8 border-b border-border pb-6">
       <h1 className="text-2xl font-semibold tracking-[-0.035em]">Settings</h1>
-      <p className="mt-1.5 text-sm text-muted-foreground">Manage your Velld instance.</p>
     </div>
 
     <div className="flex flex-col gap-8 md:flex-row md:gap-12">
@@ -47,7 +46,6 @@ export function ProfileSettings() {
       <div className="min-w-0 flex-1 pb-8">
         <section hidden={section !== "account"} aria-labelledby="account-heading">
           <h2 id="account-heading" className="text-xl font-semibold tracking-[-0.025em]">Account</h2>
-          <p className="mt-1.5 text-sm text-muted-foreground">Your account on this Velld instance.</p>
 
           <LayerCard className="mt-7 rounded-lg shadow-none">
             <div className="flex items-center gap-4 p-5">
@@ -57,7 +55,6 @@ export function ProfileSettings() {
           </LayerCard>
 
           <div className="mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-border pt-6">
-            <div><h3 className="text-sm font-medium">Sign out</h3><p className="mt-1 text-[13px] text-muted-foreground">End your current session on this device.</p></div>
             <Button variant="secondary" onClick={logout}><LogOut className="h-4 w-4" aria-hidden="true" />Sign out</Button>
           </div>
         </section>

@@ -7,7 +7,7 @@ description: Take a backup, schedule repeats, and store a copy in S3 or Cloudfla
 
 1. [Install Velld](/docs/installation) and [save a database connection](/docs/databases).
 2. Open the connection and choose **Back up now**.
-3. Open **History**, check that the backup completed, and open its detail page. The backup status and restore-check result are separate.
+3. Open **Backup history** and select the backup. Check both its backup status and restore-check result.
 4. Download a copy or [test a restore](/docs/restore-best-practices).
 
 ## Schedule backups and retention
@@ -36,10 +36,10 @@ Open **Settings → Storage**, turn on **Object storage**, and choose a provider
 | Credentials | Bucket-scoped access key ID and secret access key | R2 S3 API token's access key ID and secret access key |
 | Path prefix | `production` | `production` |
 
-Use **Test connection**, then save the settings. Run a backup and check **History** and the bucket to confirm upload. A completed backup can still be local if upload failed; check the API logs if you don't see an object.
+Use **Test connection**, then **Save settings**. Run a backup and check **Backup history** and the bucket. If the backup completed but no object appears, check the API upload logs.
 
-**Purge local backup after upload** removes the local file after a successful upload. Velld can fetch the remote copy for restores. Leave purging off until you've tested uploads and restores. The bucket stores backup files, not the Velld SQLite database or your encryption key.
+**Delete local files after upload** makes restores depend on the object-storage copy. Test an upload and restore before enabling it. The bucket contains backup files, not Velld's SQLite database or encryption key.
 
 ## Send failure alerts
 
-Open **Settings → Notifications**. Enable email and enter the recipient and SMTP settings, or enable webhooks and enter a Slack, Discord, or custom webhook URL. Save, then confirm delivery from a controlled failure on a test connection. Velld can send notifications for scheduled backup failures and failed restore checks; it does not send a success message on each backup.
+Open **Settings → Notifications**. Enable **Email** and enter the recipient and SMTP settings, or enable **Webhook** and enter a Slack, Discord, or custom webhook URL. Save, then confirm delivery with a controlled failure on a test connection. Alerts cover scheduled backup failures and failed restore checks.

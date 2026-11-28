@@ -33,7 +33,6 @@ export function LoginForm() {
           <Label htmlFor="username">Username</Label>
           <Input
             id="username"
-            placeholder="Enter your username"
             type="text"
             disabled={isPending}
             required
@@ -45,7 +44,6 @@ export function LoginForm() {
           <Label htmlFor="password">Password</Label>
           <Input
             id="password"
-            placeholder="Enter your password"
             type="password"
             disabled={isPending}
             required

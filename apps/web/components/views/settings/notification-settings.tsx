@@ -101,8 +101,7 @@ export function NotificationSettings() {
         Notifications
       </h2>
       <p className="mt-1.5 text-sm text-muted-foreground">
-        Choose how to hear about failed backups. Switches save immediately;
-        changes to fields must be saved.
+        Failed backups and restore checks. Switches save immediately.
       </p>
       <form onSubmit={handleSubmit} className="mt-7 space-y-6">
         <Card className="rounded-lg shadow-none">
@@ -115,10 +114,7 @@ export function NotificationSettings() {
                     <Mail className="h-4 w-4 text-muted-foreground" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium">Email Notifications</p>
-                    <p className="text-xs text-muted-foreground">
-                      Receive notifications via email
-                    </p>
+                    <p className="text-sm font-medium">Email</p>
                   </div>
                 </div>
                 <Switch
@@ -299,10 +295,7 @@ export function NotificationSettings() {
                     <Webhook className="h-4 w-4 text-muted-foreground" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium">Webhook Notifications</p>
-                    <p className="text-xs text-muted-foreground">
-                      Send notifications to a webhook URL
-                    </p>
+                    <p className="text-sm font-medium">Webhook</p>
                   </div>
                 </div>
                 <Switch

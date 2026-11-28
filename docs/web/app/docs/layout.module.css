@@ -160,16 +160,8 @@
   text-wrap: balance;
 }
 
-.description {
-  margin-top: 0.625rem;
-  margin-bottom: 2rem;
-  color: var(--muted);
-  font-size: 0.9375rem;
-  line-height: 1.6;
-  text-wrap: pretty;
-}
-
 .body {
+  margin-block-start: 1.5rem;
   font-size: 0.9375rem;
   line-height: 1.6;
   overflow-wrap: break-word;
@@ -460,8 +452,14 @@
     padding-inline: 0.375rem;
   }
 
+  .body th:first-child,
+  .body td:first-child {
+    min-width: 10rem;
+  }
+
   .body td code {
-    overflow-wrap: anywhere;
+    overflow-wrap: normal;
+    word-break: normal;
   }
 }
 

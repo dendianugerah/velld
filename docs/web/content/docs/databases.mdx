@@ -1,11 +1,11 @@
 ---
 title: Database connections
-description: Connect PostgreSQL, MySQL, or MongoDB directly, over SSH, or via Docker discovery.
+description: Connect PostgreSQL, MySQL, MongoDB, or Cloudflare D1.
 ---
 
 ## Add a connection
 
-Open **Connections** and create a connection. Enter a connection URL or fill in the fields:
+Open **Connections → Add connection**. Use **Details** or **Connection URL**:
 
 | Engine | Default port | Example URL |
 | --- | --- | --- |
@@ -17,7 +17,13 @@ Use a host address the **Velld API** can reach. In Compose, `localhost` inside t
 
 Use credentials that can read the objects you need to dump. Restore targets need separate credentials with permission to create and populate objects. MongoDB's authentication database can differ from the database being backed up; set it explicitly if needed.
 
-Open the saved connection's **Configuration** tab to discover and select databases for multi-database backup. Each database is dumped separately. For PITR, also set an explicit database name on the connection.
+In the saved connection's **Overview**, use **Choose databases** for multi-database backups. Each database is dumped separately. PITR also requires an explicit database name on the connection.
+
+## Cloudflare D1
+
+Under **Details**, choose **Cloudflare D1**. Enter the Cloudflare account ID, D1 database ID, and an API token with access to database metadata and exports. Velld exports SQL through Cloudflare's API; it does not need a host, port, or SSH tunnel.
+
+D1 restore checks import the export into temporary SQLite and check its integrity, tables, and row counts. Direct restore to D1, branches, schema comparison, and PITR are not available in the dashboard. Download the SQL export for a manual import with Cloudflare's tools.
 
 ## Connect over SSH
 
@@ -27,4 +33,4 @@ Example: set the SSH host to `jump.example.com:22` (host and port in separate fi
 
 ## Discover Docker databases
 
-Enable the [Docker overlay](/docs/installation#enable-docker-features), then use **Discover Docker databases** from **Connections**. Select a detected running database container, review the generated connection fields, and save. If a container isn't listed or the connection test fails, use a manual connection with an endpoint reachable from the API.
+Enable the [Docker overlay](/docs/installation#enable-docker-features), then open **Connections → Add connection → Docker**. Use **Add & schedule** for a detected container: daily at midnight, with 30 days of retention. Change these in its **Backup schedule** tab. If a container is missing or unreachable, use **Details** with an endpoint the API can reach.

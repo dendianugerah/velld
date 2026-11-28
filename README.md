@@ -1,146 +1,113 @@
 # Velld
 
-A self-hosted database backup management tool. Schedule automated backups, monitor status, and manage multiple databases from one place.
+Self-hosted backups for PostgreSQL, MySQL, MongoDB, and Cloudflare D1.
 
-**[Documentation](https://velld.vercel.app)** · **[Quick Start](https://velld.vercel.app/docs/quick-start)**
+[Documentation](https://velld.vercel.app/docs) · [Installation](https://velld.vercel.app/docs/installation) · [Recovery](https://velld.vercel.app/docs/restore-best-practices)
 
-## Features
+## What it does
 
-- Multiple database support (PostgreSQL, MySQL, MongoDB)
-- Automated scheduling with cron syntax
-- S3-compatible storage integration
-- Database restore functionality
-- Email and webhook notifications for failed backups
+| Back up | Recover |
+| --- | --- |
+| Manual backups and cron schedules | Restore into an empty database |
+| Local files, S3-compatible storage, or Cloudflare R2 | Automatic restore checks |
+| Multi-database selection, SSH tunnels, Docker discovery | Temporary masked branches and schema comparison |
+| Retention policies and failure alerts | PostgreSQL 18 rehearsals, container upgrades, and PITR |
 
-## Getting Started
+D1 uses Cloudflare's SQL export API and SQLite restore checks. Direct D1 restore, branches, schema comparison, and PITR are not available in the dashboard. Docker is required for the other engines' restore checks and disposable recovery environments.
 
-```bash
-curl -o docker-compose.yml https://raw.githubusercontent.com/dendianugerah/velld/main/docker-compose.prebuilt.yml
-```
+## Run with Docker
 
-Create a `.env` file:
-
-```bash
-NEXT_PUBLIC_API_URL=http://localhost:8080
-
-# Generate secure keys (IMPORTANT!)
-JWT_SECRET=$(openssl rand -hex 32)
-ENCRYPTION_KEY=$(openssl rand -hex 32)
-
-# Admin credentials for initial setup
-ADMIN_USERNAME_CREDENTIAL=admin
-ADMIN_PASSWORD_CREDENTIAL=changeme
-```
-
-> **Important:** The `ENCRYPTION_KEY` must be a **64-character hex string**. Don't use shell commands like `$(openssl rand -hex 32)` directly in `.env` files - they won't execute. Instead, run the command in your terminal and paste the output.
-
-**Generate keys properly:**
-
-```bash
-# Generate and display keys
-echo "JWT_SECRET=$(openssl rand -hex 32)"
-echo "ENCRYPTION_KEY=$(openssl rand -hex 32)"
-
-# Copy the output to your .env file
-```
-
-Start the containers:
-
-```bash
-docker compose up -d
-```
-
-On startup, the API creates the configured admin account if that username does not already exist. Visit [localhost:3000](http://localhost:3000) and log in with those credentials. Existing accounts continue to work; public registration is unavailable.
-
-For detailed setup instructions, see the [Installation Guide](https://velld.vercel.app/docs/installation).
-
-### Discover databases on the Docker host
-
-Enable Docker discovery by adding the optional Compose file:
-
-```bash
-docker compose -f docker-compose.yml -f docker-compose.discovery.yml up -d
-```
-
-Use the first filename that matches your installation (for example, `docker-compose.prebuilt.yml` when using the published images). Then log in as the configured admin and open **Connections → Discover Docker**. Velld finds running PostgreSQL, MySQL/MariaDB, and MongoDB containers on a shared Docker network or a reachable published port. **Add & schedule** adds a connection and enables daily backups at midnight (API server time), with 30 days of retention; you can change that schedule from Connections.
-
-### Restore checks
-
-With the same Docker access, Velld restores every completed backup into a throwaway container of the same database (PostgreSQL, MySQL/MariaDB, or MongoDB, matching the source server version when the dump records it), confirms the restored tables, rows, or documents match the backup, then removes the container. Backup history shows **Restore verified** or **Restore check failed**, and failures send the same webhook and email alerts as failed backups. Without Docker access the check is recorded as **Restore not checked**. Set `RESTORE_CHECK_ENABLED=false` to turn it off.
-
-Velld reads the database image's standard initialization environment variables. If credentials were changed later, or supplied via Docker secrets instead of environment variables, add the connection manually. Only enable this on a trusted Velld installation: giving the API access to the Docker socket grants privileged access to the host even with a read-only bind mount.
-
-### Branch from a backup
-
-With Docker access enabled, choose **Branch from backup…** on any completed PostgreSQL, MySQL/MariaDB, or MongoDB backup in History. Velld restores the backup into a separate container and gives you a database-scoped connection string only after masking succeeds. The port binds to the Docker host's loopback address, so connect on that host or forward the port over SSH. Velld's API removes the container after 24 hours.
-
-Masking uses column and field names to find common email, name, and phone fields, including nested MongoDB fields. It does not inspect unrelated fields or free text, so review the branch before sharing its data. If recognized fields cannot be safely updated, Velld removes the failed branch instead of issuing credentials.
-
-## Screenshots
-
-<table>
-  <tr>
-    <td><img src="docs/images/dashboard.png" alt="Dashboard" /></td>
-    <td><img src="docs/images/connections.png" alt="Connections" /></td>
-  </tr>
-  <tr>
-    <td align="center"><b>Dashboard</b></td>
-    <td align="center"><b>Connections</b></td>
-  </tr>
-  <tr>
-    <td><img src="docs/images/history.png" alt="History" /></td>
-    <td></td>
-  </tr>
-  <tr>
-    <td align="center"><b>Backup History</b></td>
-    <td></td>
-  </tr>
-</table>
-
-## Documentation
-
-Complete documentation is available at [velld.vercel.app](https://velld.vercel.app):
-
-- [Installation](https://velld.vercel.app/docs/installation)
-- [Database Configuration](https://velld.vercel.app/docs/databases)
-- [Troubleshooting](https://velld.vercel.app/docs/troubleshooting)
-
-## Development
-
-Clone the repository:
+Requires Docker Compose v2, Git, and OpenSSL.
 
 ```bash
 git clone https://github.com/dendianugerah/velld.git
 cd velld
+umask 077
+cp -n .env.example .env
 ```
 
-With Docker:
+Edit `.env`:
+
+- Generate `JWT_SECRET` with `openssl rand -hex 32`.
+- Run it again for `ENCRYPTION_KEY` (exactly 64 hexadecimal characters).
+- Set `ADMIN_USERNAME_CREDENTIAL` and `ADMIN_PASSWORD_CREDENTIAL`.
+- Set `NEXT_PUBLIC_API_URL` to an API URL your browser can reach.
+
+Paste the generated values, not shell expressions. Keep the encryption key: saved credentials cannot be decrypted without it. The admin variables create an account; they do not reset an existing password.
 
 ```bash
-cp .env.example .env
-docker compose up -d
+docker compose -f docker-compose.prebuilt.yml up -d
+curl -fsS http://localhost:8080/health
 ```
 
-Without Docker, install [Bun](https://bun.com/), Node.js 20+, Go 1.25+, and a C compiler (needed by SQLite). Copy the environment template:
+Open [localhost:3000](http://localhost:3000) and sign in. Published `latest` images track `main`; to run another branch, check it out and build from source instead:
 
 ```bash
-cp .env.example .env
+docker compose up -d --build
 ```
 
-Replace the `JWT_SECRET` and `ENCRYPTION_KEY` placeholders in `.env` with separate outputs from `openssl rand -hex 32`, and set the admin username and password you'll use to sign in. Then run both apps from the repo root:
+The shipped ports bind on all interfaces. For local-only use, change the chosen Compose file's mappings to `127.0.0.1:3000:3000` and `127.0.0.1:8080:8080`. Use HTTPS for remote access.
+
+SQLite and backups persist in `api_data` and `backup_data`. Back up both volumes and `.env` before updating. `docker compose down -v` deletes the volumes.
+
+### Enable Docker features
+
+On a trusted host with `/var/run/docker.sock`, add the overlay after the base file:
 
 ```bash
-bun install && bun run dev
+docker compose -f docker-compose.prebuilt.yml -f docker-compose.discovery.yml up -d
 ```
 
-The web app is at [localhost:3000](http://localhost:3000) and the API is at [localhost:8080](http://localhost:8080/health). Press Ctrl+C to stop both. To run just one app, use `bun run dev:web` or `bun run dev:api`. Use `bun run build` to build both without starting them.
+For source builds, replace the first file with `docker-compose.yml` and add `--build`. Keep the same file flags for subsequent commands. The socket gives Velld control of the Docker daemon, even with a read-only bind mount.
 
-For the docs, run `bun install --cwd docs/web` once, then `bun run dev:docs` to serve them at [localhost:3001](http://localhost:3001) or `bun run build:docs` to build them. Use `bun run dev:all` to start the web app, API, and docs together.
+## First backup
+
+1. Open **Connections → Add connection**. Use **Details**, **Connection URL**, or **Docker**.
+2. Choose **Back up now**, then open the result in **Backup history**.
+3. Check the backup status and restore-check result, then download or test a restore.
+
+Use the connection's **Backup schedule** tab for frequency and retention, and **Overview → Choose databases** for multi-database selection. Docker **Add & schedule** defaults to daily at midnight in the API server's time zone, with 30 days of retention.
+
+Configure off-host copies in **Settings → Storage** and email/webhook failure alerts in **Settings → Notifications**. [Quick start](https://velld.vercel.app/docs/quick-start) covers storage credentials and six-field cron expressions.
+
+## Recovery
+
+Open a completed backup for **Restore**, **Branch**, **Compare schema**, or **Test on PG 18**, where supported. Branches expire after 24 hours and bind to the Docker host's loopback address. Masking recognizes common field names; review data before sharing a branch.
+
+Use **Connections → connection → Recovery** for container upgrades and PostgreSQL/MySQL point-in-time recovery. Upgrades interrupt the live database. PITR requires a baseline and archived database logs, separate from ordinary dumps. See [Restore and recovery](https://velld.vercel.app/docs/restore-best-practices) for prerequisites.
+
+## Screenshots
+
+| Overview | Connections |
+| --- | --- |
+| ![Overview](docs/images/dashboard.png) | ![Connections](docs/images/connections.png) |
+
+![Backup history](docs/images/history.png)
+
+## Development
+
+Requires Bun, Node.js 20+, Go 1.25+, and a C compiler for SQLite. Configure `.env` as above; install database client tools for native backups (PostgreSQL, MariaDB, or MongoDB).
+
+```bash
+bun install --frozen-lockfile
+bun run dev
+```
+
+| Command | Runs |
+| --- | --- |
+| `bun run dev:web` / `bun run dev:api` | Dashboard (3000) / API (8080) |
+| `bun run build` | API and dashboard production builds |
+| `bun run check` | API vet/tests; dashboard lint, types, tests, dead code |
+| `bun install --cwd docs/web --frozen-lockfile` | Docs dependencies |
+| `bun run dev:docs` / `bun run build:docs` | Docs server (3001) / build |
+| `bun run dev:all` | Dashboard, API, and docs |
+
+See [API images and integration tests](apps/api/DOCKER.md), [dashboard development](apps/web/README.md), and [docs development](docs/web/README.md).
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit issues or pull requests.
+Report bugs or propose changes through GitHub issues and pull requests.
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) for details.
+[MIT](LICENSE)

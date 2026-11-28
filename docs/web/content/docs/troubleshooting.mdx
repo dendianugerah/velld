@@ -34,6 +34,10 @@ Apply [docker-compose.discovery.yml](/docs/installation#enable-docker-features) 
 
 ## Backup finished but there's no object in the bucket
 
-Use **Settings → Storage → Test connection** with the intended credentials and save the settings. Check bucket permissions and API upload logs. For R2 use the account ID and the S3 API token's access key ID and secret, not a general Cloudflare API token. Confirm that **History** shows object storage before depending on a remote copy.
+Use **Settings → Storage → Test connection** with the intended credentials and save the settings. Check bucket permissions and API upload logs. For R2 use the account ID and the S3 API token's access key ID and secret, not a general Cloudflare API token. Confirm that **Backup history** shows object storage before depending on a remote copy.
+
+## D1 export fails
+
+Check the account ID (32 hexadecimal characters), database ID (UUID), and API token permissions for that account's D1 database. The API must reach `api.cloudflare.com` and the export download URL. D1 uses a Cloudflare API token; R2 storage uses S3 access keys.
 
 When reporting an issue, include the Velld image tag or Git ref, database engine and version, and the relevant API or restore-check error. Redact passwords, tokens, and connection strings.

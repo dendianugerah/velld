@@ -6,18 +6,18 @@ description: Verify a backup, create a masked branch, rehearse upgrades, or reco
 ## Restore to an empty database
 
 1. Create a new, empty database of the same engine and add it as a separate [connection](/docs/databases).
-2. In **History**, open the completed backup, select **Restore**, and choose the new target. Confirm the destination before starting.
+2. In **Backup history**, open the completed backup, select **Restore**, and choose the new target. Confirm the destination before starting.
 3. Check the restored data and run application smoke tests. For a production cutover, switch the application only after validation and retain a rollback path.
 
 Manual restore is not a merge or a rollback button. Do not run it against your existing production database. A target may be partially populated after a failed restore; retry into a fresh target.
 
 ## Restore checks
 
-With [Docker access](/docs/installation#enable-docker-features), Velld automatically tries restoring completed backups into disposable database containers, one at a time. In **History**, open a backup's **Overview** to see the check result and its output. **Skipped** is not a pass; inspect the output, especially if the API cannot reach Docker. A passed check verifies the test restore, not whether your application works or your production target has the same extensions and roles.
+With [Docker access](/docs/installation#enable-docker-features), completed PostgreSQL, MySQL, and MongoDB backups are restored into disposable containers, one at a time. D1 exports are checked in temporary SQLite without Docker. In **Backup history → backup → Overview**, open **Restore check output** for diagnostics. **Restore not checked** is not a pass. A passed check verifies the test restore, not application compatibility or the production target's roles and extensions.
 
 ## Create a masked branch
 
-1. Open a completed backup in **History → Branch** and create a branch.
+1. Open a completed PostgreSQL, MySQL, or MongoDB backup in **Backup history → backup → Branch**.
 2. Copy its generated connection string and connect from the Docker host. The address uses `127.0.0.1`; a remote client needs a tunnel to that host.
 3. Run tests on the copy. The branch expires after 24 hours; do not use it as persistent storage.
 

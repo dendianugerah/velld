@@ -1,31 +1,43 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Velld dashboard
 
-## Getting Started
+Next.js App Router, React, TypeScript, Tailwind CSS, Cloudflare Kumo, and TanStack Query.
 
-From the repository root, install dependencies and run the web development server:
+## Run
+
+From the repository root, configure `.env` using the [setup guide](../../README.md#run-with-docker). `NEXT_PUBLIC_API_URL` must be reachable from the browser.
 
 ```bash
-bun install
-bun run dev:web
+bun install --frozen-lockfile
+bun run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+This starts the dashboard on port 3000 and the Go API on 8080. For just the frontend, run `bun run dev:web` with an API already running.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Check and build
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+From the repository root:
 
-## Learn More
+```bash
+bun run check:web
+bun run build:web
+```
 
-To learn more about Next.js, take a look at the following resources:
+`check:web` runs ESLint, design lint, TypeScript, Bun tests, and dead-code checks. Run `bun run check` to include API checks.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Set `NEXT_PUBLIC_API_URL` before building: Next.js includes this value in the production build.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Routes
 
-## Deploy on Vercel
+| Route | Page |
+| --- | --- |
+| `/` | Overview |
+| `/connections` | Connections |
+| `/connections/new` | Details, URL, or Docker connection setup |
+| `/connections/[id]` | Overview, schedule, recovery, configuration |
+| `/connections/[id]/edit` | Connection editor |
+| `/history` | Backup history and filters |
+| `/history/[id]` | Backup details and supported recovery actions |
+| `/settings` | Account, storage, notifications |
+| `/login` | Sign in |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Views live in `components/views`; API clients in `lib/api`; data hooks in `hooks`. The homepage and documentation are a separate app in `docs/web`.

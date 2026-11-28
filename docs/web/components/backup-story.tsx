@@ -9,45 +9,24 @@ import styles from "./backup-story.module.css";
 const stages = [
   {
     name: "Connect",
-    lede: "Velld reaches the database without exposing the password.",
-    items: [
-      { name: "SSH tunnel", text: "Connect securely through SSH when needed." },
-      { name: "Protected credentials", text: "Your password stays out of command arguments." },
-      { name: "Compatibility", text: "Backup tool compatibility is checked when needed." },
-    ],
+    lede: "Directly or through an SSH tunnel.",
   },
   {
     name: "Dump",
-    lede: "Your database’s own tool makes the backup file.",
-    items: [
-      { name: "Native tool", text: "Your database’s own tool creates the backup." },
-      { name: "Backup processing", text: "The output is prepared as a backup file." },
-      { name: "Stored locally", text: "Each database backup is saved on your server." },
-    ],
+    lede: "Native database tools write a compressed backup to your server.",
   },
   {
     name: "Upload",
-    lede: "If enabled, a copy goes to your S3 bucket.",
-    items: [
-      { name: "Your storage", text: "Send a copy to your S3-compatible storage." },
-      { name: "Local backup", text: "An upload failure won’t remove your local backup." },
-      { name: "Optional cleanup", text: "Remove the local file after a successful upload, if enabled." },
-    ],
+    lede: "Optionally copy it to S3-compatible storage or Cloudflare R2.",
   },
   {
     name: "Verify",
-    lede: "If enabled, Velld test-restores the file.",
-    items: [
-      { name: "Temporary container", text: "The backup is restored in an isolated container." },
-      { name: "Restore check", text: "Velld checks the restored data." },
-      { name: "Result", text: "See whether verification passed, failed, or was skipped." },
-    ],
+    lede: "With Docker access, restore into a temporary database and check the data.",
   },
 ];
 
 export function BackupStory() {
   const [active, setActive] = useState(0);
-  const [focus, setFocus] = useState<number | null>(null);
   const sections = useRef<(HTMLElement | null)[]>([]);
   const bars = useRef<(HTMLElement | null)[]>([]);
   const pinned = useRef<HTMLElement>(null);
@@ -100,19 +79,17 @@ export function BackupStory() {
   return (
     <section className={styles.story} aria-label="What happens when Velld backs up a database">
       <header className={`${styles.intro} ${styles.desktopIntro}`}>
-        <p className={styles.eyebrow}>Under the hood</p>
-        <h2 id="backup-story-title">What happens when Velld backs up a database.</h2>
-        <p className={styles.introLede}>One backup, step by step, straight from the source code.</p>
+        <p className={styles.eyebrow}>PostgreSQL · MySQL · MongoDB</p>
+        <h2 id="backup-story-title">From database to verified backup.</h2>
       </header>
       <div className={styles.sequence}>
-        <figure ref={pinned} className={styles.pinned} aria-label="Diagram of a Velld backup: the database, connection, backup tool, local storage, optional S3 storage and restore verification">
+        <figure ref={pinned} className={styles.pinned} aria-label="PostgreSQL, MySQL and MongoDB backup flow: connection, native tool, local storage, optional S3 storage and restore verification">
           <div className={`${styles.intro} ${styles.mobileIntro}`}>
-            <p className={styles.eyebrow}>Under the hood</p>
-            <h2 className={styles.mobileTitle}>What happens when Velld backs up a database.</h2>
-            <p className={styles.introLede}>One backup, step by step, straight from the source code.</p>
+            <p className={styles.eyebrow}>PostgreSQL · MySQL · MongoDB</p>
+            <h2 className={styles.mobileTitle}>From database to verified backup.</h2>
           </div>
           <div className={styles.drawing}>
-            <BackupFigure active={active} focus={focus} />
+            <BackupFigure active={active} />
           </div>
           <ol className={styles.progress} aria-label="Backup steps">
             {stages.map((stage, i) => (
@@ -139,17 +116,6 @@ export function BackupStory() {
                 <p className={styles.chapterNumber}>0{i + 1} / 0{stages.length}</p>
                 <h3 id={"backup-stage-" + i}>{stage.name}</h3>
                 <p className={styles.lede}>{stage.lede}</p>
-                <ul className={styles.items} onMouseLeave={() => setFocus(null)}>
-                  {stage.items.map((item, j) => (
-                    <li key={item.name} onMouseEnter={() => active === i && setFocus(j)}>
-                      <span className={styles.letter} aria-hidden="true">{"ABC"[j]}</span>
-                      <div>
-                        <strong>{item.name}</strong>
-                        <p>{item.text}</p>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
               </div>
             </article>
           ))}

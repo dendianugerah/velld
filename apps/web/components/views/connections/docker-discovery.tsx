@@ -129,7 +129,7 @@ export function DockerDiscovery({ onManual }: { onManual: () => void }) {
         {!!discovery.data?.containers.length && (
           <p className="text-xs text-muted-foreground">
             Imported databases get daily backups at midnight (server time), kept
-            for 30 days. You can change this later.
+            for 30 days.
           </p>
         )}
         {discovery.data?.containers.map((container) => {
