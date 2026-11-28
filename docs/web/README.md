@@ -24,6 +24,7 @@ In the project, you can see:
 | `app/(home)`              | The route group for your landing page and other pages. |
 | `app/docs`                | The documentation layout and pages.                    |
 | `app/api/search/route.ts` | The Route Handler for search.                          |
+| `app/llms.txt` and `app/llms-full.txt` | Plain-text index and complete docs for coding agents. |
 
 ### Fumadocs MDX
 

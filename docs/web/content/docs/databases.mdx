@@ -1,0 +1,30 @@
+---
+title: Database connections
+description: Connect PostgreSQL, MySQL, or MongoDB directly, over SSH, or via Docker discovery.
+---
+
+## Add a connection
+
+Open **Connections** and create a connection. Enter a connection URL or fill in the fields:
+
+| Engine | Default port | Example URL |
+| --- | --- | --- |
+| PostgreSQL | 5432 | `postgresql://backup_user:password@db.example.com:5432/shop?sslmode=require` |
+| MySQL | 3306 | `mysql://backup_user:password@db.example.com:3306/shop?tls=true` |
+| MongoDB | 27017 | `mongodb://backup_user:password@db.example.com:27017/shop?authSource=admin&tls=true` |
+
+Use a host address the **Velld API** can reach. In Compose, `localhost` inside the API container is not the Docker host. Use a database service name on a shared network, or use `host.docker.internal` with the [host-gateway overlay](/docs/installation#enable-docker-features) and a published database port. Match the TLS setting to the server; do not disable TLS for a remote database as a workaround.
+
+Use credentials that can read the objects you need to dump. Restore targets need separate credentials with permission to create and populate objects. MongoDB's authentication database can differ from the database being backed up; set it explicitly if needed.
+
+Open the saved connection's **Configuration** tab to discover and select databases for multi-database backup. Each database is dumped separately. For PITR, also set an explicit database name on the connection.
+
+## Connect over SSH
+
+Expand the SSH settings, enable the tunnel, and enter the jump host, port (usually `22`), and username. Choose password or private-key authentication. The database host and port must be reachable **from the jump host**.
+
+Example: set the SSH host to `jump.example.com:22` (host and port in separate fields), and the database host to `10.0.2.15` with port `5432`. Keep the database credentials in the database fields.
+
+## Discover Docker databases
+
+Enable the [Docker overlay](/docs/installation#enable-docker-features), then use **Discover Docker databases** from **Connections**. Select a detected running database container, review the generated connection fields, and save. If a container isn't listed or the connection test fails, use a manual connection with an endpoint reachable from the API.
