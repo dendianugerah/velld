@@ -6,7 +6,10 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint && bun run lint:design",
+    "lint:design": "oxlint -c .oxlintrc.json app components hooks lib",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "dependencies": {
     "@cloudflare/kumo": "^2.19.1",
@@ -15,10 +18,8 @@
     "@radix-ui/react-dropdown-menu": "^2.1.16",
     "@radix-ui/react-label": "^2.1.1",
     "@radix-ui/react-scroll-area": "^1.2.2",
-    "@radix-ui/react-select": "^2.1.4",
     "@radix-ui/react-separator": "^1.1.2",
     "@radix-ui/react-slot": "^1.1.1",
-    "@radix-ui/react-switch": "^1.1.2",
     "@radix-ui/react-tabs": "^1.1.2",
     "@radix-ui/react-toast": "^1.2.4",
     "@radix-ui/react-tooltip": "^1.2.3",
@@ -43,7 +44,10 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "15.5.29",
+    "outtrue": "0.2.2",
+    "oxlint": "1.95.0",
     "postcss": "^8.5.23",
+    "prettier": "3.10.1",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

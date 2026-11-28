@@ -31,7 +31,7 @@ export function ProfileSettings() {
     </div>
 
     <div className="flex flex-col gap-8 md:flex-row md:gap-12">
-      <nav aria-label="Settings sections" className="flex shrink-0 flex-wrap gap-1 border-b border-border pb-3 md:w-44 md:flex-col md:border-0 md:pb-0">
+      <nav aria-label="Settings sections" className="flex shrink-0 flex-wrap gap-1 border-b border-border pb-3 md:w-44 md:flex-col md:border-0 md:pb-0 lg:sticky lg:top-6 lg:max-h-[calc(100dvh-3rem)] lg:self-start lg:overflow-y-auto">
         {sections.map(({ id, label, icon: Icon }) => <button
           key={id}
           type="button"

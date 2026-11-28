@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select } from "@cloudflare/kumo/components/select";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -84,22 +84,19 @@ export function ScheduleForm({ connection, returnFocusTo, onClose = () => {}, in
   const form = <form onSubmit={submit} className="space-y-6">
         <div className="flex items-center justify-between gap-6 rounded-xl bg-muted/70 p-4">
           <div><Label htmlFor="schedule-enabled">Automatic backups</Label><p className="mt-1.5 text-xs text-muted-foreground">Off means you’ll run backups manually.</p></div>
-          <Switch id="schedule-enabled" checked={enabled} onCheckedChange={setEnabled} disabled={save.isPending} />
+          <Switch id="schedule-enabled" aria-label="Automatic backups" checked={enabled} onCheckedChange={setEnabled} disabled={save.isPending} />
         </div>
 
         {enabled && <div className="space-y-5">
           <div className="space-y-2">
             <Label htmlFor="schedule-frequency">How often</Label>
-            <Select value={frequency} onValueChange={setFrequency} disabled={save.isPending}>
-              <SelectTrigger id="schedule-frequency"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="hourly">Hourly</SelectItem>
-                <SelectItem value="daily">Daily, at midnight</SelectItem>
-                <SelectItem value="weekly">Weekly, on Sunday</SelectItem>
-                <SelectItem value="monthly">Monthly, on the 1st</SelectItem>
-                <SelectItem value="custom">Custom cron expression</SelectItem>
-                <SelectItem value="test">Every minute (testing)</SelectItem>
-              </SelectContent>
+            <Select id="schedule-frequency" aria-label="How often" value={frequency} onValueChange={value => { if (value) setFrequency(value); }} items={{ hourly: "Hourly", daily: "Daily, at midnight", weekly: "Weekly, on Sunday", monthly: "Monthly, on the 1st", custom: "Custom cron expression", test: "Every minute (testing)" }} className="w-full" disabled={save.isPending}>
+              <Select.Option value="hourly">Hourly</Select.Option>
+              <Select.Option value="daily">Daily, at midnight</Select.Option>
+              <Select.Option value="weekly">Weekly, on Sunday</Select.Option>
+              <Select.Option value="monthly">Monthly, on the 1st</Select.Option>
+              <Select.Option value="custom">Custom cron expression</Select.Option>
+              <Select.Option value="test">Every minute (testing)</Select.Option>
             </Select>
             <p className="text-xs leading-relaxed text-muted-foreground">Schedules use your Velld server’s time zone.</p>
           </div>
@@ -115,7 +112,7 @@ export function ScheduleForm({ connection, returnFocusTo, onClose = () => {}, in
           </div>
           {settings?.s3_enabled && <div className="flex items-start justify-between gap-5 border-t pt-5">
             <div><Label htmlFor="schedule-s3-cleanup">Apply retention to S3, too</Label><p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">Delete S3 backups outside this retention policy.</p></div>
-            <Switch id="schedule-s3-cleanup" checked={s3Cleanup} onCheckedChange={setS3Cleanup} disabled={save.isPending} />
+            <Switch id="schedule-s3-cleanup" aria-label="Apply retention to S3" checked={s3Cleanup} onCheckedChange={setS3Cleanup} disabled={save.isPending} />
           </div>}
         </div>}
         {(validationError || save.error) && <p role="alert" className="text-sm text-destructive">{validationError || save.error?.message || "Couldn’t save the schedule. Please try again."}</p>}

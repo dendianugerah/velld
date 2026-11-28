@@ -4,15 +4,15 @@ import { useState, useEffect } from "react";
 import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LayerCard as Card } from "@cloudflare/kumo/components/layer-card";
 import { Button } from "@cloudflare/kumo/components/button";
-import { SettingsInput as Input, SettingsField, SettingsFieldGroup, SettingsFieldRow } from "./settings-input";
+import { FormInput as Input, FormField as SettingsField, FormFieldGroup as SettingsFieldGroup, FormFieldRow as SettingsFieldRow } from "@/components/ui/form-field";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@cloudflare/kumo/components/switch";
+import { Switch } from "@/components/ui/switch";
 import { Loader2, Cloud } from "lucide-react";
 import { useSettings } from "@/hooks/use-settings";
 import { useToast } from "@/hooks/use-toast";
 import { testStorageConnection } from "@/lib/api/settings";
 import type { StorageProvider } from "@/types/settings";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select } from "@cloudflare/kumo/components/select";
 
 const S3_PROVIDERS = [
   { value: "aws", label: "AWS S3", endpoint: "s3.amazonaws.com", region: "us-east-1", ssl: true },
@@ -24,6 +24,7 @@ const S3_PROVIDERS = [
   { value: "wasabi", label: "Wasabi", endpoint: "s3.wasabisys.com", region: "us-east-1", ssl: true },
   { value: "custom", label: "Custom / Other", endpoint: "", region: "", ssl: true },
 ];
+const providerItems = Object.fromEntries(S3_PROVIDERS.map(provider => [provider.value, provider.label]));
 
 export function S3StorageSettings() {
   const { settings, isLoading, error, updateSettings, isUpdating } = useSettings();
@@ -183,14 +184,9 @@ export function S3StorageSettings() {
           <>
             <SettingsFieldGroup>
             <SettingsField id="storage-provider" label="Storage provider">
-              <Select value={formData.s3_provider} onValueChange={(provider: StorageProvider) => setFormData({ ...formData, s3_provider: provider })}>
-                <SelectTrigger id="storage-provider">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="s3">S3-compatible</SelectItem>
-                  <SelectItem value="r2">Cloudflare R2</SelectItem>
-                </SelectContent>
+              <Select id="storage-provider" aria-label="Storage provider" value={formData.s3_provider} onValueChange={value => { if (value) setFormData({ ...formData, s3_provider: value as StorageProvider }); }} items={{ s3: "S3-compatible", r2: "Cloudflare R2" }} className="w-full">
+                <Select.Option value="s3">S3-compatible</Select.Option>
+                <Select.Option value="r2">Cloudflare R2</Select.Option>
               </Select>
             </SettingsField>
             {isR2 ? (
@@ -206,17 +202,8 @@ export function S3StorageSettings() {
             ) : (
             <>
             <SettingsField id="provider" label="Provider preset" hint="Select a provider to fill in its endpoint and region.">
-              <Select onValueChange={handlePresetChange}>
-                <SelectTrigger id="provider" aria-describedby="provider-hint">
-                  <SelectValue placeholder="Select a provider or use custom" />
-                </SelectTrigger>
-                <SelectContent>
-                  {S3_PROVIDERS.map((provider) => (
-                    <SelectItem key={provider.value} value={provider.value}>
-                      {provider.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
+              <Select id="provider" aria-label="Provider preset" onValueChange={value => { if (typeof value === "string") handlePresetChange(value); }} items={providerItems} placeholder="Select a provider or use custom" className="w-full">
+                {S3_PROVIDERS.map(provider => <Select.Option key={provider.value} value={provider.value}>{provider.label}</Select.Option>)}
               </Select>
             </SettingsField>
 

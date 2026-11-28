@@ -1,0 +1,9 @@
+{
+  "jsPlugins": [{ "name": "design-system", "specifier": "outtrue" }],
+  "categories": { "correctness": "off" },
+  "settings": { "design-system": { "primitives": "components/ui" } },
+  "rules": {
+    "design-system/icon-button-label": "error",
+    "design-system/semantic-tokens-only": "error"
+  }
+}

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
+import { Select } from "@cloudflare/kumo/components/select";
 import { compareBackupSchema, getBackups } from "@/lib/api/backups";
 import type { BackupList } from "@/types/backup";
 
@@ -24,6 +25,7 @@ export function SchemaDiffPanel({ backup }: { backup: BackupList }) {
   const candidates = (data?.data ?? []).filter(item => item.id !== backup.id &&
     item.status === "completed" && item.database_type === backup.database_type);
   const pages = data?.pagination?.total_pages ?? 1;
+  const candidateItems = Object.fromEntries(candidates.map(item => [item.id, `${item.database_name || item.connection_name} · ${new Date(item.created_at).toLocaleString()}`]));
 
   useEffect(() => () => request.current?.abort(), []);
 
@@ -66,7 +68,7 @@ export function SchemaDiffPanel({ backup }: { backup: BackupList }) {
     }
   }
 
-  const selectClass = "w-full rounded-md border bg-background px-2 py-1.5 text-sm";
+  const selectClass = "w-full";
   function download() {
     if (!sql) return;
     const url = URL.createObjectURL(new Blob([sql], {type: "application/sql"}));
@@ -78,24 +80,20 @@ export function SchemaDiffPanel({ backup }: { backup: BackupList }) {
   }
   return <div className="space-y-5">
       <div><h2 className="text-lg font-semibold tracking-tight">Compare schema</h2>
-        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">Generate SQL to change this backup’s schema to match the target. Nothing is applied. Review the SQL before running it; it can drop tables and columns.</p>
+        <p className="mt-2 max-w-2xl text-sm text-muted-foreground">Generate SQL to match this backup’s schema to a target. Nothing is applied. Tables, columns, indexes, and constraints only.</p>
       </div>
-      <p className="text-xs text-muted-foreground">Compares tables, columns, indexes, and constraints. Does not compare data, views, routines, or all engine-specific options.</p>
-      <label className="block max-w-lg space-y-2 text-sm">
-        <span>Target</span>
-        <select className={selectClass} value={mode} disabled={pending} onChange={event => { setMode(event.target.value); clearResult(); }}>
-          <option value="live">Live database</option>
-          <option value="backup">Another backup</option>
-        </select>
-      </label>
-      {mode === "backup" && <div className="min-w-0 space-y-2">
-        <label className="block space-y-1 text-sm">
-          <span>Target backup</span>
-          <select className={selectClass} value={target} disabled={pending || isPending || !candidates.length} onChange={event => { setTarget(event.target.value); clearResult(); }}>
-            <option value="">{isPending ? "Loading backups…" : candidates.length ? "Choose a backup" : "No matching backups on this page"}</option>
-            {candidates.map(item => <option key={item.id} value={item.id}>{item.database_name || item.connection_name} · {new Date(item.created_at).toLocaleString()}</option>)}
-          </select>
-        </label>
+      <div className="max-w-lg space-y-2 text-sm">
+        <span className="block">Target</span>
+        <Select aria-label="Target" value={mode} disabled={pending} onValueChange={value => { setMode(value ?? "live"); clearResult(); }} items={{ live: "Live database", backup: "Another backup" }} className={selectClass}>
+          <Select.Option value="live">Live database</Select.Option>
+          <Select.Option value="backup">Another backup</Select.Option>
+        </Select>
+      </div>
+      {mode === "backup" && <div className="min-w-0 max-w-lg space-y-2 text-sm">
+        <span className="block">Target backup</span>
+        <Select aria-label="Target backup" value={target} disabled={pending || isPending || !candidates.length} onValueChange={value => { setTarget(value ?? ""); clearResult(); }} items={candidateItems} placeholder={candidates.length ? "Choose a backup" : "No matching backups"} className={selectClass}>
+          {candidates.map(item => <Select.Option key={item.id} value={item.id}>{item.database_name || item.connection_name} · {new Date(item.created_at).toLocaleString()}</Select.Option>)}
+        </Select>
         {isError && <div role="alert" className="space-y-2 text-sm text-destructive"><p>Couldn’t load backups.</p><Button variant="outline" size="sm" onClick={() => refetch()}>Try again</Button></div>}
         {(pages > 1 || page > 1) && <div className="flex items-center gap-2 text-xs">
           <Button variant="outline" size="sm" disabled={pending || page <= 1} onClick={() => { setPage(page - 1); setTarget(""); clearResult(); }}>Previous</Button>

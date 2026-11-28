@@ -82,6 +82,7 @@ export function DeleteConnectionDialog({
                 </div>
                 <Switch
                   id="cleanup-s3"
+                  aria-label="Also delete S3 backups"
                   checked={cleanupS3}
                   onCheckedChange={(checked) => setCleanupS3(checked)}
                 />

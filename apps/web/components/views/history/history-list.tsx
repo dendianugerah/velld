@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { format, formatDistanceToNow, parseISO } from "date-fns";
 import { ArrowUpRight, Download } from "lucide-react";
 import { LayerCard } from "@cloudflare/kumo/components/layer-card";
+import { Select } from "@cloudflare/kumo/components/select";
 import { useBackup } from "@/hooks/use-backup";
 import { useConnections } from "@/hooks/use-connections";
 import { formatSize } from "@/lib/helper";
@@ -48,11 +49,11 @@ export function HistoryList() {
       status={status} onStatusChange={value => change("status", value)} databaseType={engine} onDatabaseTypeChange={value => change("engine", value)}
       onReset={() => window.history.pushState(null, "", "/history")} />
     <div className="flex flex-wrap items-center justify-between gap-3">
-      <label className="flex items-center gap-2 text-xs text-muted-foreground">Restore check
-        <select aria-label="Filter by restore check" value={verification} onChange={event => change("verification", event.target.value)} className="rounded-md border bg-card px-2 py-1.5 text-foreground">
-          <option value="all">All results</option><option value="passed">Verified</option><option value="failed">Failed</option><option value="pending">Running</option><option value="skipped">Not checked</option>
-        </select>
-      </label>
+      <div className="flex items-center gap-2 text-xs text-muted-foreground"><span>Restore check</span>
+        <Select aria-label="Filter by restore check" value={verification} onValueChange={value => { if (value) change("verification", value); }} items={{ all: "All results", passed: "Verified", failed: "Failed", pending: "Running", skipped: "Not checked" }} className="w-32">
+          <Select.Option value="all">All results</Select.Option><Select.Option value="passed">Verified</Select.Option><Select.Option value="failed">Failed</Select.Option><Select.Option value="pending">Running</Select.Option><Select.Option value="skipped">Not checked</Select.Option>
+        </Select>
+      </div>
       {connectionId && <div className="flex items-center gap-2 rounded-md bg-muted px-2.5 py-1.5 text-xs"><span className="max-w-52 truncate">{connection?.name || "Selected connection"}</span><button aria-label="Remove connection filter" className="rounded px-1 hover:bg-background" onClick={() => change("connection_id", "")}>×</button></div>}
     </div>
     <LayerCard className="overflow-hidden rounded-lg shadow-none">
@@ -79,6 +80,5 @@ export function HistoryList() {
     <div className="flex flex-wrap items-center justify-between gap-4"><p role="status" className="text-[11px] text-muted-foreground">{isFetching ? "Updating…" : pagination ? `${pagination.total} ${active ? "matching " : ""}backup${pagination.total === 1 ? "" : "s"} · Page ${page} of ${Math.max(1, pagination.total_pages)}` : ""}</p>
       {pagination && pagination.total_pages > 1 && <CustomPagination currentPage={page} totalPages={pagination.total_pages} onPageChange={value => change("page", String(value))} />}
     </div>
-    <p className="text-[11px] leading-relaxed text-muted-foreground">A completed backup is a saved file. A restore check verifies it in a temporary database.</p>
   </div>;
 }
