@@ -20,8 +20,10 @@ interface HistoryFiltersProps {
   onStatusChange: (value: string) => void;
   databaseType: string;
   onDatabaseTypeChange: (value: string) => void;
+  verification: string;
+  onVerificationChange: (value: string) => void;
   onReset: () => void;
-  isLoading?: boolean;
+  active: boolean;
 }
 
 export function HistoryFilters({ 
@@ -33,44 +35,45 @@ export function HistoryFilters({
   onStatusChange,
   databaseType,
   onDatabaseTypeChange,
+  verification,
+  onVerificationChange,
   onReset,
-  isLoading
+  active
 }: HistoryFiltersProps) {
   
   return (
-    <div className="flex flex-col gap-3 2xl:flex-row 2xl:items-center 2xl:justify-between">
-      <div className="relative w-full xl:max-w-xs">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+    <div className="flex flex-wrap items-center gap-2">
+      <div className="relative min-w-0 basis-full xl:flex-1">
+        <Search aria-hidden="true" className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
-          type="text"
-          placeholder="Search database, connection or file…"
+          type="search"
+          placeholder="Search backups…"
           aria-label="Search backup history"
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="pl-10"
-          disabled={isLoading}
+          className="ps-9"
         />
       </div>
       
-      <div className="grid grid-cols-2 items-center gap-2 sm:flex sm:flex-wrap">
+      <div className="grid w-full grid-cols-2 items-center gap-2 sm:grid-cols-4 xl:w-auto xl:grid-cols-[repeat(4,auto)]">
         <Select value={dateRange} onValueChange={onDateRangeChange}>
-          <SelectTrigger aria-label="Filter by date" className="w-full sm:w-[140px]">
-            <SelectValue placeholder="Last 7 Days" />
+          <SelectTrigger aria-label="Filter by date" className="min-w-0 xl:min-w-32">
+            <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Time</SelectItem>
-            <SelectItem value="24hours">Last 24 Hours</SelectItem>
-            <SelectItem value="7days">Last 7 Days</SelectItem>
-            <SelectItem value="30days">Last 30 Days</SelectItem>
+            <SelectItem value="all">Any date</SelectItem>
+            <SelectItem value="24hours">Last 24 hours</SelectItem>
+            <SelectItem value="7days">Last 7 days</SelectItem>
+            <SelectItem value="30days">Last 30 days</SelectItem>
           </SelectContent>
         </Select>
 
         <Select value={status} onValueChange={onStatusChange}>
-          <SelectTrigger aria-label="Filter by status" className="w-full sm:w-[130px]">
-            <SelectValue placeholder="All Status" />
+          <SelectTrigger aria-label="Filter by status" className="min-w-0 xl:min-w-32">
+            <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
+            <SelectItem value="all">All statuses</SelectItem>
             <SelectItem value="completed">Completed</SelectItem>
             <SelectItem value="failed">Failed</SelectItem>
             <SelectItem value="running">Running</SelectItem>
@@ -79,11 +82,11 @@ export function HistoryFilters({
         </Select>
 
         <Select value={databaseType} onValueChange={onDatabaseTypeChange}>
-          <SelectTrigger aria-label="Filter by database engine" className="w-full sm:w-[140px]">
-            <SelectValue placeholder="All Databases" />
+          <SelectTrigger aria-label="Filter by database engine" className="min-w-0 xl:min-w-32">
+            <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Databases</SelectItem>
+            <SelectItem value="all">All engines</SelectItem>
             <SelectItem value="mysql">MySQL</SelectItem>
             <SelectItem value="postgresql">PostgreSQL</SelectItem>
             <SelectItem value="mongodb">MongoDB</SelectItem>
@@ -92,10 +95,20 @@ export function HistoryFilters({
           </SelectContent>
         </Select>
 
-        <Button variant="ghost" size="sm" onClick={onReset} className="w-full sm:w-auto">
-          Reset
-        </Button>
+        <Select value={verification} onValueChange={onVerificationChange}>
+          <SelectTrigger aria-label="Filter by restore check" className="min-w-0 xl:min-w-36">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Restore checks</SelectItem>
+            <SelectItem value="passed">Verified</SelectItem>
+            <SelectItem value="failed">Failed</SelectItem>
+            <SelectItem value="pending">Running</SelectItem>
+            <SelectItem value="skipped">Not checked</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
+      {active && <Button variant="ghost" size="sm" onClick={onReset}>Clear filters</Button>}
     </div>
   );
 }
